@@ -12,6 +12,7 @@
 #include "duckdb/parser/statement/update_statement.hpp"
 #include "duckdb/parser/tableref/expressionlistref.hpp"
 #include "duckdb/parser/transformer.hpp"
+#include "duckdb/parser/parser_cache.hpp"
 #include "parser/parser.hpp"
 #include "postgres_parser.hpp"
 
@@ -189,6 +190,18 @@ vector<string> SplitQueryStringIntoStatements(const string &query) {
 }
 
 void Parser::ParseQuery(const string &query) {
+	// 检查缓存中是否有相同的查询
+	auto cached_result = ParserCache::Get().GetCachedResult(query);
+	if (cached_result) {
+		// 从缓存中恢复结果
+		statements = std::move(cached_result->statements);
+		if (!cached_result->success) {
+			throw ParserException::SyntaxError(query, cached_result->error.Message(), 
+				cached_result->error.GetQueryLocation());
+		}
+		return;
+	}
+
 	Transformer transformer(options);
 	string parser_error;
 	optional_idx parser_error_location;
@@ -299,12 +312,17 @@ void Parser::ParseQuery(const string &query) {
 			statement->query = query.substr(statement->stmt_location, statement->stmt_length);
 			statement->stmt_location = 0;
 			statement->stmt_length = statement->query.size();
-			if (statement->type == StatementType::CREATE_STATEMENT) {
-				auto &create = statement->Cast<CreateStatement>();
-				create.info->sql = statement->query;
-			}
+		if (statement->type == StatementType::CREATE_STATEMENT) {
+			auto &create = statement->Cast<CreateStatement>();
+			create.info->sql = statement->query;
 		}
 	}
+	
+	// 缓存查询结果
+	PreservedError error;
+	bool success = true;
+	ParserCache::Get().CacheResult(query, std::move(statements), error, success);
+}
 }
 
 vector<SimplifiedToken> Parser::Tokenize(const string &query) {

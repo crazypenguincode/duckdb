@@ -19,6 +19,7 @@
 #include "duckdb/catalog/catalog_entry/table_column_type.hpp"
 #include "duckdb/catalog/catalog_entry/column_dependency_manager.hpp"
 #include "duckdb/common/table_column.hpp"
+#include "duckdb/common/atomic.hpp"
 
 namespace duckdb {
 
@@ -129,10 +130,17 @@ public:
 
 	virtual vector<column_t> GetRowIdColumns() const;
 
+	//! Get current version of table structure
+	DUCKDB_API uint64_t GetVersion() const { return version.load(); }
+	//! Increment version when table structure changes
+	DUCKDB_API void IncrementVersion() { version++; }
+
 protected:
 	//! A list of columns that are part of this table
 	ColumnList columns;
 	//! A list of constraints that are part of this table
 	vector<unique_ptr<Constraint>> constraints;
+	//! Version number for tracking table structure changes
+	atomic<uint64_t> version;
 };
 } // namespace duckdb

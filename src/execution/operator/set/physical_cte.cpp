@@ -10,9 +10,9 @@
 namespace duckdb {
 
 PhysicalCTE::PhysicalCTE(string ctename, idx_t table_index, vector<LogicalType> types, PhysicalOperator &top,
-                         PhysicalOperator &bottom, idx_t estimated_cardinality)
+                         PhysicalOperator &bottom, idx_t estimated_cardinality, optional_ptr<BoundCTENode> bound_cte)
     : PhysicalOperator(PhysicalOperatorType::CTE, std::move(types), estimated_cardinality), table_index(table_index),
-      ctename(std::move(ctename)) {
+      ctename(std::move(ctename)), bound_cte(bound_cte) {
 	children.push_back(top);
 	children.push_back(bottom);
 }
@@ -74,6 +74,17 @@ SinkCombineResultType PhysicalCTE::Combine(ExecutionContext &context, OperatorSi
 	auto &lstate = input.local_state.Cast<CTELocalState>();
 	auto &gstate = input.global_state.Cast<CTEGlobalState>();
 	gstate.MergeIT(lstate.lhs_data);
+
+	// Cache the result if bound_cte is available
+	if (bound_cte) {
+		lock_guard<mutex> guard(gstate.lhs_lock);
+		if (!bound_cte->is_cached) {
+			bound_cte->cached_result = make_uniq<ColumnDataCollection>(context.client, gstate.working_table_ref->Types());
+			bound_cte->cached_result->Combine(*gstate.working_table_ref);
+			bound_cte->bloom_filter.Insert(ctename);
+			bound_cte->is_cached = true;
+		}
+	}
 
 	return SinkCombineResultType::FINISHED;
 }

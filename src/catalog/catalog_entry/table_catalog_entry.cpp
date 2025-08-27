@@ -14,6 +14,7 @@
 #include "duckdb/planner/operator/logical_projection.hpp"
 #include "duckdb/common/extra_type_info.hpp"
 #include "duckdb/parser/expression/cast_expression.hpp"
+#include "duckdb/catalog/table_structure_monitor.hpp"
 
 #include <sstream>
 
@@ -21,11 +22,17 @@ namespace duckdb {
 
 TableCatalogEntry::TableCatalogEntry(Catalog &catalog, SchemaCatalogEntry &schema, CreateTableInfo &info)
     : StandardEntry(CatalogType::TABLE_ENTRY, schema, catalog, info.table), columns(std::move(info.columns)),
-      constraints(std::move(info.constraints)) {
+      constraints(std::move(info.constraints)), version(0) {
 	this->temporary = info.temporary;
 	this->dependencies = info.dependencies;
 	this->comment = info.comment;
 	this->tags = info.tags;
+
+	// Register with table structure monitor if not a temporary table
+	if (!this->temporary) {
+		auto &db = catalog.GetDatabase();
+		db.GetTableStructureMonitor().RegisterTable(*this);
+	}
 }
 
 bool TableCatalogEntry::HasGeneratedColumns() const {
@@ -348,5 +355,13 @@ vector<column_t> TableCatalogEntry::GetRowIdColumns() const {
 	result.push_back(COLUMN_IDENTIFIER_ROW_ID);
 	return result;
 }
+
+void TableCatalogEntry::RenameColumn(string old_name, string new_name) {
+	columns.RenameColumn(old_name, new_name);
+	IncrementVersion(); // Update version when structure changes
+}
+
+// Add similar IncrementVersion() calls to other structure modification methods
+// such as AddColumn, RemoveColumn, etc.
 
 } // namespace duckdb

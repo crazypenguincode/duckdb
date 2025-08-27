@@ -1,6 +1,7 @@
 #include "duckdb/main/database.hpp"
 
 #include "duckdb/catalog/catalog.hpp"
+#include "duckdb/catalog/table_structure_monitor.hpp"
 #include "duckdb/common/virtual_file_system.hpp"
 #include "duckdb/execution/index/index_type_set.hpp"
 #include "duckdb/execution/operator/helper/physical_set.hpp"
@@ -68,6 +69,10 @@ DBConfig::~DBConfig() {
 DatabaseInstance::DatabaseInstance() {
 	config.is_user_config = false;
 	create_api_v1 = nullptr;
+
+	// Initialize table structure monitor with default 60s scan interval
+	table_structure_monitor = make_uniq<TableStructureMonitor>(*this, 60000);
+	table_structure_monitor->Start();
 }
 
 DatabaseInstance::~DatabaseInstance() {
@@ -95,6 +100,11 @@ DatabaseInstance::~DatabaseInstance() {
 	Allocator::SetBackgroundThreads(false);
 	// after all destruction is complete clear the cache entry
 	config.db_cache_entry.reset();
+
+	// Stop table structure monitor
+	if (table_structure_monitor) {
+		table_structure_monitor->Stop();
+	}
 }
 
 BufferManager &BufferManager::GetBufferManager(DatabaseInstance &db) {

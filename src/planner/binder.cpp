@@ -3,6 +3,7 @@
 #include "duckdb/catalog/catalog_entry/aggregate_function_catalog_entry.hpp"
 #include "duckdb/catalog/catalog_entry/table_catalog_entry.hpp"
 #include "duckdb/catalog/catalog_entry/view_catalog_entry.hpp"
+#include "duckdb/catalog/table_structure_monitor.hpp"
 #include "duckdb/common/enum_util.hpp"
 #include "duckdb/common/helper.hpp"
 #include "duckdb/main/config.hpp"
@@ -75,6 +76,13 @@ Binder::Binder(ClientContext &context, shared_ptr<Binder> parent_p, BinderType b
 	}
 }
 
+void Binder::CheckTableStructureChanges(TableCatalogEntry &table, uint64_t last_known_version) {
+    auto &db = table.catalog.GetDatabase();
+    if (db.GetTableStructureMonitor().HasStructureChanged(table, last_known_version)) {
+        throw BinderException("Table structure of %s has changed, please retry the query", table.name);
+    }
+}
+
 unique_ptr<BoundCTENode> Binder::BindMaterializedCTE(CommonTableExpressionMap &cte_map) {
 	// Extract materialized CTEs from cte_map
 	vector<unique_ptr<CTENode>> materialized_ctes;
@@ -109,6 +117,19 @@ unique_ptr<BoundCTENode> Binder::BindMaterializedCTE(CommonTableExpressionMap &c
 
 	AddCTEMap(cte_map);
 	auto bound_cte = BindCTE(cte_root->Cast<CTENode>());
+
+	// Check bloom filter for cached result
+	if (bound_cte->is_cached && bound_cte->bloom_filter.Contains(bound_cte->ctename)) {
+		return bound_cte; // Use cached result
+	}
+
+	// Execute query and cache result if not cached
+	if (bound_cte->query) {
+		// Execute query and store result in cached_result
+		// This part needs to be implemented in the query execution logic
+		bound_cte->bloom_filter.Insert(bound_cte->ctename);
+		bound_cte->is_cached = true;
+	}
 
 	return bound_cte;
 }

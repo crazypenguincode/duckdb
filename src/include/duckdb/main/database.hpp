@@ -8,13 +8,15 @@
 
 #pragma once
 
-#include "duckdb/common/winapi.hpp"
-#include "duckdb/main/capi/extension_api.hpp"
+#include "duckdb/common/atomic.hpp"
+#include "duckdb/common/enums/access_mode.hpp"
+#include "duckdb/common/mutex.hpp"
 #include "duckdb/main/config.hpp"
-#include "duckdb/main/extension.hpp"
-#include "duckdb/main/extension_install_info.hpp"
 #include "duckdb/main/settings.hpp"
-#include "duckdb/main/valid_checker.hpp"
+#include "duckdb/storage/storage_manager.hpp"
+#include "duckdb/transaction/transaction_manager.hpp"
+#include "duckdb/catalog/catalog.hpp"
+#include "duckdb/catalog/table_structure_monitor.hpp"
 
 namespace duckdb {
 class BufferManager;
@@ -39,7 +41,7 @@ struct ExtensionInfo {
 	unique_ptr<ExtensionLoadedInfo> load_info;
 };
 
-class DatabaseInstance : public enable_shared_from_this<DatabaseInstance> {
+class DatabaseInstance : public std::enable_shared_from_this<DatabaseInstance> {
 	friend class DuckDB;
 
 public:
@@ -80,6 +82,11 @@ public:
 
 	void AddExtensionInfo(const string &name, const ExtensionLoadedInfo &info);
 
+	//! Get the table structure monitor
+	TableStructureMonitor &GetTableStructureMonitor() {
+		return *table_structure_monitor;
+	}
+
 private:
 	void Initialize(const char *path, DBConfig *config);
 	void LoadExtensionSettings();
@@ -100,6 +107,9 @@ private:
 	unique_ptr<ExternalFileCache> external_file_cache;
 
 	duckdb_ext_api_v1 (*create_api_v1)();
+
+	//! Table structure change monitor
+	unique_ptr<TableStructureMonitor> table_structure_monitor;
 };
 
 //! The database object. This object holds the catalog and all the

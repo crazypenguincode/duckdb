@@ -27,6 +27,7 @@
 #include "duckdb/main/settings.hpp"
 #include "duckdb/main/stream_query_result.hpp"
 #include "duckdb/main/table_description.hpp"
+#include "duckdb/main/query_cache.hpp"
 #include "duckdb/planner/expression/bound_parameter_data.hpp"
 #include "duckdb/transaction/transaction_context.hpp"
 
@@ -88,6 +89,8 @@ public:
 	unique_ptr<ClientData> client_data;
 	//! Data for the currently running transaction
 	TransactionContext transaction;
+	//! Query result cache
+	unique_ptr<QueryCache> query_cache;
 
 public:
 	MetaTransaction &ActiveTransaction() {
@@ -221,6 +224,15 @@ public:
 
 	//! Process an error for display to the user
 	DUCKDB_API void ProcessError(ErrorData &error, const string &query) const;
+
+	//! Get the query cache
+	DUCKDB_API QueryCache &GetQueryCache();
+	//! Enable/disable query caching
+	DUCKDB_API void SetQueryCacheEnabled(bool enabled);
+	//! Clear the query cache
+	DUCKDB_API void ClearQueryCache();
+	//! Get query cache statistics
+	DUCKDB_API QueryCache::CacheStats GetQueryCacheStats() const;
 
 private:
 	//! Parse statements and resolve pragmas from a query

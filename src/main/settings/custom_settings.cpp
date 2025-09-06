@@ -876,6 +876,60 @@ Value EnableObjectCacheSetting::GetSetting(const ClientContext &context) {
 }
 
 //===----------------------------------------------------------------------===//
+// Enable Query Cache
+//===----------------------------------------------------------------------===//
+void EnableQueryCacheSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.enable_query_cache = input.GetValue<bool>();
+	
+	// Update query cache configuration
+	if (context.query_cache) {
+		QueryCacheConfig cache_config;
+		cache_config.enabled = config.enable_query_cache;
+		// Parse memory size string (e.g., "100MB" -> bytes)
+		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+		context.query_cache->UpdateConfig(cache_config);
+	}
+}
+
+void EnableQueryCacheSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.enable_query_cache = ClientConfig().enable_query_cache;
+}
+
+Value EnableQueryCacheSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value::BOOLEAN(config.enable_query_cache);
+}
+
+//===----------------------------------------------------------------------===//
+// Query Cache Max Size
+//===----------------------------------------------------------------------===//
+void QueryCacheMaxSizeSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_max_size = input.ToString();
+	
+	// Update query cache configuration
+	if (context.query_cache) {
+		QueryCacheConfig cache_config;
+		cache_config.enabled = config.enable_query_cache;
+		// Parse memory size string (e.g., "100MB" -> bytes)
+		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+		context.query_cache->UpdateConfig(cache_config);
+	}
+}
+
+void QueryCacheMaxSizeSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_max_size = ClientConfig().query_cache_max_size;
+}
+
+Value QueryCacheMaxSizeSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value(config.query_cache_max_size);
+}
+
+//===----------------------------------------------------------------------===//
 // Enable Profiling
 //===----------------------------------------------------------------------===//
 void EnableProfilingSetting::SetLocal(ClientContext &context, const Value &input) {

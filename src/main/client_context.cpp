@@ -147,6 +147,12 @@ ClientContext::ClientContext(shared_ptr<DatabaseInstance> database)
 	LoggingContext context(LogContextScope::CONNECTION);
 	logger = db->GetLogManager().CreateLogger(context, true);
 	client_data = make_uniq<ClientData>(*this);
+	
+	// Initialize query cache with configuration from client config
+	QueryCacheConfig cache_config;
+	cache_config.enabled = config.enable_query_cache;
+	cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+	query_cache = make_uniq<QueryCache>(cache_config);
 }
 
 ClientContext::~ClientContext() {
@@ -939,6 +945,77 @@ void ClientContext::LogQueryInternal(ClientContextLock &, const string &query) {
 }
 
 unique_ptr<QueryResult> ClientContext::Query(unique_ptr<SQLStatement> statement, bool allow_stream_result) {
+	// Check if the statement is cacheable and caching is enabled
+	if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheable(*statement)) {
+		// Generate cache key
+		string cache_key = QueryCacheKeyGenerator::GenerateKey(*statement);
+		printf("DEBUG: Query is cacheable, cache key: %s\n", cache_key.c_str());
+		
+		// Check bloom filter first for fast negative lookup
+		if (query_cache->MightBeCached(cache_key)) {
+			printf("DEBUG: Bloom filter says query might be cached\n");
+			// Try to get cached result
+			auto cached_result = query_cache->GetCachedResult(cache_key);
+			if (cached_result) {
+				printf("DEBUG: Found cached result! Returning cached result.\n");
+				return std::move(cached_result);
+			} else {
+				printf("DEBUG: Bloom filter false positive - no cached result found\n");
+			}
+		} else {
+			printf("DEBUG: Bloom filter says query is not cached\n");
+		}
+		
+		// Execute the query
+		auto pending_query = PendingQuery(std::move(statement), allow_stream_result);
+		if (pending_query->HasError()) {
+			return ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
+		}
+		
+		auto result = pending_query->Execute();
+		
+		// Cache the result if it's a MaterializedQueryResult and successful
+		if (result && !result->HasError()) {
+			auto materialized_result = dynamic_cast<MaterializedQueryResult*>(result.get());
+			if (materialized_result && !allow_stream_result && materialized_result->RowCount() > 0) {
+				printf("DEBUG: Caching result with %llu rows\n", materialized_result->RowCount());
+				// Create a new collection and copy data from the original
+				auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), materialized_result->types);
+				
+				// Copy all data chunks from the original collection
+				ColumnDataScanState scan_state;
+				materialized_result->Collection().InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+				
+				ColumnDataAppendState append_state;
+				collection_copy->InitializeAppend(append_state);
+				
+				DataChunk chunk;
+				materialized_result->Collection().InitializeScanChunk(chunk);
+				while (materialized_result->Collection().Scan(scan_state, chunk)) {
+					collection_copy->Append(append_state, chunk);
+				}
+				
+				auto cached_result = make_uniq<MaterializedQueryResult>(
+					materialized_result->statement_type,
+					materialized_result->properties,
+					materialized_result->names, 
+					std::move(collection_copy),
+					materialized_result->client_properties
+				);
+				query_cache->CacheResult(cache_key, std::move(cached_result));
+				printf("DEBUG: Result cached successfully\n");
+			} else {
+				printf("DEBUG: Result not cached - materialized_result=%p, allow_stream_result=%d, row_count=%llu\n", 
+					   materialized_result, allow_stream_result, materialized_result ? materialized_result->RowCount() : 0);
+			}
+		} else {
+			printf("DEBUG: Result not cached - result=%p, has_error=%d\n", result.get(), result ? result->HasError() : true);
+		}
+		
+		return result;
+	}
+	
+	// Fallback to original execution path
 	auto pending_query = PendingQuery(std::move(statement), allow_stream_result);
 	if (pending_query->HasError()) {
 		return ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
@@ -969,28 +1046,112 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 	for (idx_t i = 0; i < statements.size(); i++) {
 		auto &statement = statements[i];
 		bool is_last_statement = i + 1 == statements.size();
-		PendingQueryParameters parameters;
-		parameters.allow_stream_result = allow_stream_result && is_last_statement;
-		auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);
-		auto has_result = pending_query->properties.return_type == StatementReturnType::QUERY_RESULT;
+		
 		unique_ptr<QueryResult> current_result;
-		if (pending_query->HasError()) {
-			current_result = ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
+		
+		string cache_key;
+		bool is_cacheable = query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheable(*statement);
+		
+		// Check if this statement is cacheable and caching is enabled
+		if (is_cacheable) {
+			// Generate cache key
+			cache_key = QueryCacheKeyGenerator::GenerateKey(*statement);
+			printf("DEBUG: String query is cacheable, cache key: %s\n", cache_key.c_str());
+			
+			// Check bloom filter first for fast negative lookup
+			if (query_cache->MightBeCached(cache_key)) {
+				printf("DEBUG: String query bloom filter says query might be cached\n");
+				// Try to get cached result
+				auto cached_result = query_cache->GetCachedResult(cache_key);
+				if (cached_result) {
+					printf("DEBUG: String query found cached result! Returning cached result.\n");
+					current_result = std::move(cached_result);
+				} else {
+					printf("DEBUG: String query bloom filter false positive - no cached result found\n");
+				}
+			} else {
+				printf("DEBUG: String query bloom filter says query is not cached\n");
+			}
 		} else {
-			current_result = ExecutePendingQueryInternal(*lock, *pending_query);
+			printf("DEBUG: String query not cacheable - query_cache=%p, enabled=%d, cacheable=%d\n", 
+				   query_cache.get(), 
+				   query_cache ? query_cache->IsEnabled() : false,
+				   QueryCacheKeyGenerator::IsCacheable(*statement));
 		}
+			
+		// If not found in cache, execute the query
+		if (!current_result) {
+			PendingQueryParameters parameters;
+			parameters.allow_stream_result = allow_stream_result && is_last_statement;
+			auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);
+			auto has_result = pending_query->properties.return_type == StatementReturnType::QUERY_RESULT;
+			
+			if (pending_query->HasError()) {
+				current_result = ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
+			} else {
+				current_result = ExecutePendingQueryInternal(*lock, *pending_query);
+				
+				// Cache the result if it's a MaterializedQueryResult and successful
+				if (is_cacheable && current_result && !current_result->HasError()) {
+					auto materialized_result = dynamic_cast<MaterializedQueryResult*>(current_result.get());
+					if (materialized_result && !allow_stream_result && materialized_result->RowCount() > 0) {
+						printf("DEBUG: String query caching result with %llu rows\n", materialized_result->RowCount());
+						// Create a new collection and copy data from the original
+						auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), materialized_result->types);
+						
+						// Copy all data chunks from the original collection
+						ColumnDataScanState scan_state;
+						materialized_result->Collection().InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+						
+						ColumnDataAppendState append_state;
+						collection_copy->InitializeAppend(append_state);
+						
+						DataChunk chunk;
+						materialized_result->Collection().InitializeScanChunk(chunk);
+						while (materialized_result->Collection().Scan(scan_state, chunk)) {
+							collection_copy->Append(append_state, chunk);
+						}
+						
+						auto cached_result = make_uniq<MaterializedQueryResult>(
+							materialized_result->statement_type,
+							materialized_result->properties,
+							materialized_result->names, 
+							std::move(collection_copy),
+							materialized_result->client_properties
+						);
+						query_cache->CacheResult(cache_key, std::move(cached_result));
+						printf("DEBUG: String query result cached successfully\n");
+					} else {
+						printf("DEBUG: String query result not cached - materialized_result=%p, allow_stream_result=%d, row_count=%llu\n", 
+							   materialized_result, allow_stream_result, materialized_result ? materialized_result->RowCount() : 0);
+					}
+				} else if (is_cacheable) {
+					printf("DEBUG: String query result not cached - current_result=%p, has_error=%d\n", current_result.get(), current_result ? current_result->HasError() : true);
+				}
+			}
+		}
+		} else {
+			// No caching, execute normally
+			PendingQueryParameters parameters;
+			parameters.allow_stream_result = allow_stream_result && is_last_statement;
+			auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);
+			auto has_result = pending_query->properties.return_type == StatementReturnType::QUERY_RESULT;
+			
+			if (pending_query->HasError()) {
+				current_result = ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
+			} else {
+				current_result = ExecutePendingQueryInternal(*lock, *pending_query);
+			}
+		}
+		
 		// now append the result to the list of results
 		if (!last_result || !last_had_result) {
 			// first result of the query
 			result = std::move(current_result);
 			last_result = result.get();
-			last_had_result = has_result;
+			last_had_result = true; // We always have a result here
 		} else {
 			// later results; attach to the result chain
-			// but only if there is a result
-			if (!has_result) {
-				continue;
-			}
 			last_result->next = std::move(current_result);
 			last_result = last_result->next.get();
 		}
@@ -1391,6 +1552,36 @@ bool ClientContext::ExecutionIsFinished() {
 		return false;
 	}
 	return active_query->executor->ExecutionIsFinished();
+}
+
+QueryCache &ClientContext::GetQueryCache() {
+	if (!query_cache) {
+		query_cache = make_uniq<QueryCache>();
+	}
+	return *query_cache;
+}
+
+void ClientContext::SetQueryCacheEnabled(bool enabled) {
+	if (!query_cache) {
+		query_cache = make_uniq<QueryCache>();
+	}
+	QueryCacheConfig config;
+	config.enabled = enabled;
+	query_cache->UpdateConfig(config);
+}
+
+void ClientContext::ClearQueryCache() {
+	if (query_cache) {
+		query_cache->Clear();
+	}
+}
+
+QueryCache::CacheStats ClientContext::GetQueryCacheStats() const {
+	if (!query_cache) {
+		QueryCache::CacheStats empty_stats = {};
+		return empty_stats;
+	}
+	return query_cache->GetStats();
 }
 
 } // namespace duckdb

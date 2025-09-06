@@ -425,6 +425,13 @@
         "custom_implementation": true
     },
     {
+        "name": "enable_query_cache",
+        "description": "Enable query result caching to improve performance of repeated queries",
+        "type": "BOOLEAN",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
         "name": "enable_view_dependencies",
         "description": "Enable created VIEWs to create dependencies on the referenced objects (such as tables)",
         "type": "BOOLEAN",
@@ -761,6 +768,13 @@
         "name": "progress_bar_time",
         "description": "Sets the time (in milliseconds) how long a query needs to take before we start printing a progress bar",
         "type": "BIGINT",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
+        "name": "query_cache_max_size",
+        "description": "Maximum size of the query cache (e.g., '100MB', '1GB')",
+        "type": "VARCHAR",
         "scope": "local",
         "custom_implementation": true
     },

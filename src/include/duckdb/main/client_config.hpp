@@ -159,6 +159,12 @@ struct ClientConfig {
 	//! (empty = output to the DuckDB logger)
 	string http_logging_output;
 
+	//! If query result caching is enabled or not.
+	bool enable_query_cache = false;
+
+	//! Maximum size of the query cache (e.g., '100MB', '1GB')
+	string query_cache_max_size = "100MB";
+
 public:
 	static ClientConfig &GetConfig(ClientContext &context);
 	static const ClientConfig &GetConfig(const ClientContext &context);

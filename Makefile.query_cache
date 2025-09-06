@@ -1,0 +1,81 @@
+# Makefile for DuckDB Query Cache System
+# 
+# This Makefile helps compile and test the query cache functionality
+
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+INCLUDES = -I./src/include
+LIBS = -lduckdb
+
+# Source files
+BLOOM_FILTER_SRC = src/common/bloom_filter.cpp
+QUERY_CACHE_SRC = src/main/query_cache.cpp
+
+# Object files
+BLOOM_FILTER_OBJ = $(BLOOM_FILTER_SRC:.cpp=.o)
+QUERY_CACHE_OBJ = $(QUERY_CACHE_SRC:.cpp=.o)
+
+# Targets
+EXAMPLE_TARGET = query_cache_example
+TEST_TARGET = test_query_cache
+
+.PHONY: all clean example test help
+
+all: example test
+
+help:
+	@echo "Available targets:"
+	@echo "  all      - Build example and test programs"
+	@echo "  example  - Build the query cache example program"
+	@echo "  test     - Build and run the test program"
+	@echo "  clean    - Clean build artifacts"
+	@echo "  help     - Show this help message"
+
+# Build object files
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Build example program
+example: $(EXAMPLE_TARGET)
+
+$(EXAMPLE_TARGET): examples/query_cache_example.cpp $(BLOOM_FILTER_OBJ) $(QUERY_CACHE_OBJ)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@ $(LIBS)
+	@echo "Example program built successfully!"
+	@echo "Run with: ./$(EXAMPLE_TARGET)"
+
+# Build and run test program
+test: $(TEST_TARGET)
+	@echo "Running tests..."
+	./$(TEST_TARGET)
+
+$(TEST_TARGET): test/test_query_cache.cpp $(BLOOM_FILTER_OBJ) $(QUERY_CACHE_OBJ)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $^ -o $@ $(LIBS)
+	@echo "Test program built successfully!"
+
+# Clean build artifacts
+clean:
+	rm -f $(BLOOM_FILTER_OBJ) $(QUERY_CACHE_OBJ)
+	rm -f $(EXAMPLE_TARGET) $(TEST_TARGET)
+	@echo "Clean completed!"
+
+# Development targets
+dev-test: $(TEST_TARGET)
+	@echo "Running development tests with verbose output..."
+	./$(TEST_TARGET) --verbose
+
+benchmark: $(EXAMPLE_TARGET)
+	@echo "Running benchmark..."
+	time ./$(EXAMPLE_TARGET)
+
+# Install dependencies (Ubuntu/Debian)
+install-deps:
+	@echo "Installing dependencies..."
+	sudo apt-get update
+	sudo apt-get install -y build-essential cmake libduckdb-dev
+
+# Documentation
+docs:
+	@echo "Documentation available at:"
+	@echo "  - docs/query_cache_system.md - Complete system documentation"
+	@echo "  - examples/query_cache_example.cpp - Usage examples"
+	@echo "  - test/test_query_cache.cpp - Test cases"

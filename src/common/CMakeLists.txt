@@ -32,6 +32,7 @@ add_library_unity(
   allocator.cpp
   assert.cpp
   bind_helpers.cpp
+  bloom_filter.cpp
   box_renderer.cpp
   cgroups.cpp
   complex_json.cpp

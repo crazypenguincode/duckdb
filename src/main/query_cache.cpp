@@ -17,12 +17,59 @@
 #include "duckdb/parser/query_node/select_node.hpp"
 #include "duckdb/parser/query_node/cte_node.hpp"
 #include <regex>
+#include <cmath>
 
 namespace duckdb {
 
+// MLCachePredictor implementation
+MLCachePredictor::MLCachePredictor(double learning_rate, double decay_factor) 
+    : learning_rate(learning_rate), decay_factor(decay_factor) {
+    // Initialize weights for features: complexity, exec_time, result_size, access_freq, 
+    // temporal_locality, table_count, join_count, has_aggregation, has_subquery
+    weights = {0.2, 0.3, 0.1, 0.25, 0.15, 0.05, 0.05, 0.1, 0.1};
+}
+
+double MLCachePredictor::Predict(const MLCacheFeatures &features) const {
+    auto feature_vec = FeaturesToVector(features);
+    double score = 0.0;
+    for (size_t i = 0; i < weights.size() && i < feature_vec.size(); i++) {
+        score += weights[i] * feature_vec[i];
+    }
+    // Apply sigmoid activation
+    return 1.0 / (1.0 + std::exp(-score));
+}
+
+void MLCachePredictor::Update(const MLCacheFeatures &features, double actual_utility) {
+    auto feature_vec = FeaturesToVector(features);
+    double predicted = Predict(features);
+    double error = actual_utility - predicted;
+    
+    // Gradient descent update with decay
+    double effective_lr = learning_rate * std::pow(decay_factor, update_count / 100.0);
+    for (size_t i = 0; i < weights.size() && i < feature_vec.size(); i++) {
+        weights[i] += effective_lr * error * feature_vec[i];
+    }
+    update_count++;
+}
+
+vector<double> MLCachePredictor::FeaturesToVector(const MLCacheFeatures &features) const {
+    return {
+        features.query_complexity_score,
+        features.execution_time_ms / 1000.0,  // Normalize to seconds
+        features.result_size_bytes / (1024.0 * 1024.0),  // Normalize to MB
+        features.access_frequency,
+        features.temporal_locality,
+        static_cast<double>(features.table_count) / 10.0,  // Normalize
+        static_cast<double>(features.join_count) / 5.0,    // Normalize
+        features.has_aggregation ? 1.0 : 0.0,
+        features.has_subquery ? 1.0 : 0.0
+    };
+}
+
 QueryCache::QueryCache(QueryCacheConfig config) 
     : config(std::move(config)), 
-      bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions) {
+      bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
+      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor) {
 }
 
 bool QueryCache::MightBeCached(const string &query_hash) const {
@@ -60,6 +107,15 @@ unique_ptr<MaterializedQueryResult> QueryCache::GetCachedResult(const string &qu
     entry->last_accessed = std::chrono::steady_clock::now();
     total_hits++;
     
+    // Update ML features for temporal locality
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_last = std::chrono::duration_cast<std::chrono::seconds>(now - entry->last_accessed).count();
+    entry->ml_features.temporal_locality = 1.0 / (1.0 + time_since_last / 3600.0); // Decay over hours
+    entry->ml_features.access_frequency = static_cast<double>(entry->access_count);
+    
+    // Record access for ML training
+    RecordAccess(query_hash, entry->ml_features, true);
+    
     // Clone the result for return
     // Create a copy of the collection
     auto& original_collection = entry->result->Collection();
@@ -89,7 +145,8 @@ unique_ptr<MaterializedQueryResult> QueryCache::GetCachedResult(const string &qu
     return cloned_result;
 }
 
-void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQueryResult> result) {
+void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQueryResult> result, 
+                            const MLCacheFeatures &features) {
     if (!config.enabled || !result || result->HasError()) {
         return;
     }
@@ -101,9 +158,24 @@ void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQu
     
     // Create cache entry
     auto entry = make_uniq<QueryCacheEntry>(std::move(result));
+    entry->ml_features = features;
+    
+    // Calculate ML score if using ML strategy
+    if (config.eviction_strategy == CacheEvictionStrategy::ML_BASED) {
+        entry->ml_score = ml_predictor.Predict(features);
+        entry->eviction_priority = entry->ml_score;
+    } else if (config.eviction_strategy == CacheEvictionStrategy::LRU_BASED) {
+        entry->eviction_priority = static_cast<double>(entry->last_accessed.time_since_epoch().count());
+    } else {
+        // TTL-based: priority based on creation time
+        entry->eviction_priority = static_cast<double>(entry->created_at.time_since_epoch().count());
+    }
     
     // Insert into cache
     cache[query_hash] = std::move(entry);
+    
+    // Record access for ML training
+    RecordAccess(query_hash, features, false);
     
     // Evict if necessary
     EvictIfNeeded();
@@ -115,6 +187,13 @@ void QueryCache::Clear() {
     bloom_filter.Clear();
     total_hits = 0;
     total_misses = 0;
+    ttl_evictions = 0;
+    lru_evictions = 0;
+    ml_evictions = 0;
+    // Clear access history
+    while (!access_history.empty()) {
+        access_history.pop();
+    }
 }
 
 QueryCache::CacheStats QueryCache::GetStats() const {
@@ -127,12 +206,18 @@ QueryCache::CacheStats QueryCache::GetStats() const {
     stats.hit_rate = (total_hits + total_misses) > 0 ? 
                      static_cast<double>(total_hits) / (total_hits + total_misses) : 0.0;
     stats.false_positive_rate = bloom_filter.GetFalsePositiveRate();
+    stats.ttl_evictions = ttl_evictions;
+    stats.lru_evictions = lru_evictions;
+    stats.ml_evictions = ml_evictions;
     
-    // Calculate memory usage
+    // Calculate memory usage and average ML score
     stats.memory_usage_bytes = 0;
+    double total_ml_score = 0.0;
     for (const auto &entry : cache) {
         stats.memory_usage_bytes += CalculateMemoryUsage(*entry.second->result);
+        total_ml_score += entry.second->ml_score;
     }
+    stats.avg_ml_score = cache.empty() ? 0.0 : total_ml_score / cache.size();
     
     return stats;
 }
@@ -154,7 +239,72 @@ void QueryCache::UpdateConfig(const QueryCacheConfig &new_config) {
     EvictIfNeeded();
 }
 
+void QueryCache::SetEvictionStrategy(CacheEvictionStrategy strategy) {
+    lock_guard<mutex> lock(cache_mutex);
+    config.eviction_strategy = strategy;
+    
+    // Update eviction priorities for all entries
+    for (auto &entry : cache) {
+        if (strategy == CacheEvictionStrategy::ML_BASED) {
+            entry.second->ml_score = ml_predictor.Predict(entry.second->ml_features);
+            entry.second->eviction_priority = entry.second->ml_score;
+        } else if (strategy == CacheEvictionStrategy::LRU_BASED) {
+            entry.second->eviction_priority = static_cast<double>(entry.second->last_accessed.time_since_epoch().count());
+        } else {
+            // TTL-based: priority based on creation time
+            entry.second->eviction_priority = static_cast<double>(entry.second->created_at.time_since_epoch().count());
+        }
+    }
+}
+
 void QueryCache::EvictIfNeeded() {
+    switch (config.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED:
+            EvictByTTL();
+            break;
+        case CacheEvictionStrategy::LRU_BASED:
+            EvictByLRU();
+            break;
+        case CacheEvictionStrategy::ML_BASED:
+            EvictByML();
+            break;
+    }
+    
+    // Update ML model periodically
+    if (config.eviction_strategy == CacheEvictionStrategy::ML_BASED) {
+        UpdateMLModel();
+    }
+}
+
+void QueryCache::EvictByTTL() {
+    // Remove expired entries first
+    RemoveExpiredEntries();
+    
+    // Check memory limit
+    idx_t current_memory = 0;
+    for (const auto &entry : cache) {
+        current_memory += CalculateMemoryUsage(*entry.second->result);
+    }
+    
+    // Evict oldest entries if over limits
+    while ((cache.size() > config.max_entries || current_memory > config.max_memory_bytes) 
+           && !cache.empty()) {
+        
+        // Find oldest entry
+        auto oldest_it = cache.begin();
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if (it->second->created_at < oldest_it->second->created_at) {
+                oldest_it = it;
+            }
+        }
+        
+        current_memory -= CalculateMemoryUsage(*oldest_it->second->result);
+        cache.erase(oldest_it);
+        ttl_evictions++;
+    }
+}
+
+void QueryCache::EvictByLRU() {
     // Remove expired entries first
     RemoveExpiredEntries();
     
@@ -178,6 +328,35 @@ void QueryCache::EvictIfNeeded() {
         
         current_memory -= CalculateMemoryUsage(*lru_it->second->result);
         cache.erase(lru_it);
+        lru_evictions++;
+    }
+}
+
+void QueryCache::EvictByML() {
+    // Remove expired entries first
+    RemoveExpiredEntries();
+    
+    // Check memory limit
+    idx_t current_memory = 0;
+    for (const auto &entry : cache) {
+        current_memory += CalculateMemoryUsage(*entry.second->result);
+    }
+    
+    // Evict entries with lowest ML scores if over limits
+    while ((cache.size() > config.max_entries || current_memory > config.max_memory_bytes) 
+           && !cache.empty()) {
+        
+        // Find entry with lowest ML score (least likely to be accessed again)
+        auto worst_it = cache.begin();
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if (it->second->ml_score < worst_it->second->ml_score) {
+                worst_it = it;
+            }
+        }
+        
+        current_memory -= CalculateMemoryUsage(*worst_it->second->result);
+        cache.erase(worst_it);
+        ml_evictions++;
     }
 }
 
@@ -214,6 +393,48 @@ void QueryCache::RemoveExpiredEntries() {
             ++it;
         }
     }
+}
+
+void QueryCache::UpdateMLModel() {
+    // Process access history to train the ML model
+    while (!access_history.empty() && access_history.size() > config.ml_history_size) {
+        auto &record = access_history.front();
+        
+        // Calculate utility based on whether it was a hit and how recent it was
+        auto now = std::chrono::steady_clock::now();
+        auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - record.access_time).count();
+        double utility = record.was_hit ? (1.0 / (1.0 + time_diff / 3600.0)) : 0.0;
+        
+        // Update ML model
+        ml_predictor.Update(record.features, utility);
+        
+        access_history.pop();
+    }
+}
+
+void QueryCache::RecordAccess(const string &query_hash, const MLCacheFeatures &features, bool was_hit) {
+    AccessRecord record;
+    record.query_hash = query_hash;
+    record.features = features;
+    record.access_time = std::chrono::steady_clock::now();
+    record.was_hit = was_hit;
+    
+    access_history.push(record);
+    
+    // Limit history size
+    while (access_history.size() > config.ml_history_size) {
+        access_history.pop();
+    }
+}
+
+double QueryCache::CalculateQueryComplexity(const MLCacheFeatures &features) const {
+    // Simple complexity calculation based on features
+    double complexity = 0.0;
+    complexity += features.table_count * 0.2;
+    complexity += features.join_count * 0.3;
+    complexity += features.has_aggregation ? 0.2 : 0.0;
+    complexity += features.has_subquery ? 0.3 : 0.0;
+    return std::min(complexity, 1.0);
 }
 
 // QueryCacheKeyGenerator implementation
@@ -296,6 +517,28 @@ bool QueryCacheKeyGenerator::IsCacheable(const SQLStatement &statement) {
 	}
 }
 
+MLCacheFeatures QueryCacheKeyGenerator::ExtractMLFeatures(const SQLStatement &statement, 
+                                                         double execution_time_ms,
+                                                         idx_t result_size_bytes) {
+    MLCacheFeatures features;
+    features.execution_time_ms = execution_time_ms;
+    features.result_size_bytes = static_cast<double>(result_size_bytes);
+    features.query_complexity_score = CalculateComplexityScore(statement);
+    
+    // Extract features based on statement type
+    if (statement.type == StatementType::SELECT_STATEMENT) {
+        auto &select = static_cast<const SelectStatement &>(statement);
+        if (select.node) {
+            // Count tables, joins, etc. (simplified implementation)
+            features.table_count = 1; // At least one table
+            features.has_aggregation = false; // Would need deeper AST analysis
+            features.has_subquery = !select.node->cte_map.map.empty();
+        }
+    }
+    
+    return features;
+}
+
 string QueryCacheKeyGenerator::NormalizeQuery(const string &query) {
     string normalized = query;
     
@@ -325,6 +568,27 @@ vector<string> QueryCacheKeyGenerator::ExtractTableDependencies(const SQLStateme
     }
     
     return dependencies;
+}
+
+double QueryCacheKeyGenerator::CalculateComplexityScore(const SQLStatement &statement) {
+    double score = 0.0;
+    
+    // Basic complexity based on query string length and keywords
+    string query_str = statement.query;
+    std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+    
+    // Count complexity indicators
+    if (query_str.find("join") != string::npos) score += 0.3;
+    if (query_str.find("group by") != string::npos) score += 0.2;
+    if (query_str.find("order by") != string::npos) score += 0.1;
+    if (query_str.find("having") != string::npos) score += 0.2;
+    if (query_str.find("union") != string::npos) score += 0.2;
+    if (query_str.find("with") != string::npos) score += 0.3; // CTE
+    
+    // Normalize by query length
+    score += std::min(query_str.length() / 1000.0, 0.5);
+    
+    return std::min(score, 1.0);
 }
 
 } // namespace duckdb

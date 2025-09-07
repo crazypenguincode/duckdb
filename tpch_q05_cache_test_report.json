@@ -1,0 +1,122 @@
+{
+  "test_timestamp": "2025-09-08T00:43:06.321705",
+  "test_summary": {
+    "total_tests": 7,
+    "successful_tests": 7,
+    "cache_hits": 0,
+    "final_cache_stats": {
+      "total_entries": 0,
+      "total_hits": 0,
+      "total_misses": 0,
+      "hit_rate": 0.0,
+      "memory_usage_bytes": 0
+    }
+  },
+  "test_results": [
+    {
+      "test_name": "原始Q05查询 - 第一次执行",
+      "execution_time": 0.0296018123626709,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "SELECT\n            n_name,\n            sum(l_extendedprice * (1 - l_discount)) AS revenue\n        FROM\n            customer,\n            orders,\n            lineitem,\n            supplier,\n           ..."
+    },
+    {
+      "test_name": "原始Q05查询 - 第二次执行（缓存测试）",
+      "execution_time": 0.02513599395751953,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "SELECT\n            n_name,\n            sum(l_extendedprice * (1 - l_discount)) AS revenue\n        FROM\n            customer,\n            orders,\n            lineitem,\n            supplier,\n           ..."
+    },
+    {
+      "test_name": "CTE版本Q05查询 - 第一次执行",
+      "execution_time": 0.028119802474975586,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "WITH asia_revenue AS (\n            SELECT\n                n_name,\n                sum(l_extendedprice * (1 - l_discount)) AS revenue\n            FROM\n                customer,\n                orders,\n..."
+    },
+    {
+      "test_name": "CTE版本Q05查询 - 第二次执行（缓存测试）",
+      "execution_time": 0.02646780014038086,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "WITH asia_revenue AS (\n            SELECT\n                n_name,\n                sum(l_extendedprice * (1 - l_discount)) AS revenue\n            FROM\n                customer,\n                orders,\n..."
+    },
+    {
+      "test_name": "嵌套CTE版本Q05查询 - 第一次执行",
+      "execution_time": 0.026757001876831055,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "WITH base_data AS (\n            SELECT\n                c_custkey, o_custkey, o_orderkey, o_orderdate,\n                l_orderkey, l_suppkey, l_extendedprice, l_discount,\n                s_suppkey, s_n..."
+    },
+    {
+      "test_name": "嵌套CTE版本Q05查询 - 第二次执行（缓存测试）",
+      "execution_time": 0.025581836700439453,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "WITH base_data AS (\n            SELECT\n                c_custkey, o_custkey, o_orderkey, o_orderdate,\n                l_orderkey, l_suppkey, l_extendedprice, l_discount,\n                s_suppkey, s_n..."
+    },
+    {
+      "test_name": "原始Q05查询 - 第三次执行（缓存持久性测试）",
+      "execution_time": 0.02445387840270996,
+      "row_count": 0,
+      "cache_hit": false,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0
+      },
+      "error": null,
+      "query_preview": "SELECT\n            n_name,\n            sum(l_extendedprice * (1 - l_discount)) AS revenue\n        FROM\n            customer,\n            orders,\n            lineitem,\n            supplier,\n           ..."
+    }
+  ]
+}

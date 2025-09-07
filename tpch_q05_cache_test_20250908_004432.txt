@@ -1,0 +1,435 @@
+TPCH Q05 查询缓存测试报告
+测试时间: 2025-09-08T00:44:32.047011
+总执行时间: 0.0426s
+============================================================
+
+详细输出:
+DEBUG: ClientContext constructor - QueryCache initialized with enabled=1
+DEBUG: Processing statement 1 of 1, type: 9
+DEBUG: IsCacheable called with statement type: 9
+DEBUG: TRANSACTION_STATEMENT contains query: 'begin transaction...', is_select_like=0
+DEBUG: Cache check - query_cache=0x6000003041a0, enabled=1, is_cacheable=0
+DEBUG: String query not cacheable - query_cache=0x6000003041a0, enabled=1, cacheable=0, stmt_type=9
+DEBUG: String query result not cached - is_cacheable=0, current_result=0x147f053b0, has_error=0
+DEBUG: Processing statement 1 of 1, type: 9
+DEBUG: IsCacheable called with statement type: 9
+DEBUG: TRANSACTION_STATEMENT contains query: 'commit...', is_select_like=0
+DEBUG: Cache check - query_cache=0x6000003041a0, enabled=1, is_cacheable=0
+DEBUG: String query not cacheable - query_cache=0x6000003041a0, enabled=1, cacheable=0, stmt_type=9
+DEBUG: String query result not cached - is_cacheable=0, current_result=0x147f04cc0, has_error=0
+DEBUG: ClientContext constructor - QueryCache initialized with enabled=1
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 11583463400140105821
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147e04a90, row_count=0
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 13161140168348904248
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147e05430, row_count=0
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 17763610790201718719
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147e05390, row_count=0
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 10230551781245359658
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147e05390, row_count=0
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 10348860636786756771
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147e05390, row_count=0
+DEBUG: PendingQuery called with statement type: 15
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 8134008619941482752
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x137e04640, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 16813495187071767806
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x137e05420, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 17432320444084569320
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147f86df0, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 10222448558722542326
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x137e05720, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 5932745623209793059
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x137f3cb00, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 8850481430162741305
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147f874c0, row_count=0
+DEBUG: PendingQuery called with statement type: 4
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 4130796338648250800
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147f88840, row_count=0
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 7201313956560676796
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 8104525088799817242
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 14717821459345227091
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 47668243767702339
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 16315930802430728289
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 2
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 3005137446068753936
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 1 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+DEBUG: PendingQuery called with statement type: 17
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 8305238404829209796
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147f897c0, row_count=0
+┌─────────┐
+│ Success │
+│ boolean │
+├─────────┤
+│ 0 rows  │
+└─────────┘
+DEBUG: PendingQuery called with statement type: 17
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 9407752386668961907
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=0x147f89110, row_count=0
+┌─────────┐
+│ Success │
+│ boolean │
+├─────────┤
+│ 0 rows  │
+└─────────┘
+🎯 TPCH Q05 查询缓存测试开始
+==================================
+📊 初始缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬─────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │ false_positive_rate │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │       double        │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼─────────────────────┼─────────┤
+│             0 │          0 │            0 │      0.0 │                  0 │                 0.0 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴─────────────────────┴─────────┘
+
+🔍 测试1: 原始Q05查询 - 第一次执行
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 4345128105544500371
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 2 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.003 user 0.002808 sys 0.002418
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬────────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │  false_positive_rate   │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │         double         │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼────────────────────────┼─────────┤
+│             1 │          0 │            0 │      0.0 │                 93 │ 2.6999878500702844e-17 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴────────────────────────┴─────────┘
+
+🔍 测试2: 原始Q05查询 - 第二次执行（应该命中缓存）
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 4345128105544500371
+DEBUG: sqlite3_print_duckbox bloom filter says query might be cached
+DEBUG: sqlite3_print_duckbox found cached result! Using cached result.
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.001 user 0.000621 sys 0.000064
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬────────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │  false_positive_rate   │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │         double         │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼────────────────────────┼─────────┤
+│             1 │          1 │            0 │      1.0 │                 93 │ 2.6999878500702844e-17 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴────────────────────────┴─────────┘
+
+🔍 测试3: CTE版本Q05查询 - 第一次执行
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 18270439203548337716
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 2 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.001 user 0.001905 sys 0.000717
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬────────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │  false_positive_rate   │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │         double         │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼────────────────────────┼─────────┤
+│             2 │          1 │            0 │      1.0 │                186 │ 2.1599805600751822e-16 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴────────────────────────┴─────────┘
+
+🔍 测试4: CTE版本Q05查询 - 第二次执行（应该命中缓存）
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 18270439203548337716
+DEBUG: sqlite3_print_duckbox bloom filter says query might be cached
+DEBUG: sqlite3_print_duckbox found cached result! Using cached result.
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.001 user 0.000553 sys 0.000040
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬────────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │  false_positive_rate   │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │         double         │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼────────────────────────┼─────────┤
+│             2 │          2 │            0 │      1.0 │                186 │ 2.1599805600751822e-16 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴────────────────────────┴─────────┘
+
+🔍 测试5: 嵌套CTE版本Q05查询 - 第一次执行
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 2860951343017971051
+DEBUG: sqlite3_print_duckbox bloom filter says query is not cached
+DEBUG: sqlite3_print_duckbox caching new result with 2 rows
+DEBUG: sqlite3_print_duckbox new result cached successfully
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.001 user 0.001640 sys 0.000535
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬──────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │ false_positive_rate  │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │        double        │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼──────────────────────┼─────────┤
+│             3 │          2 │            0 │      1.0 │                279 │ 7.28990158568591e-16 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴──────────────────────┴─────────┘
+
+🔍 测试6: 嵌套CTE版本Q05查询 - 第二次执行（应该命中缓存）
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 2860951343017971051
+DEBUG: sqlite3_print_duckbox bloom filter says query might be cached
+DEBUG: sqlite3_print_duckbox found cached result! Using cached result.
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.000 user 0.000674 sys 0.000069
+📊 执行后缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬──────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │ false_positive_rate  │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │        double        │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼──────────────────────┼─────────┤
+│             3 │          3 │            0 │      1.0 │                279 │ 7.28990158568591e-16 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴──────────────────────┴─────────┘
+
+🔍 测试7: 原始Q05查询 - 第三次执行（验证缓存持久性）
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox cache key: 4345128105544500371
+DEBUG: sqlite3_print_duckbox bloom filter says query might be cached
+DEBUG: sqlite3_print_duckbox found cached result! Using cached result.
+┌─────────┬───────────────┐
+│ n_name  │    revenue    │
+│ varchar │ decimal(38,6) │
+├─────────┼───────────────┤
+│ JAPAN   │   1674.000000 │
+│ CHINA   │    950.000000 │
+└─────────┴───────────────┘
+Run Time (s): real 0.000 user 0.000540 sys 0.000054
+📊 最终缓存状态:
+DEBUG: PendingQuery called with statement type: 1
+DEBUG: sqlite3_print_duckbox called
+DEBUG: sqlite3_print_duckbox executing query
+DEBUG: sqlite3_print_duckbox using pending query
+DEBUG: sqlite3_print_duckbox query cache is enabled
+DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching
+┌───────────────┬────────────┬──────────────┬──────────┬────────────────────┬──────────────────────┬─────────┐
+│ total_entries │ total_hits │ total_misses │ hit_rate │ memory_usage_bytes │ false_positive_rate  │ enabled │
+│     int64     │   int64    │    int64     │  double  │       int64        │        double        │ boolean │
+├───────────────┼────────────┼──────────────┼──────────┼────────────────────┼──────────────────────┼─────────┤
+│             3 │          4 │            0 │      1.0 │                279 │ 7.28990158568591e-16 │ true    │
+└───────────────┴────────────┴──────────────┴──────────┴────────────────────┴──────────────────────┴─────────┘
+
+🎉 TPCH Q05 查询缓存测试完成！

@@ -1129,7 +1129,7 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 					printf("DEBUG: String query result not cached - current_result=%p, has_error=%d\n", current_result.get(), current_result ? current_result->HasError() : true);
 				}
 			}
-		}
+
 		} else {
 			// No caching, execute normally
 			PendingQueryParameters parameters;

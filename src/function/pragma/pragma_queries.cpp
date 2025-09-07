@@ -11,6 +11,7 @@
 #include "duckdb/parser/qualified_name.hpp"
 #include "duckdb/parser/statement/copy_statement.hpp"
 #include "duckdb/parser/statement/export_statement.hpp"
+#include "duckdb/main/query_cache.hpp"
 
 namespace duckdb {
 
@@ -197,6 +198,10 @@ string PragmaUserAgent(ClientContext &context, const FunctionParameters &paramet
 	return "SELECT * FROM pragma_user_agent()";
 }
 
+string PragmaQueryCacheStats(ClientContext &context, const FunctionParameters &parameters) {
+	return "SELECT * FROM pragma_query_cache_stats()";
+}
+
 void PragmaQueries::RegisterFunction(BuiltinFunctions &set) {
 	set.AddFunction(PragmaFunction::PragmaCall("table_info", PragmaTableInfo, {LogicalType::VARCHAR}));
 	set.AddFunction(PragmaFunction::PragmaCall("storage_info", PragmaStorageInfo, {LogicalType::VARCHAR}));
@@ -217,6 +222,7 @@ void PragmaQueries::RegisterFunction(BuiltinFunctions &set) {
 	    PragmaFunction::PragmaCall("copy_database", PragmaCopyDatabase, {LogicalType::VARCHAR, LogicalType::VARCHAR}));
 	set.AddFunction(PragmaFunction::PragmaStatement("all_profiling_output", PragmaAllProfiling));
 	set.AddFunction(PragmaFunction::PragmaStatement("user_agent", PragmaUserAgent));
+	set.AddFunction(PragmaFunction::PragmaStatement("query_cache_stats", PragmaQueryCacheStats));
 }
 
 } // namespace duckdb

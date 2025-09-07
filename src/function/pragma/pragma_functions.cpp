@@ -11,6 +11,7 @@
 #include "duckdb/planner/expression_binder.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb/storage/storage_manager.hpp"
+#include "duckdb/main/query_cache.hpp"
 
 #include <cctype>
 
@@ -152,6 +153,18 @@ static void PragmaDisableOptimizer(ClientContext &context, const FunctionParamet
 	ClientConfig::GetConfig(context).enable_optimizer = false;
 }
 
+static void PragmaEnableQueryCache(ClientContext &context, const FunctionParameters &parameters) {
+	context.SetQueryCacheEnabled(true);
+}
+
+static void PragmaDisableQueryCache(ClientContext &context, const FunctionParameters &parameters) {
+	context.SetQueryCacheEnabled(false);
+}
+
+static void PragmaClearQueryCache(ClientContext &context, const FunctionParameters &parameters) {
+	context.ClearQueryCache();
+}
+
 void PragmaFunctions::RegisterFunction(BuiltinFunctions &set) {
 	RegisterEnableProfiling(set);
 
@@ -195,6 +208,11 @@ void PragmaFunctions::RegisterFunction(BuiltinFunctions &set) {
 	set.AddFunction(PragmaFunction::PragmaStatement("enable_checkpoint_on_shutdown", PragmaEnableCheckpointOnShutdown));
 	set.AddFunction(
 	    PragmaFunction::PragmaStatement("disable_checkpoint_on_shutdown", PragmaDisableCheckpointOnShutdown));
+
+	// Query cache functions
+	set.AddFunction(PragmaFunction::PragmaStatement("enable_query_cache", PragmaEnableQueryCache));
+	set.AddFunction(PragmaFunction::PragmaStatement("disable_query_cache", PragmaDisableQueryCache));
+	set.AddFunction(PragmaFunction::PragmaStatement("clear_query_cache", PragmaClearQueryCache));
 }
 
 } // namespace duckdb

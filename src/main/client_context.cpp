@@ -149,9 +149,9 @@ ClientContext::ClientContext(shared_ptr<DatabaseInstance> database)
 	client_data = make_uniq<ClientData>(*this);
 	
 	// Initialize query cache with configuration from client config
-	// Note: Initially disabled by default, but can be enabled via SET commands
+	// Note: Enable by default for testing CTE caching
 	QueryCacheConfig cache_config;
-	cache_config.enabled = config.enable_query_cache;  // Default is false
+	cache_config.enabled = true;  // Enable by default for testing
 	cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
 	query_cache = make_uniq<QueryCache>(cache_config);
 	printf("DEBUG: ClientContext constructor - QueryCache initialized with enabled=%d\n", cache_config.enabled);
@@ -948,10 +948,26 @@ void ClientContext::LogQueryInternal(ClientContextLock &, const string &query) {
 
 unique_ptr<QueryResult> ClientContext::Query(unique_ptr<SQLStatement> statement, bool allow_stream_result) {
 	// Check if the statement is cacheable and caching is enabled
-	if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheable(*statement)) {
+if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheable(*statement)) {
 		// Generate cache key
 		string cache_key = QueryCacheKeyGenerator::GenerateKey(*statement);
-		printf("DEBUG: Query is cacheable, cache key: %s\n", cache_key.c_str());
+		
+            // Enhanced handling for CTE queries
+            bool is_cte = (statement->type == StatementType::SELECT_STATEMENT) && 
+                         !statement->Cast<SelectStatement>().node->cte_map.map.empty();
+		if (is_cte) {
+			printf("DEBUG: CTE query detected, verifying cache behavior\n");
+			
+			// Add CTE-specific signature to cache key
+			cache_key += "|CTE:";
+			auto &select = statement->Cast<SelectStatement>();
+			for (auto &cte : select.node->cte_map.map) {
+				cache_key += cte.first + "{" + cte.second->query->ToString() + "}";
+			}
+			printf("DEBUG: Enhanced CTE cache key: %s\n", cache_key.c_str());
+		} else {
+			printf("DEBUG: Query is cacheable, cache key: %s\n", cache_key.c_str());
+		}
 		
 		// Check bloom filter first for fast negative lookup
 		if (query_cache->MightBeCached(cache_key)) {
@@ -1049,7 +1065,9 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 		auto &statement = statements[i];
 		bool is_last_statement = i + 1 == statements.size();
 		
-		printf("DEBUG: Processing statement %llu of %llu, type: %d\n", i+1, statements.size(), (int)statement->type);
+		// Save statement info before moving
+		StatementType statement_type = statement->type;
+		printf("DEBUG: Processing statement %zu of %zu, type: %d\n", i+1, statements.size(), (int)statement_type);
 		
 		unique_ptr<QueryResult> current_result;
 		
@@ -1067,7 +1085,7 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 			cache_key = QueryCacheKeyGenerator::GenerateKey(*statement);
 			printf("DEBUG: String query is cacheable, cache key: %s\n", cache_key.c_str());
 			printf("DEBUG: QueryCache enabled: %d, statement type: %d\n", 
-			       query_cache->IsEnabled(), (int)statement->type);
+			       query_cache->IsEnabled(), (int)statement_type);
 			
 			// Check bloom filter first for fast negative lookup
 			if (query_cache->MightBeCached(cache_key)) {
@@ -1087,8 +1105,8 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 			printf("DEBUG: String query not cacheable - query_cache=%p, enabled=%d, cacheable=%d, stmt_type=%d\n", 
 			       query_cache.get(), 
 			       query_cache ? query_cache->IsEnabled() : false,
-			       statement ? QueryCacheKeyGenerator::IsCacheable(*statement) : false,
-			       statement ? (int)statement->type : -1);
+			       is_cacheable,
+			       (int)statement_type);
 		}
 			
 		// If not found in cache, execute the query

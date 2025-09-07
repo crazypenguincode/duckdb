@@ -243,22 +243,57 @@ string QueryCacheKeyGenerator::GenerateKey(const string &query) {
 }
 
 bool QueryCacheKeyGenerator::IsCacheable(const SQLStatement &statement) {
-    printf("DEBUG: IsCacheable called with statement type: %d\n", (int)statement.type);
-    switch (statement.type) {
-    case StatementType::SELECT_STATEMENT:
-        printf("DEBUG: Statement is SELECT, returning true\n");
-        return true;
-    case StatementType::EXPLAIN_STATEMENT: {
-        // Check if it's explaining a SELECT
-        auto &explain = static_cast<const ExplainStatement &>(statement);
-        bool result = explain.stmt && explain.stmt->type == StatementType::SELECT_STATEMENT;
-        printf("DEBUG: Statement is EXPLAIN, returning %d\n", result);
-        return result;
-    }
-    default:
-        printf("DEBUG: Statement type %d is not cacheable\n", (int)statement.type);
-        return false;
-    }
+	printf("DEBUG: IsCacheable called with statement type: %d\n", (int)statement.type);
+	switch (statement.type) {
+	case StatementType::SELECT_STATEMENT: {
+		printf("DEBUG: Statement is SELECT, checking for CTE...\n");
+		auto &select = static_cast<const SelectStatement &>(statement);
+		
+		// Check if this is a pragma query - these should not be cached
+		string query_str = statement.query;
+		std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+		if (query_str.find("pragma_query_cache_stats") != string::npos) {
+			printf("DEBUG: Statement contains pragma_query_cache_stats, not cacheable\n");
+			return false;
+		}
+		
+		if (select.node && !select.node->cte_map.map.empty()) {
+			printf("DEBUG: SELECT statement contains CTE, still cacheable\n");
+		}
+		printf("DEBUG: Statement is SELECT, returning true\n");
+		return true;
+	}
+	case StatementType::EXPLAIN_STATEMENT: {
+		// Check if it's explaining a SELECT
+		auto &explain = static_cast<const ExplainStatement &>(statement);
+		bool result = explain.stmt && explain.stmt->type == StatementType::SELECT_STATEMENT;
+		printf("DEBUG: Statement is EXPLAIN, returning %d\n", result);
+		return result;
+	}
+	case StatementType::TRANSACTION_STATEMENT: {
+		// This might be a wrapped SELECT statement - check the query string
+		string query_str = statement.query;
+		std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+		
+		// Remove leading/trailing whitespace
+		size_t start = query_str.find_first_not_of(" \t\n\r");
+		if (start == string::npos) {
+			printf("DEBUG: Empty query string in TRANSACTION_STATEMENT\n");
+			return false;
+		}
+		size_t end = query_str.find_last_not_of(" \t\n\r");
+		query_str = query_str.substr(start, end - start + 1);
+		
+		// Check if it starts with SELECT or WITH (for CTE)
+		bool is_select_like = query_str.substr(0, 6) == "select" || query_str.substr(0, 4) == "with";
+		printf("DEBUG: TRANSACTION_STATEMENT contains query: '%.50s...', is_select_like=%d\n", 
+		       query_str.c_str(), is_select_like);
+		return is_select_like;
+	}
+	default:
+		printf("DEBUG: Statement type %d is not cacheable\n", (int)statement.type);
+		return false;
+	}
 }
 
 string QueryCacheKeyGenerator::NormalizeQuery(const string &query) {

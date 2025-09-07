@@ -175,4 +175,8 @@ struct PragmaUserAgent {
 	static void RegisterFunction(BuiltinFunctions &set);
 };
 
+struct PragmaQueryCacheStats {
+	static void RegisterFunction(BuiltinFunctions &set);
+};
+
 } // namespace duckdb

@@ -33,6 +33,7 @@ add_library_unity(
   pragma_table_info.cpp
   pragma_table_sample.cpp
   pragma_user_agent.cpp
+  pragma_query_cache_stats.cpp
   test_all_types.cpp
   test_vector_types.cpp)
 set(ALL_OBJECT_FILES

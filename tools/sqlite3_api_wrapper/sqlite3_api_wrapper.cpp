@@ -279,9 +279,18 @@ void sqlite3_print_duckbox(sqlite3_stmt *pStmt, size_t max_rows, size_t max_widt
 			auto& context = *pStmt->db->con->context;
 			auto& query_cache = context.GetQueryCache();
 			
-			if (query_cache.IsEnabled()) {
-				printf("DEBUG: sqlite3_print_duckbox query cache is enabled\n");
-				
+		if (query_cache.IsEnabled()) {
+			printf("DEBUG: sqlite3_print_duckbox query cache is enabled\n");
+			
+			// Check if this query should be cached (exclude pragma queries)
+			string query_str = pStmt->query_string;
+			std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+			bool should_cache = query_str.find("pragma_query_cache_stats") == string::npos;
+			
+			if (!should_cache) {
+				printf("DEBUG: sqlite3_print_duckbox query contains pragma_query_cache_stats, not caching\n");
+				pStmt->result = pStmt->pending->Execute();
+			} else {
 				// Generate cache key from the query string
 				string cache_key = QueryCacheKeyGenerator::GenerateKey(pStmt->query_string);
 				printf("DEBUG: sqlite3_print_duckbox cache key: %s\n", cache_key.c_str());
@@ -380,12 +389,13 @@ void sqlite3_print_duckbox(sqlite3_stmt *pStmt, size_t max_rows, size_t max_widt
 					} else {
 						printf("DEBUG: sqlite3_print_duckbox new result not cached - result=%p, has_error=%d\n", 
 							   pStmt->result.get(), pStmt->result ? pStmt->result->HasError() : true);
-					}
 				}
-			} else {
-				printf("DEBUG: sqlite3_print_duckbox query cache is disabled\n");
-				pStmt->result = pStmt->pending->Execute();
 			}
+			}
+		} else {
+			printf("DEBUG: sqlite3_print_duckbox query cache is disabled\n");
+			pStmt->result = pStmt->pending->Execute();
+		}
 		} else if (pStmt->prepared) {
 			printf("DEBUG: sqlite3_print_duckbox using prepared statement\n");
 			pStmt->result = pStmt->prepared->Execute(pStmt->bound_values, false);

@@ -9,6 +9,7 @@
 #include "duckdb/common/types.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/main/error_manager.hpp"
+#include "duckdb/main/query_cache.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "sqlite3.h"
 #include "sqlite3_udf_wrapper.hpp"
@@ -263,14 +264,131 @@ void sqlite3_print_duckbox(sqlite3_stmt *pStmt, size_t max_rows, size_t max_widt
 		if (!pStmt) {
 			return;
 		}
+		printf("DEBUG: sqlite3_print_duckbox called\n");
 		if (pStmt->result) {
 			pStmt->db->last_error = ErrorData("Statement has already been executed");
 			return;
 		}
-		if (pStmt->prepared) {
+		printf("DEBUG: sqlite3_print_duckbox executing query\n");
+		
+		// Check for caching if we have a pending query
+		if (pStmt->pending) {
+			printf("DEBUG: sqlite3_print_duckbox using pending query\n");
+			
+			// Try to get the query cache from the client context
+			auto& context = *pStmt->db->con->context;
+			auto& query_cache = context.GetQueryCache();
+			
+			if (query_cache.IsEnabled()) {
+				printf("DEBUG: sqlite3_print_duckbox query cache is enabled\n");
+				
+				// Generate cache key from the query string
+				string cache_key = QueryCacheKeyGenerator::GenerateKey(pStmt->query_string);
+				printf("DEBUG: sqlite3_print_duckbox cache key: %s\n", cache_key.c_str());
+				
+				// Check bloom filter first for fast negative lookup
+				if (query_cache.MightBeCached(cache_key)) {
+					printf("DEBUG: sqlite3_print_duckbox bloom filter says query might be cached\n");
+					// Try to get cached result
+					auto cached_result = query_cache.GetCachedResult(cache_key);
+					if (cached_result) {
+						printf("DEBUG: sqlite3_print_duckbox found cached result! Using cached result.\n");
+						pStmt->result = std::move(cached_result);
+					} else {
+						printf("DEBUG: sqlite3_print_duckbox bloom filter false positive - no cached result found\n");
+						// Execute the query and cache the result
+						pStmt->result = pStmt->pending->Execute();
+						
+						// Cache the result if it's successful
+						if (pStmt->result && !pStmt->result->HasError()) {
+							auto materialized_result = dynamic_cast<MaterializedQueryResult*>(pStmt->result.get());
+							if (materialized_result && materialized_result->RowCount() > 0) {
+								printf("DEBUG: sqlite3_print_duckbox caching result with %llu rows\n", materialized_result->RowCount());
+								// Create a new collection and copy data from the original
+								auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), materialized_result->types);
+								
+								// Copy all data chunks from the original collection
+								ColumnDataScanState scan_state;
+								materialized_result->Collection().InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+								
+								ColumnDataAppendState append_state;
+								collection_copy->InitializeAppend(append_state);
+								
+								DataChunk chunk;
+								materialized_result->Collection().InitializeScanChunk(chunk);
+								while (materialized_result->Collection().Scan(scan_state, chunk)) {
+									collection_copy->Append(append_state, chunk);
+								}
+								
+								auto cached_result = make_uniq<MaterializedQueryResult>(
+									materialized_result->statement_type,
+									materialized_result->properties,
+									materialized_result->names, 
+									std::move(collection_copy),
+									materialized_result->client_properties
+								);
+								query_cache.CacheResult(cache_key, std::move(cached_result));
+								printf("DEBUG: sqlite3_print_duckbox result cached successfully\n");
+							} else {
+								printf("DEBUG: sqlite3_print_duckbox result not cached - materialized_result=%p, row_count=%llu\n", 
+									   materialized_result, materialized_result ? materialized_result->RowCount() : 0);
+							}
+						} else {
+							printf("DEBUG: sqlite3_print_duckbox result not cached - result=%p, has_error=%d\n", 
+								   pStmt->result.get(), pStmt->result ? pStmt->result->HasError() : true);
+						}
+					}
+				} else {
+					printf("DEBUG: sqlite3_print_duckbox bloom filter says query is not cached\n");
+					// Execute the query and cache the result
+					pStmt->result = pStmt->pending->Execute();
+					
+					// Cache the result if it's successful
+					if (pStmt->result && !pStmt->result->HasError()) {
+						auto materialized_result = dynamic_cast<MaterializedQueryResult*>(pStmt->result.get());
+						if (materialized_result && materialized_result->RowCount() > 0) {
+							printf("DEBUG: sqlite3_print_duckbox caching new result with %llu rows\n", materialized_result->RowCount());
+							// Create a new collection and copy data from the original
+							auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), materialized_result->types);
+							
+							// Copy all data chunks from the original collection
+							ColumnDataScanState scan_state;
+							materialized_result->Collection().InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+							
+							ColumnDataAppendState append_state;
+							collection_copy->InitializeAppend(append_state);
+							
+							DataChunk chunk;
+							materialized_result->Collection().InitializeScanChunk(chunk);
+							while (materialized_result->Collection().Scan(scan_state, chunk)) {
+								collection_copy->Append(append_state, chunk);
+							}
+							
+							auto cached_result = make_uniq<MaterializedQueryResult>(
+								materialized_result->statement_type,
+								materialized_result->properties,
+								materialized_result->names, 
+								std::move(collection_copy),
+								materialized_result->client_properties
+							);
+							query_cache.CacheResult(cache_key, std::move(cached_result));
+							printf("DEBUG: sqlite3_print_duckbox new result cached successfully\n");
+						} else {
+							printf("DEBUG: sqlite3_print_duckbox new result not cached - materialized_result=%p, row_count=%llu\n", 
+								   materialized_result, materialized_result ? materialized_result->RowCount() : 0);
+						}
+					} else {
+						printf("DEBUG: sqlite3_print_duckbox new result not cached - result=%p, has_error=%d\n", 
+							   pStmt->result.get(), pStmt->result ? pStmt->result->HasError() : true);
+					}
+				}
+			} else {
+				printf("DEBUG: sqlite3_print_duckbox query cache is disabled\n");
+				pStmt->result = pStmt->pending->Execute();
+			}
+		} else if (pStmt->prepared) {
+			printf("DEBUG: sqlite3_print_duckbox using prepared statement\n");
 			pStmt->result = pStmt->prepared->Execute(pStmt->bound_values, false);
-		} else if (pStmt->pending) {
-			pStmt->result = pStmt->pending->Execute();
 		} else {
 			throw InternalException("Neither a prepared statement nor pending query result were found while executing "
 			                        "sqlite3_print_duckbox");
@@ -332,6 +450,7 @@ int sqlite3_step(sqlite3_stmt *pStmt) {
 	pStmt->current_text = nullptr;
 	if (!pStmt->result) {
 		// no result yet! call Execute()
+		printf("DEBUG: sqlite3_step executing query\n");
 
 		if (pStmt->prepared) {
 			pStmt->result = pStmt->prepared->Execute(pStmt->bound_values, true);

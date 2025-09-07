@@ -1193,6 +1193,8 @@ unique_ptr<PendingQueryResult> ClientContext::PendingQuery(const string &query, 
 
 unique_ptr<PendingQueryResult> ClientContext::PendingQuery(unique_ptr<SQLStatement> statement,
                                                            bool allow_stream_result) {
+	printf("DEBUG: PendingQuery called with statement type: %d\n", (int)statement->type);
+	
 	case_insensitive_map_t<BoundParameterData> empty_param_list;
 	return PendingQuery(std::move(statement), empty_param_list, allow_stream_result);
 }

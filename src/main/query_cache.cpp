@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "duckdb/main/query_cache.hpp"
+#include "duckdb/main/query_cache_persistence.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/common/types/hash.hpp"
 #include "duckdb/parser/statement/select_statement.hpp"
@@ -70,6 +71,23 @@ QueryCache::QueryCache(QueryCacheConfig config)
     : config(std::move(config)), 
       bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
       ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor) {
+    // 初始化持久化策略（默认为内存策略）
+    persistence = CachePersistenceFactory::CreatePersistence(CachePersistenceStrategy::MEMORY_ONLY);
+    if (persistence) {
+        persistence->Initialize(this->config.persistence_config);
+    }
+}
+
+QueryCache::~QueryCache() {
+    if (persistence) {
+        persistence->Sync();
+        persistence->Close();
+    }
+}
+
+bool QueryCache::InitializeWithContext(ClientContext *context) {
+    client_context = context;
+    return InitializePersistence();
 }
 
 bool QueryCache::MightBeCached(const string &query_hash) const {
@@ -89,8 +107,16 @@ unique_ptr<MaterializedQueryResult> QueryCache::GetCachedResult(const string &qu
     
     auto it = cache.find(query_hash);
     if (it == cache.end()) {
-        total_misses++;
-        return nullptr;
+        // 尝试从持久化存储加载
+        auto persisted_entry = LoadFromPersistence(query_hash);
+        if (persisted_entry) {
+            // 将持久化的条目加载到内存缓存
+            cache[query_hash] = std::move(persisted_entry);
+            it = cache.find(query_hash);
+        } else {
+            total_misses++;
+            return nullptr;
+        }
     }
     
     auto &entry = it->second;
@@ -173,6 +199,11 @@ void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQu
     
     // Insert into cache
     cache[query_hash] = std::move(entry);
+    
+    // 持久化到存储
+    if (persistence) {
+        PersistEntry(query_hash, *cache[query_hash]);
+    }
     
     // Record access for ML training
     RecordAccess(query_hash, features, false);
@@ -589,6 +620,134 @@ double QueryCacheKeyGenerator::CalculateComplexityScore(const SQLStatement &stat
     score += std::min(query_str.length() / 1000.0, 0.5);
     
     return std::min(score, 1.0);
+}
+
+//===----------------------------------------------------------------------===//
+// QueryCache Persistence Methods
+//===----------------------------------------------------------------------===//
+
+bool QueryCache::SetPersistenceStrategy(CachePersistenceStrategy strategy, ClientContext *context) {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    // 同步当前数据
+    if (persistence) {
+        persistence->Sync();
+        persistence->Close();
+    }
+    
+    // 创建新的持久化策略
+    client_context = context;
+    persistence = CachePersistenceFactory::CreatePersistence(strategy, context);
+    if (!persistence) {
+        printf("Failed to create persistence strategy\n");
+        return false;
+    }
+    
+    config.persistence_strategy = strategy;
+    return persistence->Initialize(config.persistence_config);
+}
+
+QueryCache::PersistenceStats QueryCache::GetPersistenceStats() const {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    PersistenceStats stats;
+    if (persistence) {
+        stats.storage_size_bytes = persistence->GetStorageSize();
+        auto all_keys = persistence->GetAllKeys();
+        stats.persisted_entries = all_keys.size();
+    }
+    
+    stats.memory_entries = cache.size();
+    stats.disk_entries = stats.persisted_entries - stats.memory_entries;
+    
+    return stats;
+}
+
+bool QueryCache::SyncToPersistentStorage() {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    if (!persistence) {
+        return false;
+    }
+    
+    // 同步所有内存中的条目到持久化存储
+    for (const auto &entry : cache) {
+        PersistEntry(entry.first, *entry.second);
+    }
+    
+    return persistence->Sync();
+}
+
+bool QueryCache::LoadFromPersistentStorage() {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    if (!persistence) {
+        return false;
+    }
+    
+    try {
+        auto all_keys = persistence->GetAllKeys();
+        printf("Loading %zu entries from persistent storage\n", all_keys.size());
+        
+        for (const auto &key : all_keys) {
+            auto entry = persistence->LoadEntry(key);
+            if (entry) {
+                // 添加到bloom filter
+                bloom_filter.Add(key);
+                // 不直接加载到内存缓存，而是在需要时懒加载
+            }
+        }
+        
+        return true;
+    } catch (std::exception &ex) {
+        printf("Failed to load from persistent storage: %s\n", ex.what());
+        return false;
+    }
+}
+
+unique_ptr<QueryCacheEntry> QueryCache::LoadFromPersistence(const string &query_hash) {
+    if (!persistence) {
+        return nullptr;
+    }
+    
+    try {
+        return persistence->LoadEntry(query_hash);
+    } catch (std::exception &ex) {
+        printf("Failed to load entry from persistence: %s\n", ex.what());
+        return nullptr;
+    }
+}
+
+bool QueryCache::PersistEntry(const string &query_hash, const QueryCacheEntry &entry) {
+    if (!persistence) {
+        return false;
+    }
+    
+    try {
+        return persistence->PersistEntry(query_hash, entry);
+    } catch (std::exception &ex) {
+        printf("Failed to persist entry: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool QueryCache::InitializePersistence() {
+    if (!persistence) {
+        // 使用默认的内存策略
+        persistence = CachePersistenceFactory::CreatePersistence(
+            CachePersistenceStrategy::MEMORY_ONLY, client_context);
+    }
+    
+    if (persistence) {
+        bool initialized = persistence->Initialize(config.persistence_config);
+        if (initialized) {
+            // 从持久化存储加载现有数据
+            LoadFromPersistentStorage();
+        }
+        return initialized;
+    }
+    
+    return false;
 }
 
 } // namespace duckdb

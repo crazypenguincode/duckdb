@@ -20,6 +20,14 @@
 
 namespace duckdb {
 
+// Forward declarations for persistence
+class CachePersistenceInterface;
+enum class CachePersistenceStrategy;
+struct CachePersistenceConfig;
+class ClientContext;
+
+
+
 //! Cache eviction strategies
 enum class CacheEvictionStrategy {
     TTL_BASED,      // Time-to-live based eviction
@@ -84,6 +92,10 @@ struct QueryCacheConfig {
     double ml_learning_rate = 0.01;
     double ml_decay_factor = 0.95;
     idx_t ml_history_size = 1000;
+    //! Persistence strategy
+    CachePersistenceStrategy persistence_strategy;
+    //! Persistence configuration
+    CachePersistenceConfig persistence_config;
 };
 
 //! Simple linear regression model for ML-based caching
@@ -114,7 +126,10 @@ private:
 class QueryCache {
 public:
     explicit QueryCache(QueryCacheConfig config = QueryCacheConfig());
-    ~QueryCache() = default;
+    ~QueryCache();
+    
+    //! Initialize with client context for persistence strategies that need it
+    bool InitializeWithContext(ClientContext *context);
 
     //! Check if a query result might be cached (using bloom filter)
     bool MightBeCached(const string &query_hash) const;
@@ -155,6 +170,24 @@ public:
     
     //! Get ML predictor for testing
     const MLCachePredictor& GetMLPredictor() const { return ml_predictor; }
+    
+    //! Set persistence strategy
+    bool SetPersistenceStrategy(CachePersistenceStrategy strategy, ClientContext *context = nullptr);
+    
+    //! Get persistence statistics
+    struct PersistenceStats {
+        idx_t storage_size_bytes = 0;
+        idx_t persisted_entries = 0;
+        idx_t memory_entries = 0;
+        idx_t disk_entries = 0;
+    };
+    PersistenceStats GetPersistenceStats() const;
+    
+    //! Force sync to persistent storage
+    bool SyncToPersistentStorage();
+    
+    //! Load cache from persistent storage
+    bool LoadFromPersistentStorage();
 
 private:
     //! Configuration
@@ -217,6 +250,21 @@ private:
     
     //! Record access for ML training
     void RecordAccess(const string &query_hash, const MLCacheFeatures &features, bool was_hit);
+    
+    //! Persistence interface
+    unique_ptr<CachePersistenceInterface> persistence;
+    
+    //! Client context for persistence strategies that need it
+    ClientContext *client_context = nullptr;
+    
+    //! Load entry from persistence if not in memory
+    unique_ptr<QueryCacheEntry> LoadFromPersistence(const string &query_hash);
+    
+    //! Persist entry to storage
+    bool PersistEntry(const string &query_hash, const QueryCacheEntry &entry);
+    
+    //! Initialize persistence layer
+    bool InitializePersistence();
 };
 
 //! Utility class for generating cache keys from SQL statements

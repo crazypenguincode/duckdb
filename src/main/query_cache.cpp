@@ -243,15 +243,20 @@ string QueryCacheKeyGenerator::GenerateKey(const string &query) {
 }
 
 bool QueryCacheKeyGenerator::IsCacheable(const SQLStatement &statement) {
+    printf("DEBUG: IsCacheable called with statement type: %d\n", (int)statement.type);
     switch (statement.type) {
     case StatementType::SELECT_STATEMENT:
+        printf("DEBUG: Statement is SELECT, returning true\n");
         return true;
     case StatementType::EXPLAIN_STATEMENT: {
         // Check if it's explaining a SELECT
         auto &explain = static_cast<const ExplainStatement &>(statement);
-        return explain.stmt && explain.stmt->type == StatementType::SELECT_STATEMENT;
+        bool result = explain.stmt && explain.stmt->type == StatementType::SELECT_STATEMENT;
+        printf("DEBUG: Statement is EXPLAIN, returning %d\n", result);
+        return result;
     }
     default:
+        printf("DEBUG: Statement type %d is not cacheable\n", (int)statement.type);
         return false;
     }
 }

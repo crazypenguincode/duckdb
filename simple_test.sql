@@ -1,17 +1,9 @@
--- 简单的查询缓存测试
-.timer on
+-- 测试单个查询的缓存
+SET enable_query_cache = true;
+SET query_cache_max_size = '10MB';
 
--- 启用查询缓存
-SET enable_query_cache=true;
-SET query_cache_max_size='10MB';
+-- 第一次执行
+SELECT COUNT(*) FROM customer;
 
--- 创建小测试表
-CREATE TABLE test AS SELECT i FROM range(1000) t(i);
-
--- 第一次查询
-SELECT '=== 第一次查询 ===' as message;
-SELECT COUNT(*) FROM test WHERE i > 500;
-
--- 第二次相同查询
-SELECT '=== 第二次查询（应该从缓存返回）===' as message;
-SELECT COUNT(*) FROM test WHERE i > 500;
+-- 第二次执行（应该使用缓存）
+SELECT COUNT(*) FROM customer;

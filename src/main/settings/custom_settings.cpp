@@ -880,16 +880,29 @@ Value EnableObjectCacheSetting::GetSetting(const ClientContext &context) {
 //===----------------------------------------------------------------------===//
 void EnableQueryCacheSetting::SetLocal(ClientContext &context, const Value &input) {
 	auto &config = ClientConfig::GetConfig(context);
-	config.enable_query_cache = input.GetValue<bool>();
+	bool new_value = input.GetValue<bool>();
+	config.enable_query_cache = new_value;
+	
+	printf("DEBUG: EnableQueryCacheSetting::SetLocal called with value: %d\n", new_value);
 	
 	// Update query cache configuration
-	if (context.query_cache) {
+	if (!context.query_cache) {
+		// Initialize query cache if it doesn't exist
+		QueryCacheConfig cache_config;
+		cache_config.enabled = config.enable_query_cache;
+		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+		context.query_cache = make_uniq<QueryCache>(cache_config);
+		printf("DEBUG: Created new QueryCache with enabled=%d\n", cache_config.enabled);
+	} else {
 		QueryCacheConfig cache_config;
 		cache_config.enabled = config.enable_query_cache;
 		// Parse memory size string (e.g., "100MB" -> bytes)
 		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
 		context.query_cache->UpdateConfig(cache_config);
+		printf("DEBUG: Updated QueryCache config with enabled=%d\n", cache_config.enabled);
 	}
+	
+	printf("DEBUG: QueryCache IsEnabled() returns: %d\n", context.query_cache->IsEnabled());
 }
 
 void EnableQueryCacheSetting::ResetLocal(ClientContext &context) {
@@ -910,7 +923,13 @@ void QueryCacheMaxSizeSetting::SetLocal(ClientContext &context, const Value &inp
 	config.query_cache_max_size = input.ToString();
 	
 	// Update query cache configuration
-	if (context.query_cache) {
+	if (!context.query_cache) {
+		// Initialize query cache if it doesn't exist
+		QueryCacheConfig cache_config;
+		cache_config.enabled = config.enable_query_cache;
+		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+		context.query_cache = make_uniq<QueryCache>(cache_config);
+	} else {
 		QueryCacheConfig cache_config;
 		cache_config.enabled = config.enable_query_cache;
 		// Parse memory size string (e.g., "100MB" -> bytes)

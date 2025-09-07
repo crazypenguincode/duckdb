@@ -1,0 +1,116 @@
+[
+  {
+    "query_name": "Simple_Count",
+    "complexity": "simple",
+    "first_execution_ms": 30.451059341430664,
+    "avg_cache_read_ms": 0.5150616904493226,
+    "avg_requery_ms": 30.734539031982422,
+    "speedup_ratio": 59.671568672037395,
+    "cache_times": [
+      0.5333179610379019,
+      0.5795253921233088,
+      0.432341718186757
+    ],
+    "requery_times": [
+      29.299020767211914,
+      30.774593353271484,
+      32.13000297546387
+    ],
+    "cache_simulation": true
+  },
+  {
+    "query_name": "Simple_Sum",
+    "complexity": "simple",
+    "first_execution_ms": 34.58380699157715,
+    "avg_cache_read_ms": 0.48894990931920973,
+    "avg_requery_ms": 32.269954681396484,
+    "speedup_ratio": 65.99848791531143,
+    "cache_times": [
+      0.4470589824892443,
+      0.5984950835138112,
+      0.4212956619545737
+    ],
+    "requery_times": [
+      30.467987060546875,
+      31.02898597717285,
+      35.31289100646973
+    ],
+    "cache_simulation": true
+  },
+  {
+    "query_name": "Medium_Join",
+    "complexity": "medium",
+    "first_execution_ms": 40.67683219909668,
+    "avg_cache_read_ms": 2.141816824514223,
+    "avg_requery_ms": 34.797350565592446,
+    "speedup_ratio": 16.246651052190092,
+    "cache_times": [
+      2.283373418433172,
+      1.915177596087094,
+      2.226899459022403
+    ],
+    "requery_times": [
+      33.856868743896484,
+      36.089181900024414,
+      34.446001052856445
+    ],
+    "cache_simulation": true
+  },
+  {
+    "query_name": "Medium_Aggregate",
+    "complexity": "medium",
+    "first_execution_ms": 37.18304634094238,
+    "avg_cache_read_ms": 1.9557372031927007,
+    "avg_requery_ms": 34.02193387349447,
+    "speedup_ratio": 17.395963945439277,
+    "cache_times": [
+      1.7768251854889152,
+      2.1354585008305267,
+      1.9549279232586603
+    ],
+    "requery_times": [
+      32.10806846618652,
+      33.394813537597656,
+      36.56291961669922
+    ],
+    "cache_simulation": true
+  },
+  {
+    "query_name": "Complex_Analysis",
+    "complexity": "complex",
+    "first_execution_ms": 41.43881797790527,
+    "avg_cache_read_ms": 4.143881797790527,
+    "avg_requery_ms": 37.14911142985026,
+    "speedup_ratio": 8.964809626002788,
+    "cache_times": [
+      4.143881797790527,
+      4.143881797790527,
+      4.143881797790527
+    ],
+    "requery_times": [
+      37.020206451416016,
+      36.8959903717041,
+      37.531137466430664
+    ],
+    "cache_simulation": true
+  },
+  {
+    "query_name": "Complex_Subquery",
+    "complexity": "complex",
+    "first_execution_ms": 37.93001174926758,
+    "avg_cache_read_ms": 3.793001174926758,
+    "avg_requery_ms": 35.83526611328125,
+    "speedup_ratio": 9.447733987051354,
+    "cache_times": [
+      3.793001174926758,
+      3.793001174926758,
+      3.793001174926758
+    ],
+    "requery_times": [
+      33.551931381225586,
+      35.307884216308594,
+      38.64598274230957
+    ],
+    "cache_simulation": true
+  }
+]

@@ -815,20 +815,173 @@ bool WALFormatPersistence::SaveIndex() {
 
 vector<uint8_t> WALFormatPersistence::SerializeEntry(const QueryCacheEntry &entry) const {
     // 简化的序列化实现
-    // 实际实现中应该使用DuckDB的序列化框架
     vector<uint8_t> data;
     
-    // 这里应该序列化QueryCacheEntry的所有字段
-    // 包括result、created_at、access_count、ml_features等
-    // 由于MaterializedQueryResult的序列化比较复杂，这里先返回空数据
+    try {
+        // 序列化基本字段
+        // 1. 访问次数 (8 bytes)
+        uint64_t access_count = entry.access_count;
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&access_count), 
+                   reinterpret_cast<const uint8_t*>(&access_count) + sizeof(access_count));
+        
+        // 2. 创建时间 (8 bytes)
+        auto created_time = entry.created_at.time_since_epoch().count();
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&created_time), 
+                   reinterpret_cast<const uint8_t*>(&created_time) + sizeof(created_time));
+        
+        // 3. 最后访问时间 (8 bytes)
+        auto last_access_time = entry.last_accessed.time_since_epoch().count();
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&last_access_time), 
+                   reinterpret_cast<const uint8_t*>(&last_access_time) + sizeof(last_access_time));
+        
+        // 4. ML分数 (8 bytes)
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&entry.ml_score), 
+                   reinterpret_cast<const uint8_t*>(&entry.ml_score) + sizeof(entry.ml_score));
+        
+        // 5. ML特征 (简化版本)
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&entry.ml_features.execution_time_ms), 
+                   reinterpret_cast<const uint8_t*>(&entry.ml_features.execution_time_ms) + sizeof(entry.ml_features.execution_time_ms));
+        data.insert(data.end(), reinterpret_cast<const uint8_t*>(&entry.ml_features.result_size_bytes), 
+                   reinterpret_cast<const uint8_t*>(&entry.ml_features.result_size_bytes) + sizeof(entry.ml_features.result_size_bytes));
+        
+        // 6. 查询结果的基本信息
+        if (entry.result) {
+            // 列数
+            uint32_t column_count = entry.result->names.size();
+            data.insert(data.end(), reinterpret_cast<const uint8_t*>(&column_count), 
+                       reinterpret_cast<const uint8_t*>(&column_count) + sizeof(column_count));
+            
+            // 行数
+            uint64_t row_count = entry.result->RowCount();
+            data.insert(data.end(), reinterpret_cast<const uint8_t*>(&row_count), 
+                       reinterpret_cast<const uint8_t*>(&row_count) + sizeof(row_count));
+            
+            // 列名 (简化：只存储长度，实际数据序列化较复杂)
+            for (const auto &name : entry.result->names) {
+                uint32_t name_len = name.length();
+                data.insert(data.end(), reinterpret_cast<const uint8_t*>(&name_len), 
+                           reinterpret_cast<const uint8_t*>(&name_len) + sizeof(name_len));
+                data.insert(data.end(), name.begin(), name.end());
+            }
+            
+            // 注意：完整的MaterializedQueryResult序列化需要更复杂的实现
+            // 这里只是一个简化版本，实际使用中需要完整实现
+        } else {
+            uint32_t column_count = 0;
+            data.insert(data.end(), reinterpret_cast<const uint8_t*>(&column_count), 
+                       reinterpret_cast<const uint8_t*>(&column_count) + sizeof(column_count));
+        }
+        
+    } catch (std::exception &ex) {
+        printf("Serialization error: %s\n", ex.what());
+        data.clear();
+    }
     
     return data;
 }
 
 unique_ptr<QueryCacheEntry> WALFormatPersistence::DeserializeEntry(const vector<uint8_t> &data) const {
     // 简化的反序列化实现
-    // 实际实现中应该从序列化数据重建QueryCacheEntry
-    return nullptr;
+    if (data.empty()) {
+        return nullptr;
+    }
+    
+    try {
+        size_t offset = 0;
+        
+        // 检查数据长度是否足够
+        if (data.size() < sizeof(uint64_t) * 3 + sizeof(double) * 2 + sizeof(uint32_t)) {
+            return nullptr;
+        }
+        
+        // 1. 访问次数
+        uint64_t access_count;
+        memcpy(&access_count, data.data() + offset, sizeof(access_count));
+        offset += sizeof(access_count);
+        
+        // 2. 创建时间
+        int64_t created_time;
+        memcpy(&created_time, data.data() + offset, sizeof(created_time));
+        offset += sizeof(created_time);
+        
+        // 3. 最后访问时间
+        int64_t last_access_time;
+        memcpy(&last_access_time, data.data() + offset, sizeof(last_access_time));
+        offset += sizeof(last_access_time);
+        
+        // 4. ML分数
+        double ml_score;
+        memcpy(&ml_score, data.data() + offset, sizeof(ml_score));
+        offset += sizeof(ml_score);
+        
+        // 5. ML特征
+        double execution_time_ms, result_size_bytes;
+        memcpy(&execution_time_ms, data.data() + offset, sizeof(execution_time_ms));
+        offset += sizeof(execution_time_ms);
+        memcpy(&result_size_bytes, data.data() + offset, sizeof(result_size_bytes));
+        offset += sizeof(result_size_bytes);
+        
+        // 6. 查询结果信息
+        uint32_t column_count;
+        if (offset + sizeof(column_count) > data.size()) {
+            return nullptr;
+        }
+        memcpy(&column_count, data.data() + offset, sizeof(column_count));
+        offset += sizeof(column_count);
+        
+        // 创建一个简化的查询结果（实际实现需要完整重建MaterializedQueryResult）
+        vector<string> column_names;
+        vector<LogicalType> column_types;
+        
+        if (column_count > 0) {
+            // 读取列名
+            for (uint32_t i = 0; i < column_count && offset < data.size(); i++) {
+                if (offset + sizeof(uint32_t) > data.size()) {
+                    break;
+                }
+                
+                uint32_t name_len;
+                memcpy(&name_len, data.data() + offset, sizeof(name_len));
+                offset += sizeof(name_len);
+                
+                if (offset + name_len > data.size()) {
+                    break;
+                }
+                
+                string name(reinterpret_cast<const char*>(data.data() + offset), name_len);
+                column_names.push_back(name);
+                column_types.push_back(LogicalType::VARCHAR); // 简化：都设为VARCHAR
+                offset += name_len;
+            }
+            
+            // 创建空的结果集（简化实现）
+            auto collection = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), column_types);
+            auto result = make_uniq<MaterializedQueryResult>(
+                StatementType::SELECT_STATEMENT,
+                StatementProperties(),
+                column_names,
+                std::move(collection),
+                ClientProperties("UTC", ArrowOffsetSize::REGULAR, false, false, false, V1_0, nullptr)
+            );
+            
+            // 创建缓存条目
+            auto entry = make_uniq<QueryCacheEntry>(std::move(result));
+            entry->access_count = access_count;
+            entry->created_at = std::chrono::steady_clock::time_point(std::chrono::steady_clock::duration(created_time));
+            entry->last_accessed = std::chrono::steady_clock::time_point(std::chrono::steady_clock::duration(last_access_time));
+            entry->ml_score = ml_score;
+            entry->ml_features.execution_time_ms = execution_time_ms;
+            entry->ml_features.result_size_bytes = result_size_bytes;
+            
+            return entry;
+        }
+        
+        return nullptr;
+        
+    } catch (std::exception &ex) {
+        printf("Deserialization error: %s\n", ex.what());
+        return nullptr;
+    }
 }
 
 uint32_t WALFormatPersistence::CalculateChecksum(const void *data, uint32_t size) const {
@@ -861,9 +1014,27 @@ vector<uint8_t> WALFormatPersistence::DecompressData(const vector<uint8_t> &data
         return data;
     }
     
-    // 这里需要知道原始数据大小，简化实现先返回原数据
-    // 实际实现中应该在压缩时保存原始大小信息
-    return data;
+    try {
+        // 简化的解压缩实现
+        // 实际实现中应该在压缩时保存原始大小信息
+        // 这里使用一个估算的解压缩大小
+        duckdb_miniz::mz_ulong decompressed_size = data.size() * 4; // 估算4倍大小
+        vector<uint8_t> decompressed_data(decompressed_size);
+        
+        int result = duckdb_miniz::mz_uncompress(decompressed_data.data(), &decompressed_size,
+                                                data.data(), data.size());
+        
+        if (result == duckdb_miniz::MZ_OK) {
+            decompressed_data.resize(decompressed_size);
+            return decompressed_data;
+        } else {
+            // 解压缩失败，返回原数据（可能未压缩）
+            return data;
+        }
+    } catch (std::exception &ex) {
+        printf("Decompression error: %s\n", ex.what());
+        return data;
+    }
 }
 
 //===----------------------------------------------------------------------===//

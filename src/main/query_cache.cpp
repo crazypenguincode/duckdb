@@ -71,11 +71,8 @@ QueryCache::QueryCache(QueryCacheConfig config)
     : config(std::move(config)), 
       bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
       ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor) {
-    // 初始化持久化策略（默认为内存策略）
-    persistence = CachePersistenceFactory::CreatePersistence(CachePersistenceStrategy::MEMORY_ONLY);
-    if (persistence) {
-        persistence->Initialize(this->config.persistence_config);
-    }
+    // 延迟初始化持久化策略，直到有ClientContext可用
+    // persistence将在InitializeWithContext中初始化
 }
 
 QueryCache::~QueryCache() {
@@ -536,6 +533,12 @@ bool QueryCacheKeyGenerator::IsCacheable(const SQLStatement &statement) {
 		size_t end = query_str.find_last_not_of(" \t\n\r");
 		query_str = query_str.substr(start, end - start + 1);
 		
+		// Check for pragma queries first - these should not be cached
+		if (query_str.find("pragma_query_cache_stats") != string::npos) {
+			printf("DEBUG: TRANSACTION_STATEMENT contains pragma_query_cache_stats, not cacheable\n");
+			return false;
+		}
+		
 		// Check if it starts with SELECT or WITH (for CTE)
 		bool is_select_like = query_str.substr(0, 6) == "select" || query_str.substr(0, 4) == "with";
 		printf("DEBUG: TRANSACTION_STATEMENT contains query: '%.50s...', is_select_like=%d\n", 
@@ -733,9 +736,15 @@ bool QueryCache::PersistEntry(const string &query_hash, const QueryCacheEntry &e
 
 bool QueryCache::InitializePersistence() {
     if (!persistence) {
-        // 使用默认的内存策略
-        persistence = CachePersistenceFactory::CreatePersistence(
-            CachePersistenceStrategy::MEMORY_ONLY, client_context);
+        if (client_context) {
+            // 有ClientContext时使用WAL格式持久化策略
+            persistence = CachePersistenceFactory::CreatePersistence(
+                CachePersistenceStrategy::WAL_FORMAT, client_context);
+        } else {
+            // 没有ClientContext时使用内存策略
+            persistence = CachePersistenceFactory::CreatePersistence(
+                CachePersistenceStrategy::MEMORY_ONLY, client_context);
+        }
     }
     
     if (persistence) {

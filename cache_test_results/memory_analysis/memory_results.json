@@ -1,0 +1,1453 @@
+{
+  "disabled": {
+    "baseline_memory_mb": 116.546875,
+    "peak_memory_mb": 437.8125,
+    "memory_growth_mb": 321.265625,
+    "avg_memory_mb": 226.1184593023256,
+    "snapshots": [
+      {
+        "timestamp": 1757353475.9927502,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.09332,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.19772,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.299662,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.404564,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.5097039,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.613347,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.7182631,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.823491,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353476.927569,
+        "rss_mb": 116.546875,
+        "vms_mb": 402444.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "small/simple_count",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353477.031622,
+        "rss_mb": 118.453125,
+        "vms_mb": 402599.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.136779,
+        "rss_mb": 118.453125,
+        "vms_mb": 402599.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.2390962,
+        "rss_mb": 118.453125,
+        "vms_mb": 402599.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.342327,
+        "rss_mb": 118.453125,
+        "vms_mb": 402599.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.446368,
+        "rss_mb": 118.453125,
+        "vms_mb": 402599.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "small/simple_avg",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353477.551163,
+        "rss_mb": 126.546875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.656409,
+        "rss_mb": 126.546875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.760159,
+        "rss_mb": 126.546875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.861886,
+        "rss_mb": 126.546875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353477.96623,
+        "rss_mb": 126.546875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "medium/join_query",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353478.077914,
+        "rss_mb": 256.34375,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.18302,
+        "rss_mb": 256.34375,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.2869492,
+        "rss_mb": 256.34375,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.391843,
+        "rss_mb": 256.34375,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.497035,
+        "rss_mb": 256.34375,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "medium/aggregation",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353478.607404,
+        "rss_mb": 257.75,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.7125041,
+        "rss_mb": 257.75,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.8138182,
+        "rss_mb": 257.75,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353478.915356,
+        "rss_mb": 257.75,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.018562,
+        "rss_mb": 257.75,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/complex_join",
+        "event": "query_start"
+      },
+      {
+        "timestamp": 1757353479.1228201,
+        "rss_mb": 259.875,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/complex_join",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353479.22728,
+        "rss_mb": 308.03125,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.332461,
+        "rss_mb": 308.03125,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.434724,
+        "rss_mb": 308.03125,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.5389838,
+        "rss_mb": 308.03125,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.639511,
+        "rss_mb": 308.03125,
+        "vms_mb": 402992.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/window_function",
+        "event": "query_start"
+      },
+      {
+        "timestamp": 1757353479.747819,
+        "rss_mb": 368.484375,
+        "vms_mb": 403010.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353479.8580759,
+        "rss_mb": 404.578125,
+        "vms_mb": 403046.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/window_function",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353480.000618,
+        "rss_mb": 437.8125,
+        "vms_mb": 403080.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353480.105673,
+        "rss_mb": 437.8125,
+        "vms_mb": 403080.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353480.21077,
+        "rss_mb": 437.8125,
+        "vms_mb": 403080.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353480.314678,
+        "rss_mb": 437.8125,
+        "vms_mb": 403080.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353480.4195268,
+        "rss_mb": 437.8125,
+        "vms_mb": 403080.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      }
+    ]
+  },
+  "enabled": {
+    "baseline_memory_mb": 438.484375,
+    "peak_memory_mb": 501.125,
+    "memory_growth_mb": 62.640625,
+    "avg_memory_mb": 406.1068313953488,
+    "snapshots": [
+      {
+        "timestamp": 1757353482.583311,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353482.6847801,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353482.789185,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353482.893884,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353482.997938,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.102986,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.207669,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.312157,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.416513,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.51673,
+        "rss_mb": 438.484375,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "small/simple_count",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353483.620907,
+        "rss_mb": 354.3125,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.726072,
+        "rss_mb": 354.3125,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.827517,
+        "rss_mb": 354.3125,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353483.9293811,
+        "rss_mb": 354.3125,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.0311198,
+        "rss_mb": 354.3125,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "small/simple_avg",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353484.146344,
+        "rss_mb": 354.5,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.251456,
+        "rss_mb": 354.5,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.3556778,
+        "rss_mb": 354.5,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.45793,
+        "rss_mb": 354.5,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.561706,
+        "rss_mb": 354.5,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "medium/join_query",
+        "event": "query_start"
+      },
+      {
+        "timestamp": 1757353484.6666722,
+        "rss_mb": 360.0625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "medium/join_query",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353484.771816,
+        "rss_mb": 377.84375,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.876778,
+        "rss_mb": 377.84375,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353484.981964,
+        "rss_mb": 377.84375,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.08455,
+        "rss_mb": 377.84375,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.188472,
+        "rss_mb": 377.84375,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "medium/aggregation",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353485.293667,
+        "rss_mb": 378.390625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.3956501,
+        "rss_mb": 378.390625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.497779,
+        "rss_mb": 378.390625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.6023529,
+        "rss_mb": 378.390625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.705117,
+        "rss_mb": 378.390625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/complex_join",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353485.8101819,
+        "rss_mb": 397.90625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353485.915364,
+        "rss_mb": 397.90625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.020312,
+        "rss_mb": 397.90625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.125513,
+        "rss_mb": 397.90625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.2278788,
+        "rss_mb": 397.90625,
+        "vms_mb": 402996.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/window_function",
+        "event": "query_start"
+      },
+      {
+        "timestamp": 1757353486.3442209,
+        "rss_mb": 429.234375,
+        "vms_mb": 403009.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.4642172,
+        "rss_mb": 468.0625,
+        "vms_mb": 403048.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "large/window_function",
+        "event": "query_end"
+      },
+      {
+        "timestamp": 1757353486.603322,
+        "rss_mb": 501.125,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.708359,
+        "rss_mb": 501.125,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.813469,
+        "rss_mb": 501.125,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353486.916384,
+        "rss_mb": 501.125,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353487.018413,
+        "rss_mb": 501.125,
+        "vms_mb": 403081.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      }
+    ]
+  },
+  "10": {
+    "baseline_memory_mb": 420.40625,
+    "peak_memory_mb": 420.46875,
+    "memory_growth_mb": 0.0625,
+    "queries_executed": 20,
+    "snapshots": [
+      {
+        "timestamp": 1757353489.203191,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.30513,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.410063,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.512882,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.61818,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.720182,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.8226628,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353489.926786,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353490.029684,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353490.132152,
+        "rss_mb": 420.40625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_10",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353490.232399,
+        "rss_mb": 420.46875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      }
+    ]
+  },
+  "50": {
+    "baseline_memory_mb": 420.796875,
+    "peak_memory_mb": 420.8125,
+    "memory_growth_mb": 0.015625,
+    "queries_executed": 60,
+    "snapshots": [
+      {
+        "timestamp": 1757353492.372001,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.477121,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.5815308,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.685765,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.790146,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.890553,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353492.9957461,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353493.099466,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353493.20146,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353493.3064551,
+        "rss_mb": 420.796875,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_20",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353493.406952,
+        "rss_mb": 420.8125,
+        "vms_mb": 403000.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_50",
+        "event": "cache_fill"
+      }
+    ]
+  },
+  "100": {
+    "baseline_memory_mb": 421.5,
+    "peak_memory_mb": 421.515625,
+    "memory_growth_mb": 0.015625,
+    "queries_executed": 110,
+    "snapshots": [
+      {
+        "timestamp": 1757353495.534348,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353495.635853,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353495.738805,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353495.8438542,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353495.945135,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353496.0495071,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353496.1505668,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353496.252527,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353496.357579,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353496.459931,
+        "rss_mb": 421.5,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_20",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353496.560865,
+        "rss_mb": 421.515625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_100",
+        "event": "cache_fill"
+      }
+    ]
+  },
+  "500": {
+    "baseline_memory_mb": 421.609375,
+    "peak_memory_mb": 421.609375,
+    "memory_growth_mb": 0.0,
+    "queries_executed": 510,
+    "snapshots": [
+      {
+        "timestamp": 1757353498.6888871,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353498.793304,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353498.898394,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.0009549,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.103738,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.208842,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.311004,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.413054,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.513251,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353499.614412,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_10",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353499.715884,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_140",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353499.819411,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_250",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353499.920383,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_360",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353500.02168,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_470",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353500.126061,
+        "rss_mb": 421.609375,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_500",
+        "event": "cache_fill"
+      }
+    ]
+  },
+  "1000": {
+    "baseline_memory_mb": 421.65625,
+    "peak_memory_mb": 421.671875,
+    "memory_growth_mb": 0.015625,
+    "queries_executed": 1010,
+    "snapshots": [
+      {
+        "timestamp": 1757353502.260428,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.360836,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.463629,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.567861,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.672802,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.777919,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.882307,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353502.986204,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353503.0894458,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "",
+        "event": ""
+      },
+      {
+        "timestamp": 1757353503.1933088,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_20",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.293431,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_140",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.395495,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_240",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.500554,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_330",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.601731,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_410",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.707941,
+        "rss_mb": 421.65625,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_490",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.809061,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_570",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353503.91102,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_670",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353504.0145102,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_770",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353504.118266,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_860",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353504.21853,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_960",
+        "event": "cache_fill"
+      },
+      {
+        "timestamp": 1757353504.3231711,
+        "rss_mb": 421.671875,
+        "vms_mb": 403001.375,
+        "cache_entries": 0,
+        "cache_memory_mb": 0.0,
+        "query_name": "query_1000",
+        "event": "cache_fill"
+      }
+    ]
+  }
+}

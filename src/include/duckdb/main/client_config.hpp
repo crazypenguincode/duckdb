@@ -160,7 +160,7 @@ struct ClientConfig {
 	string http_logging_output;
 
 	//! If query result caching is enabled or not.
-	bool enable_query_cache = false;
+	bool enable_query_cache = true;
 
 	//! Maximum size of the query cache (e.g., '100MB', '1GB')
 	string query_cache_max_size = "100MB";

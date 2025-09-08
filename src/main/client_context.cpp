@@ -1067,7 +1067,7 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 		
 		// Save statement info before moving
 		StatementType statement_type = statement->type;
-		printf("DEBUG: Processing statement %zu of %zu, type: %d\n", i+1, statements.size(), (int)statement_type);
+				printf("DEBUG: Processing statement %llu of %llu, type: %d\n", (unsigned long long)(i+1), (unsigned long long)statements.size(), (int)statement_type);
 		
 		unique_ptr<QueryResult> current_result;
 		

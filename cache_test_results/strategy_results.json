@@ -1,0 +1,180 @@
+{
+  "results": {
+    "TTL_size_20": {
+      "strategy_name": "TTL",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.6644740453851058,
+      "total_execution_time_ms": 132.23033503163606,
+      "memory_usage_mb": 50.0,
+      "evictions": 11
+    },
+    "TTL_size_50": {
+      "strategy_name": "TTL",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.7000854269580344,
+      "total_execution_time_ms": 139.31699996464886,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "TTL_size_100": {
+      "strategy_name": "TTL",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.7336074631162756,
+      "total_execution_time_ms": 145.98788516013883,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "LRU_size_20": {
+      "strategy_name": "LRU",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.6968747485422029,
+      "total_execution_time_ms": 138.67807495989837,
+      "memory_usage_mb": 50.0,
+      "evictions": 11
+    },
+    "LRU_size_50": {
+      "strategy_name": "LRU",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.6893285333433998,
+      "total_execution_time_ms": 137.17637813533656,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "LRU_size_100": {
+      "strategy_name": "LRU",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.6922898043635016,
+      "total_execution_time_ms": 137.76567106833681,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "ML_size_20": {
+      "strategy_name": "ML",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.7014009496372605,
+      "total_execution_time_ms": 139.57878897781484,
+      "memory_usage_mb": 50.0,
+      "evictions": 11
+    },
+    "ML_size_50": {
+      "strategy_name": "ML",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.6687306885574781,
+      "total_execution_time_ms": 133.07740702293813,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "ML_size_100": {
+      "strategy_name": "ML",
+      "total_queries": 199,
+      "cache_hits": 168,
+      "cache_misses": 31,
+      "hit_rate": 0.8442211055276382,
+      "avg_execution_time_ms": 0.7154553963091393,
+      "total_execution_time_ms": 142.37562386551872,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "MEMORY_ONLY": {
+      "strategy_name": "PERSISTENCE_MEMORY_ONLY",
+      "total_queries": 100,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "hit_rate": 0.0,
+      "avg_execution_time_ms": 0.6987975220545195,
+      "total_execution_time_ms": 69.87975220545195,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "WAL_FORMAT": {
+      "strategy_name": "PERSISTENCE_WAL_FORMAT",
+      "total_queries": 100,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "hit_rate": 0.0,
+      "avg_execution_time_ms": 0.6492366298334673,
+      "total_execution_time_ms": 64.92366298334673,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "MATERIALIZED_VIEW": {
+      "strategy_name": "PERSISTENCE_MATERIALIZED_VIEW",
+      "total_queries": 100,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "hit_rate": 0.0,
+      "avg_execution_time_ms": 0.5955183587502688,
+      "total_execution_time_ms": 59.55183587502688,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    },
+    "HYBRID": {
+      "strategy_name": "PERSISTENCE_HYBRID",
+      "total_queries": 100,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "hit_rate": 0.0,
+      "avg_execution_time_ms": 0.634071588574443,
+      "total_execution_time_ms": 63.4071588574443,
+      "memory_usage_mb": 50.0,
+      "evictions": 0
+    }
+  },
+  "analysis": {
+    "best_hit_rate": {
+      "strategy": "TTL_size_20",
+      "hit_rate": 0.8442211055276382
+    },
+    "fastest_avg_time": {
+      "strategy": "MATERIALIZED_VIEW",
+      "time_ms": 0.5955183587502688
+    },
+    "lowest_memory": {
+      "strategy": "TTL_size_20",
+      "memory_mb": 50.0
+    },
+    "eviction_comparison": {
+      "strategies": [
+        "ML",
+        "TTL",
+        "LRU"
+      ],
+      "avg_hit_rates": {
+        "ML": 0.8442211055276382,
+        "TTL": 0.8442211055276382,
+        "LRU": 0.8442211055276382
+      },
+      "avg_execution_times": {
+        "ML": 0.6951956781679594,
+        "TTL": 0.699388978486472,
+        "LRU": 0.6928310287497015
+      }
+    },
+    "persistence_comparison": {}
+  },
+  "timestamp": 1757353569.289535
+}

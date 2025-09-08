@@ -1,0 +1,484 @@
+{
+  "simple_queries": {
+    "cache_enabled": {
+      "test_name": "简单查询 (缓存启用)",
+      "cache_enabled": true,
+      "total_queries": 10,
+      "avg_execution_time_ms": 3.6628123983973637,
+      "min_execution_time_ms": 0.13683299766853452,
+      "max_execution_time_ms": 10.588583012577146,
+      "std_execution_time_ms": 3.4428160634664264,
+      "total_memory_usage_mb": 46.984375,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0,
+        "false_positive_rate": 0.0
+      },
+      "speedup_ratio": 0.3844757367725789
+    },
+    "cache_disabled": {
+      "test_name": "简单查询 (缓存禁用)",
+      "cache_enabled": false,
+      "total_queries": 10,
+      "avg_execution_time_ms": 1.4082624955335632,
+      "min_execution_time_ms": 0.11241697939112782,
+      "max_execution_time_ms": 2.9039999935775995,
+      "std_execution_time_ms": 1.0215995050922966,
+      "total_memory_usage_mb": 15.0625,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0,
+        "false_positive_rate": 0.0
+      },
+      "speedup_ratio": 0.0
+    }
+  },
+  "tpch_queries": {
+    "cache_enabled": {
+      "test_name": "TPC-H查询 (缓存启用)",
+      "cache_enabled": true,
+      "total_queries": 10,
+      "avg_execution_time_ms": 18.494474902399816,
+      "min_execution_time_ms": 3.877332987030968,
+      "max_execution_time_ms": 40.300708002178,
+      "std_execution_time_ms": 11.428579919677608,
+      "total_memory_usage_mb": 187.265625,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0,
+        "false_positive_rate": 0.0
+      },
+      "speedup_ratio": 1.0149731793648007
+    },
+    "cache_disabled": {
+      "test_name": "TPC-H查询 (缓存禁用)",
+      "cache_enabled": false,
+      "total_queries": 10,
+      "avg_execution_time_ms": 18.771395992371254,
+      "min_execution_time_ms": 4.468125000130385,
+      "max_execution_time_ms": 39.044124976499006,
+      "std_execution_time_ms": 11.18456320269121,
+      "total_memory_usage_mb": 68.9375,
+      "cache_stats": {
+        "total_entries": 0,
+        "total_hits": 0,
+        "total_misses": 0,
+        "hit_rate": 0.0,
+        "memory_usage_bytes": 0,
+        "false_positive_rate": 0.0
+      },
+      "speedup_ratio": 0.0
+    }
+  },
+  "detailed_results": [
+    {
+      "query_name": "COUNT_ORDERS",
+      "query_sql": "SELECT COUNT(*) FROM orders;",
+      "execution_time_ms": 6.525165983475745,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 1.078125,
+      "cpu_usage_percent": 0.0,
+      "iteration": 0
+    },
+    {
+      "query_name": "COUNT_ORDERS",
+      "query_sql": "SELECT COUNT(*) FROM orders;",
+      "execution_time_ms": 0.13683299766853452,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.015625,
+      "cpu_usage_percent": 102.2,
+      "iteration": 1
+    },
+    {
+      "query_name": "AVG_PRICE",
+      "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+      "execution_time_ms": 10.588583012577146,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 28.203125,
+      "cpu_usage_percent": 242.3,
+      "iteration": 0
+    },
+    {
+      "query_name": "AVG_PRICE",
+      "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+      "execution_time_ms": 1.3932089786976576,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.59375,
+      "cpu_usage_percent": 383.2,
+      "iteration": 1
+    },
+    {
+      "query_name": "TOP_CUSTOMERS",
+      "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+      "execution_time_ms": 7.079500006511807,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 4.109375,
+      "cpu_usage_percent": 88.8,
+      "iteration": 0
+    },
+    {
+      "query_name": "TOP_CUSTOMERS",
+      "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+      "execution_time_ms": 1.0731249931268394,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 1.125,
+      "cpu_usage_percent": 129.3,
+      "iteration": 1
+    },
+    {
+      "query_name": "NATION_STATS",
+      "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+      "execution_time_ms": 4.662874998757616,
+      "rows_returned": 25,
+      "cache_hit": false,
+      "memory_usage_mb": 5.703125,
+      "cpu_usage_percent": 177.7,
+      "iteration": 0
+    },
+    {
+      "query_name": "NATION_STATS",
+      "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+      "execution_time_ms": 2.8179170039948076,
+      "rows_returned": 25,
+      "cache_hit": false,
+      "memory_usage_mb": 3.296875,
+      "cpu_usage_percent": 164.3,
+      "iteration": 1
+    },
+    {
+      "query_name": "DATE_RANGE",
+      "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+      "execution_time_ms": 1.6580410010647029,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 2.78125,
+      "cpu_usage_percent": 211.6,
+      "iteration": 0
+    },
+    {
+      "query_name": "DATE_RANGE",
+      "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+      "execution_time_ms": 0.6928750080987811,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.078125,
+      "cpu_usage_percent": 226.9,
+      "iteration": 1
+    },
+    {
+      "query_name": "COUNT_ORDERS",
+      "query_sql": "SELECT COUNT(*) FROM orders;",
+      "execution_time_ms": 0.18091598758473992,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0,
+      "cpu_usage_percent": 106.8,
+      "iteration": 0
+    },
+    {
+      "query_name": "COUNT_ORDERS",
+      "query_sql": "SELECT COUNT(*) FROM orders;",
+      "execution_time_ms": 0.11241697939112782,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0,
+      "cpu_usage_percent": 102.1,
+      "iteration": 1
+    },
+    {
+      "query_name": "AVG_PRICE",
+      "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+      "execution_time_ms": 1.93966698134318,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 8.734375,
+      "cpu_usage_percent": 516.9,
+      "iteration": 0
+    },
+    {
+      "query_name": "AVG_PRICE",
+      "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+      "execution_time_ms": 2.304499997990206,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.109375,
+      "cpu_usage_percent": 561.3,
+      "iteration": 1
+    },
+    {
+      "query_name": "TOP_CUSTOMERS",
+      "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+      "execution_time_ms": 1.425416994607076,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 1.28125,
+      "cpu_usage_percent": 159.3,
+      "iteration": 0
+    },
+    {
+      "query_name": "TOP_CUSTOMERS",
+      "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+      "execution_time_ms": 1.1074169888161123,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 0.46875,
+      "cpu_usage_percent": 141.4,
+      "iteration": 1
+    },
+    {
+      "query_name": "NATION_STATS",
+      "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+      "execution_time_ms": 2.9039999935775995,
+      "rows_returned": 25,
+      "cache_hit": false,
+      "memory_usage_mb": 2.078125,
+      "cpu_usage_percent": 216.9,
+      "iteration": 0
+    },
+    {
+      "query_name": "NATION_STATS",
+      "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+      "execution_time_ms": 2.727083017816767,
+      "rows_returned": 25,
+      "cache_hit": false,
+      "memory_usage_mb": 1.421875,
+      "cpu_usage_percent": 192.0,
+      "iteration": 1
+    },
+    {
+      "query_name": "DATE_RANGE",
+      "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+      "execution_time_ms": 0.801000016508624,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.96875,
+      "cpu_usage_percent": 303.7,
+      "iteration": 0
+    },
+    {
+      "query_name": "DATE_RANGE",
+      "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+      "execution_time_ms": 0.5802079977001995,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0,
+      "cpu_usage_percent": 240.2,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q1",
+      "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+      "execution_time_ms": 28.94225000636652,
+      "rows_returned": 4,
+      "cache_hit": false,
+      "memory_usage_mb": 30.921875,
+      "cpu_usage_percent": 638.0,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q1",
+      "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+      "execution_time_ms": 18.4461249737069,
+      "rows_returned": 4,
+      "cache_hit": false,
+      "memory_usage_mb": 2.3125,
+      "cpu_usage_percent": 1047.3,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q3",
+      "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+      "execution_time_ms": 16.885167016880587,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 37.796875,
+      "cpu_usage_percent": 569.1,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q3",
+      "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+      "execution_time_ms": 13.093082990963012,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 14.421875,
+      "cpu_usage_percent": 688.0,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q5",
+      "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+      "execution_time_ms": 15.647041000192985,
+      "rows_returned": 5,
+      "cache_hit": false,
+      "memory_usage_mb": 23.265625,
+      "cpu_usage_percent": 556.7,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q5",
+      "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+      "execution_time_ms": 14.04779200674966,
+      "rows_returned": 5,
+      "cache_hit": false,
+      "memory_usage_mb": 11.1875,
+      "cpu_usage_percent": 604.9,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q6",
+      "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+      "execution_time_ms": 4.359750018920749,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.0625,
+      "cpu_usage_percent": 680.2,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q6",
+      "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+      "execution_time_ms": 3.877332987030968,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0.015625,
+      "cpu_usage_percent": 778.8,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q10",
+      "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+      "execution_time_ms": 40.300708002178,
+      "rows_returned": 20,
+      "cache_hit": false,
+      "memory_usage_mb": 47.234375,
+      "cpu_usage_percent": 359.2,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q10",
+      "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+      "execution_time_ms": 29.345500021008775,
+      "rows_returned": 20,
+      "cache_hit": false,
+      "memory_usage_mb": 20.046875,
+      "cpu_usage_percent": 517.9,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q1",
+      "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+      "execution_time_ms": 19.542750000255182,
+      "rows_returned": 4,
+      "cache_hit": false,
+      "memory_usage_mb": 8.1875,
+      "cpu_usage_percent": 757.7,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q1",
+      "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+      "execution_time_ms": 19.99933400657028,
+      "rows_returned": 4,
+      "cache_hit": false,
+      "memory_usage_mb": 0.53125,
+      "cpu_usage_percent": 962.9,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q3",
+      "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+      "execution_time_ms": 15.681166987633333,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 13.984375,
+      "cpu_usage_percent": 621.4,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q3",
+      "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+      "execution_time_ms": 15.60404198244214,
+      "rows_returned": 10,
+      "cache_hit": false,
+      "memory_usage_mb": 3.140625,
+      "cpu_usage_percent": 579.4,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q5",
+      "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+      "execution_time_ms": 17.435874993680045,
+      "rows_returned": 5,
+      "cache_hit": false,
+      "memory_usage_mb": 7.859375,
+      "cpu_usage_percent": 602.1,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q5",
+      "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+      "execution_time_ms": 16.10354197327979,
+      "rows_returned": 5,
+      "cache_hit": false,
+      "memory_usage_mb": 2.890625,
+      "cpu_usage_percent": 607.0,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q6",
+      "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+      "execution_time_ms": 4.468125000130385,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0,
+      "cpu_usage_percent": 734.1,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q6",
+      "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+      "execution_time_ms": 4.472916014492512,
+      "rows_returned": 1,
+      "cache_hit": false,
+      "memory_usage_mb": 0,
+      "cpu_usage_percent": 728.8,
+      "iteration": 1
+    },
+    {
+      "query_name": "Q10",
+      "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+      "execution_time_ms": 39.044124976499006,
+      "rows_returned": 20,
+      "cache_hit": false,
+      "memory_usage_mb": 15.703125,
+      "cpu_usage_percent": 478.9,
+      "iteration": 0
+    },
+    {
+      "query_name": "Q10",
+      "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+      "execution_time_ms": 35.362083988729864,
+      "rows_returned": 20,
+      "cache_hit": false,
+      "memory_usage_mb": 16.640625,
+      "cpu_usage_percent": 499.8,
+      "iteration": 1
+    }
+  ]
+}

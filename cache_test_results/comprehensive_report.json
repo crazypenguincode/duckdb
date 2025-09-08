@@ -1,0 +1,2149 @@
+{
+  "test_info": {
+    "timestamp": "2025-09-09T01:46:09.302856",
+    "database_path": "/Users/max/test/tpc/tpch-sf1.db",
+    "database_exists": true
+  },
+  "performance_test": {
+    "simple_queries": {
+      "cache_enabled": {
+        "test_name": "简单查询 (缓存启用)",
+        "cache_enabled": true,
+        "total_queries": 10,
+        "avg_execution_time_ms": 3.6628123983973637,
+        "min_execution_time_ms": 0.13683299766853452,
+        "max_execution_time_ms": 10.588583012577146,
+        "std_execution_time_ms": 3.4428160634664264,
+        "total_memory_usage_mb": 46.984375,
+        "cache_stats": {
+          "total_entries": 0,
+          "total_hits": 0,
+          "total_misses": 0,
+          "hit_rate": 0.0,
+          "memory_usage_bytes": 0,
+          "false_positive_rate": 0.0
+        },
+        "speedup_ratio": 0.3844757367725789
+      },
+      "cache_disabled": {
+        "test_name": "简单查询 (缓存禁用)",
+        "cache_enabled": false,
+        "total_queries": 10,
+        "avg_execution_time_ms": 1.4082624955335632,
+        "min_execution_time_ms": 0.11241697939112782,
+        "max_execution_time_ms": 2.9039999935775995,
+        "std_execution_time_ms": 1.0215995050922966,
+        "total_memory_usage_mb": 15.0625,
+        "cache_stats": {
+          "total_entries": 0,
+          "total_hits": 0,
+          "total_misses": 0,
+          "hit_rate": 0.0,
+          "memory_usage_bytes": 0,
+          "false_positive_rate": 0.0
+        },
+        "speedup_ratio": 0.0
+      }
+    },
+    "tpch_queries": {
+      "cache_enabled": {
+        "test_name": "TPC-H查询 (缓存启用)",
+        "cache_enabled": true,
+        "total_queries": 10,
+        "avg_execution_time_ms": 18.494474902399816,
+        "min_execution_time_ms": 3.877332987030968,
+        "max_execution_time_ms": 40.300708002178,
+        "std_execution_time_ms": 11.428579919677608,
+        "total_memory_usage_mb": 187.265625,
+        "cache_stats": {
+          "total_entries": 0,
+          "total_hits": 0,
+          "total_misses": 0,
+          "hit_rate": 0.0,
+          "memory_usage_bytes": 0,
+          "false_positive_rate": 0.0
+        },
+        "speedup_ratio": 1.0149731793648007
+      },
+      "cache_disabled": {
+        "test_name": "TPC-H查询 (缓存禁用)",
+        "cache_enabled": false,
+        "total_queries": 10,
+        "avg_execution_time_ms": 18.771395992371254,
+        "min_execution_time_ms": 4.468125000130385,
+        "max_execution_time_ms": 39.044124976499006,
+        "std_execution_time_ms": 11.18456320269121,
+        "total_memory_usage_mb": 68.9375,
+        "cache_stats": {
+          "total_entries": 0,
+          "total_hits": 0,
+          "total_misses": 0,
+          "hit_rate": 0.0,
+          "memory_usage_bytes": 0,
+          "false_positive_rate": 0.0
+        },
+        "speedup_ratio": 0.0
+      }
+    },
+    "detailed_results": [
+      {
+        "query_name": "COUNT_ORDERS",
+        "query_sql": "SELECT COUNT(*) FROM orders;",
+        "execution_time_ms": 6.525165983475745,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 1.078125,
+        "cpu_usage_percent": 0.0,
+        "iteration": 0
+      },
+      {
+        "query_name": "COUNT_ORDERS",
+        "query_sql": "SELECT COUNT(*) FROM orders;",
+        "execution_time_ms": 0.13683299766853452,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.015625,
+        "cpu_usage_percent": 102.2,
+        "iteration": 1
+      },
+      {
+        "query_name": "AVG_PRICE",
+        "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+        "execution_time_ms": 10.588583012577146,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 28.203125,
+        "cpu_usage_percent": 242.3,
+        "iteration": 0
+      },
+      {
+        "query_name": "AVG_PRICE",
+        "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+        "execution_time_ms": 1.3932089786976576,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.59375,
+        "cpu_usage_percent": 383.2,
+        "iteration": 1
+      },
+      {
+        "query_name": "TOP_CUSTOMERS",
+        "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+        "execution_time_ms": 7.079500006511807,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 4.109375,
+        "cpu_usage_percent": 88.8,
+        "iteration": 0
+      },
+      {
+        "query_name": "TOP_CUSTOMERS",
+        "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+        "execution_time_ms": 1.0731249931268394,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 1.125,
+        "cpu_usage_percent": 129.3,
+        "iteration": 1
+      },
+      {
+        "query_name": "NATION_STATS",
+        "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+        "execution_time_ms": 4.662874998757616,
+        "rows_returned": 25,
+        "cache_hit": false,
+        "memory_usage_mb": 5.703125,
+        "cpu_usage_percent": 177.7,
+        "iteration": 0
+      },
+      {
+        "query_name": "NATION_STATS",
+        "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+        "execution_time_ms": 2.8179170039948076,
+        "rows_returned": 25,
+        "cache_hit": false,
+        "memory_usage_mb": 3.296875,
+        "cpu_usage_percent": 164.3,
+        "iteration": 1
+      },
+      {
+        "query_name": "DATE_RANGE",
+        "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+        "execution_time_ms": 1.6580410010647029,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 2.78125,
+        "cpu_usage_percent": 211.6,
+        "iteration": 0
+      },
+      {
+        "query_name": "DATE_RANGE",
+        "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+        "execution_time_ms": 0.6928750080987811,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.078125,
+        "cpu_usage_percent": 226.9,
+        "iteration": 1
+      },
+      {
+        "query_name": "COUNT_ORDERS",
+        "query_sql": "SELECT COUNT(*) FROM orders;",
+        "execution_time_ms": 0.18091598758473992,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0,
+        "cpu_usage_percent": 106.8,
+        "iteration": 0
+      },
+      {
+        "query_name": "COUNT_ORDERS",
+        "query_sql": "SELECT COUNT(*) FROM orders;",
+        "execution_time_ms": 0.11241697939112782,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0,
+        "cpu_usage_percent": 102.1,
+        "iteration": 1
+      },
+      {
+        "query_name": "AVG_PRICE",
+        "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+        "execution_time_ms": 1.93966698134318,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 8.734375,
+        "cpu_usage_percent": 516.9,
+        "iteration": 0
+      },
+      {
+        "query_name": "AVG_PRICE",
+        "query_sql": "SELECT AVG(l_extendedprice) FROM lineitem;",
+        "execution_time_ms": 2.304499997990206,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.109375,
+        "cpu_usage_percent": 561.3,
+        "iteration": 1
+      },
+      {
+        "query_name": "TOP_CUSTOMERS",
+        "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+        "execution_time_ms": 1.425416994607076,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 1.28125,
+        "cpu_usage_percent": 159.3,
+        "iteration": 0
+      },
+      {
+        "query_name": "TOP_CUSTOMERS",
+        "query_sql": "SELECT c_name, c_acctbal \n                FROM customer \n                ORDER BY c_acctbal DESC \n                LIMIT 10;",
+        "execution_time_ms": 1.1074169888161123,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 0.46875,
+        "cpu_usage_percent": 141.4,
+        "iteration": 1
+      },
+      {
+        "query_name": "NATION_STATS",
+        "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+        "execution_time_ms": 2.9039999935775995,
+        "rows_returned": 25,
+        "cache_hit": false,
+        "memory_usage_mb": 2.078125,
+        "cpu_usage_percent": 216.9,
+        "iteration": 0
+      },
+      {
+        "query_name": "NATION_STATS",
+        "query_sql": "SELECT n_name, COUNT(*) as customer_count\n                FROM nation n\n                JOIN customer c ON n.n_nationkey = c.c_nationkey\n                GROUP BY n_name\n                ORDER BY customer_count DESC;",
+        "execution_time_ms": 2.727083017816767,
+        "rows_returned": 25,
+        "cache_hit": false,
+        "memory_usage_mb": 1.421875,
+        "cpu_usage_percent": 192.0,
+        "iteration": 1
+      },
+      {
+        "query_name": "DATE_RANGE",
+        "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+        "execution_time_ms": 0.801000016508624,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.96875,
+        "cpu_usage_percent": 303.7,
+        "iteration": 0
+      },
+      {
+        "query_name": "DATE_RANGE",
+        "query_sql": "SELECT COUNT(*) \n                FROM orders \n                WHERE o_orderdate BETWEEN '1995-01-01' AND '1995-12-31';",
+        "execution_time_ms": 0.5802079977001995,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0,
+        "cpu_usage_percent": 240.2,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q1",
+        "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+        "execution_time_ms": 28.94225000636652,
+        "rows_returned": 4,
+        "cache_hit": false,
+        "memory_usage_mb": 30.921875,
+        "cpu_usage_percent": 638.0,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q1",
+        "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+        "execution_time_ms": 18.4461249737069,
+        "rows_returned": 4,
+        "cache_hit": false,
+        "memory_usage_mb": 2.3125,
+        "cpu_usage_percent": 1047.3,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q3",
+        "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+        "execution_time_ms": 16.885167016880587,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 37.796875,
+        "cpu_usage_percent": 569.1,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q3",
+        "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+        "execution_time_ms": 13.093082990963012,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 14.421875,
+        "cpu_usage_percent": 688.0,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q5",
+        "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+        "execution_time_ms": 15.647041000192985,
+        "rows_returned": 5,
+        "cache_hit": false,
+        "memory_usage_mb": 23.265625,
+        "cpu_usage_percent": 556.7,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q5",
+        "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+        "execution_time_ms": 14.04779200674966,
+        "rows_returned": 5,
+        "cache_hit": false,
+        "memory_usage_mb": 11.1875,
+        "cpu_usage_percent": 604.9,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q6",
+        "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+        "execution_time_ms": 4.359750018920749,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.0625,
+        "cpu_usage_percent": 680.2,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q6",
+        "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+        "execution_time_ms": 3.877332987030968,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0.015625,
+        "cpu_usage_percent": 778.8,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q10",
+        "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+        "execution_time_ms": 40.300708002178,
+        "rows_returned": 20,
+        "cache_hit": false,
+        "memory_usage_mb": 47.234375,
+        "cpu_usage_percent": 359.2,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q10",
+        "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+        "execution_time_ms": 29.345500021008775,
+        "rows_returned": 20,
+        "cache_hit": false,
+        "memory_usage_mb": 20.046875,
+        "cpu_usage_percent": 517.9,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q1",
+        "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+        "execution_time_ms": 19.542750000255182,
+        "rows_returned": 4,
+        "cache_hit": false,
+        "memory_usage_mb": 8.1875,
+        "cpu_usage_percent": 757.7,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q1",
+        "query_sql": "SELECT\n                    l_returnflag,\n                    l_linestatus,\n                    SUM(l_quantity) AS sum_qty,\n                    SUM(l_extendedprice) AS sum_base_price,\n                    SUM(l_extendedprice * (1 - l_discount)) AS sum_disc_price,\n                    SUM(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,\n                    AVG(l_quantity) AS avg_qty,\n                    AVG(l_extendedprice) AS avg_price,\n                    AVG(l_discount) AS avg_disc,\n                    COUNT(*) AS count_order\n                FROM lineitem\n                WHERE l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY\n                GROUP BY l_returnflag, l_linestatus\n                ORDER BY l_returnflag, l_linestatus;",
+        "execution_time_ms": 19.99933400657028,
+        "rows_returned": 4,
+        "cache_hit": false,
+        "memory_usage_mb": 0.53125,
+        "cpu_usage_percent": 962.9,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q3",
+        "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+        "execution_time_ms": 15.681166987633333,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 13.984375,
+        "cpu_usage_percent": 621.4,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q3",
+        "query_sql": "SELECT\n                    l_orderkey,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    o_orderdate,\n                    o_shippriority\n                FROM customer, orders, lineitem\n                WHERE c_mktsegment = 'BUILDING'\n                    AND c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate < DATE '1995-03-15'\n                    AND l_shipdate > DATE '1995-03-15'\n                GROUP BY l_orderkey, o_orderdate, o_shippriority\n                ORDER BY revenue DESC, o_orderdate\n                LIMIT 10;",
+        "execution_time_ms": 15.60404198244214,
+        "rows_returned": 10,
+        "cache_hit": false,
+        "memory_usage_mb": 3.140625,
+        "cpu_usage_percent": 579.4,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q5",
+        "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+        "execution_time_ms": 17.435874993680045,
+        "rows_returned": 5,
+        "cache_hit": false,
+        "memory_usage_mb": 7.859375,
+        "cpu_usage_percent": 602.1,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q5",
+        "query_sql": "SELECT\n                    n_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue\n                FROM customer, orders, lineitem, supplier, nation, region\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND l_suppkey = s_suppkey\n                    AND c_nationkey = s_nationkey\n                    AND s_nationkey = n_nationkey\n                    AND n_regionkey = r_regionkey\n                    AND r_name = 'ASIA'\n                    AND o_orderdate >= DATE '1994-01-01'\n                    AND o_orderdate < DATE '1995-01-01'\n                GROUP BY n_name\n                ORDER BY revenue DESC;",
+        "execution_time_ms": 16.10354197327979,
+        "rows_returned": 5,
+        "cache_hit": false,
+        "memory_usage_mb": 2.890625,
+        "cpu_usage_percent": 607.0,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q6",
+        "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+        "execution_time_ms": 4.468125000130385,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0,
+        "cpu_usage_percent": 734.1,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q6",
+        "query_sql": "SELECT\n                    SUM(l_extendedprice * l_discount) AS revenue\n                FROM lineitem\n                WHERE l_shipdate >= DATE '1994-01-01'\n                    AND l_shipdate < DATE '1995-01-01'\n                    AND l_discount BETWEEN 0.05 AND 0.07\n                    AND l_quantity < 24;",
+        "execution_time_ms": 4.472916014492512,
+        "rows_returned": 1,
+        "cache_hit": false,
+        "memory_usage_mb": 0,
+        "cpu_usage_percent": 728.8,
+        "iteration": 1
+      },
+      {
+        "query_name": "Q10",
+        "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+        "execution_time_ms": 39.044124976499006,
+        "rows_returned": 20,
+        "cache_hit": false,
+        "memory_usage_mb": 15.703125,
+        "cpu_usage_percent": 478.9,
+        "iteration": 0
+      },
+      {
+        "query_name": "Q10",
+        "query_sql": "SELECT\n                    c_custkey,\n                    c_name,\n                    SUM(l_extendedprice * (1 - l_discount)) AS revenue,\n                    c_acctbal,\n                    n_name,\n                    c_address,\n                    c_phone,\n                    c_comment\n                FROM customer, orders, lineitem, nation\n                WHERE c_custkey = o_custkey\n                    AND l_orderkey = o_orderkey\n                    AND o_orderdate >= DATE '1993-10-01'\n                    AND o_orderdate < DATE '1994-01-01'\n                    AND l_returnflag = 'R'\n                    AND c_nationkey = n_nationkey\n                GROUP BY c_custkey, c_name, c_acctbal, c_phone, n_name, c_address, c_comment\n                ORDER BY revenue DESC\n                LIMIT 20;",
+        "execution_time_ms": 35.362083988729864,
+        "rows_returned": 20,
+        "cache_hit": false,
+        "memory_usage_mb": 16.640625,
+        "cpu_usage_percent": 499.8,
+        "iteration": 1
+      }
+    ]
+  },
+  "memory_analysis": {
+    "disabled": {
+      "baseline_memory_mb": 116.546875,
+      "peak_memory_mb": 437.8125,
+      "memory_growth_mb": 321.265625,
+      "avg_memory_mb": 226.1184593023256,
+      "snapshots": [
+        {
+          "timestamp": 1757353475.9927502,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.09332,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.19772,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.299662,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.404564,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.5097039,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.613347,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.7182631,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.823491,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353476.927569,
+          "rss_mb": 116.546875,
+          "vms_mb": 402444.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "small/simple_count",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353477.031622,
+          "rss_mb": 118.453125,
+          "vms_mb": 402599.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.136779,
+          "rss_mb": 118.453125,
+          "vms_mb": 402599.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.2390962,
+          "rss_mb": 118.453125,
+          "vms_mb": 402599.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.342327,
+          "rss_mb": 118.453125,
+          "vms_mb": 402599.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.446368,
+          "rss_mb": 118.453125,
+          "vms_mb": 402599.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "small/simple_avg",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353477.551163,
+          "rss_mb": 126.546875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.656409,
+          "rss_mb": 126.546875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.760159,
+          "rss_mb": 126.546875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.861886,
+          "rss_mb": 126.546875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353477.96623,
+          "rss_mb": 126.546875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "medium/join_query",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353478.077914,
+          "rss_mb": 256.34375,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.18302,
+          "rss_mb": 256.34375,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.2869492,
+          "rss_mb": 256.34375,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.391843,
+          "rss_mb": 256.34375,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.497035,
+          "rss_mb": 256.34375,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "medium/aggregation",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353478.607404,
+          "rss_mb": 257.75,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.7125041,
+          "rss_mb": 257.75,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.8138182,
+          "rss_mb": 257.75,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353478.915356,
+          "rss_mb": 257.75,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.018562,
+          "rss_mb": 257.75,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/complex_join",
+          "event": "query_start"
+        },
+        {
+          "timestamp": 1757353479.1228201,
+          "rss_mb": 259.875,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/complex_join",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353479.22728,
+          "rss_mb": 308.03125,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.332461,
+          "rss_mb": 308.03125,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.434724,
+          "rss_mb": 308.03125,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.5389838,
+          "rss_mb": 308.03125,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.639511,
+          "rss_mb": 308.03125,
+          "vms_mb": 402992.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/window_function",
+          "event": "query_start"
+        },
+        {
+          "timestamp": 1757353479.747819,
+          "rss_mb": 368.484375,
+          "vms_mb": 403010.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353479.8580759,
+          "rss_mb": 404.578125,
+          "vms_mb": 403046.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/window_function",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353480.000618,
+          "rss_mb": 437.8125,
+          "vms_mb": 403080.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353480.105673,
+          "rss_mb": 437.8125,
+          "vms_mb": 403080.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353480.21077,
+          "rss_mb": 437.8125,
+          "vms_mb": 403080.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353480.314678,
+          "rss_mb": 437.8125,
+          "vms_mb": 403080.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353480.4195268,
+          "rss_mb": 437.8125,
+          "vms_mb": 403080.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        }
+      ]
+    },
+    "enabled": {
+      "baseline_memory_mb": 438.484375,
+      "peak_memory_mb": 501.125,
+      "memory_growth_mb": 62.640625,
+      "avg_memory_mb": 406.1068313953488,
+      "snapshots": [
+        {
+          "timestamp": 1757353482.583311,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353482.6847801,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353482.789185,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353482.893884,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353482.997938,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.102986,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.207669,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.312157,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.416513,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.51673,
+          "rss_mb": 438.484375,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "small/simple_count",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353483.620907,
+          "rss_mb": 354.3125,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.726072,
+          "rss_mb": 354.3125,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.827517,
+          "rss_mb": 354.3125,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353483.9293811,
+          "rss_mb": 354.3125,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.0311198,
+          "rss_mb": 354.3125,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "small/simple_avg",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353484.146344,
+          "rss_mb": 354.5,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.251456,
+          "rss_mb": 354.5,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.3556778,
+          "rss_mb": 354.5,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.45793,
+          "rss_mb": 354.5,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.561706,
+          "rss_mb": 354.5,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "medium/join_query",
+          "event": "query_start"
+        },
+        {
+          "timestamp": 1757353484.6666722,
+          "rss_mb": 360.0625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "medium/join_query",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353484.771816,
+          "rss_mb": 377.84375,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.876778,
+          "rss_mb": 377.84375,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353484.981964,
+          "rss_mb": 377.84375,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.08455,
+          "rss_mb": 377.84375,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.188472,
+          "rss_mb": 377.84375,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "medium/aggregation",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353485.293667,
+          "rss_mb": 378.390625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.3956501,
+          "rss_mb": 378.390625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.497779,
+          "rss_mb": 378.390625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.6023529,
+          "rss_mb": 378.390625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.705117,
+          "rss_mb": 378.390625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/complex_join",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353485.8101819,
+          "rss_mb": 397.90625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353485.915364,
+          "rss_mb": 397.90625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.020312,
+          "rss_mb": 397.90625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.125513,
+          "rss_mb": 397.90625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.2278788,
+          "rss_mb": 397.90625,
+          "vms_mb": 402996.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/window_function",
+          "event": "query_start"
+        },
+        {
+          "timestamp": 1757353486.3442209,
+          "rss_mb": 429.234375,
+          "vms_mb": 403009.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.4642172,
+          "rss_mb": 468.0625,
+          "vms_mb": 403048.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "large/window_function",
+          "event": "query_end"
+        },
+        {
+          "timestamp": 1757353486.603322,
+          "rss_mb": 501.125,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.708359,
+          "rss_mb": 501.125,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.813469,
+          "rss_mb": 501.125,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353486.916384,
+          "rss_mb": 501.125,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353487.018413,
+          "rss_mb": 501.125,
+          "vms_mb": 403081.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        }
+      ]
+    },
+    "10": {
+      "baseline_memory_mb": 420.40625,
+      "peak_memory_mb": 420.46875,
+      "memory_growth_mb": 0.0625,
+      "queries_executed": 20,
+      "snapshots": [
+        {
+          "timestamp": 1757353489.203191,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.30513,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.410063,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.512882,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.61818,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.720182,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.8226628,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353489.926786,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353490.029684,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353490.132152,
+          "rss_mb": 420.40625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_10",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353490.232399,
+          "rss_mb": 420.46875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        }
+      ]
+    },
+    "50": {
+      "baseline_memory_mb": 420.796875,
+      "peak_memory_mb": 420.8125,
+      "memory_growth_mb": 0.015625,
+      "queries_executed": 60,
+      "snapshots": [
+        {
+          "timestamp": 1757353492.372001,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.477121,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.5815308,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.685765,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.790146,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.890553,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353492.9957461,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353493.099466,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353493.20146,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353493.3064551,
+          "rss_mb": 420.796875,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_20",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353493.406952,
+          "rss_mb": 420.8125,
+          "vms_mb": 403000.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_50",
+          "event": "cache_fill"
+        }
+      ]
+    },
+    "100": {
+      "baseline_memory_mb": 421.5,
+      "peak_memory_mb": 421.515625,
+      "memory_growth_mb": 0.015625,
+      "queries_executed": 110,
+      "snapshots": [
+        {
+          "timestamp": 1757353495.534348,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353495.635853,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353495.738805,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353495.8438542,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353495.945135,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353496.0495071,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353496.1505668,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353496.252527,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353496.357579,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353496.459931,
+          "rss_mb": 421.5,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_20",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353496.560865,
+          "rss_mb": 421.515625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_100",
+          "event": "cache_fill"
+        }
+      ]
+    },
+    "500": {
+      "baseline_memory_mb": 421.609375,
+      "peak_memory_mb": 421.609375,
+      "memory_growth_mb": 0.0,
+      "queries_executed": 510,
+      "snapshots": [
+        {
+          "timestamp": 1757353498.6888871,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353498.793304,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353498.898394,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.0009549,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.103738,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.208842,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.311004,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.413054,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.513251,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353499.614412,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_10",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353499.715884,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_140",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353499.819411,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_250",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353499.920383,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_360",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353500.02168,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_470",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353500.126061,
+          "rss_mb": 421.609375,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_500",
+          "event": "cache_fill"
+        }
+      ]
+    },
+    "1000": {
+      "baseline_memory_mb": 421.65625,
+      "peak_memory_mb": 421.671875,
+      "memory_growth_mb": 0.015625,
+      "queries_executed": 1010,
+      "snapshots": [
+        {
+          "timestamp": 1757353502.260428,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.360836,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.463629,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.567861,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.672802,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.777919,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.882307,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353502.986204,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353503.0894458,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "",
+          "event": ""
+        },
+        {
+          "timestamp": 1757353503.1933088,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_20",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.293431,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_140",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.395495,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_240",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.500554,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_330",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.601731,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_410",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.707941,
+          "rss_mb": 421.65625,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_490",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.809061,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_570",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353503.91102,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_670",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353504.0145102,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_770",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353504.118266,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_860",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353504.21853,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_960",
+          "event": "cache_fill"
+        },
+        {
+          "timestamp": 1757353504.3231711,
+          "rss_mb": 421.671875,
+          "vms_mb": 403001.375,
+          "cache_entries": 0,
+          "cache_memory_mb": 0.0,
+          "query_name": "query_1000",
+          "event": "cache_fill"
+        }
+      ]
+    }
+  },
+  "strategy_test": {
+    "results": {
+      "TTL_size_20": {
+        "strategy_name": "TTL",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.6644740453851058,
+        "total_execution_time_ms": 132.23033503163606,
+        "memory_usage_mb": 50.0,
+        "evictions": 11
+      },
+      "TTL_size_50": {
+        "strategy_name": "TTL",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.7000854269580344,
+        "total_execution_time_ms": 139.31699996464886,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "TTL_size_100": {
+        "strategy_name": "TTL",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.7336074631162756,
+        "total_execution_time_ms": 145.98788516013883,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "LRU_size_20": {
+        "strategy_name": "LRU",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.6968747485422029,
+        "total_execution_time_ms": 138.67807495989837,
+        "memory_usage_mb": 50.0,
+        "evictions": 11
+      },
+      "LRU_size_50": {
+        "strategy_name": "LRU",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.6893285333433998,
+        "total_execution_time_ms": 137.17637813533656,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "LRU_size_100": {
+        "strategy_name": "LRU",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.6922898043635016,
+        "total_execution_time_ms": 137.76567106833681,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "ML_size_20": {
+        "strategy_name": "ML",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.7014009496372605,
+        "total_execution_time_ms": 139.57878897781484,
+        "memory_usage_mb": 50.0,
+        "evictions": 11
+      },
+      "ML_size_50": {
+        "strategy_name": "ML",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.6687306885574781,
+        "total_execution_time_ms": 133.07740702293813,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "ML_size_100": {
+        "strategy_name": "ML",
+        "total_queries": 199,
+        "cache_hits": 168,
+        "cache_misses": 31,
+        "hit_rate": 0.8442211055276382,
+        "avg_execution_time_ms": 0.7154553963091393,
+        "total_execution_time_ms": 142.37562386551872,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "MEMORY_ONLY": {
+        "strategy_name": "PERSISTENCE_MEMORY_ONLY",
+        "total_queries": 100,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "hit_rate": 0.0,
+        "avg_execution_time_ms": 0.6987975220545195,
+        "total_execution_time_ms": 69.87975220545195,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "WAL_FORMAT": {
+        "strategy_name": "PERSISTENCE_WAL_FORMAT",
+        "total_queries": 100,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "hit_rate": 0.0,
+        "avg_execution_time_ms": 0.6492366298334673,
+        "total_execution_time_ms": 64.92366298334673,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "MATERIALIZED_VIEW": {
+        "strategy_name": "PERSISTENCE_MATERIALIZED_VIEW",
+        "total_queries": 100,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "hit_rate": 0.0,
+        "avg_execution_time_ms": 0.5955183587502688,
+        "total_execution_time_ms": 59.55183587502688,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      },
+      "HYBRID": {
+        "strategy_name": "PERSISTENCE_HYBRID",
+        "total_queries": 100,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "hit_rate": 0.0,
+        "avg_execution_time_ms": 0.634071588574443,
+        "total_execution_time_ms": 63.4071588574443,
+        "memory_usage_mb": 50.0,
+        "evictions": 0
+      }
+    },
+    "analysis": {
+      "best_hit_rate": {
+        "strategy": "TTL_size_20",
+        "hit_rate": 0.8442211055276382
+      },
+      "fastest_avg_time": {
+        "strategy": "MATERIALIZED_VIEW",
+        "time_ms": 0.5955183587502688
+      },
+      "lowest_memory": {
+        "strategy": "TTL_size_20",
+        "memory_mb": 50.0
+      },
+      "eviction_comparison": {
+        "strategies": [
+          "ML",
+          "TTL",
+          "LRU"
+        ],
+        "avg_hit_rates": {
+          "ML": 0.8442211055276382,
+          "TTL": 0.8442211055276382,
+          "LRU": 0.8442211055276382
+        },
+        "avg_execution_times": {
+          "ML": 0.6951956781679594,
+          "TTL": 0.699388978486472,
+          "LRU": 0.6928310287497015
+        }
+      },
+      "persistence_comparison": {}
+    },
+    "timestamp": 1757353569.289535
+  },
+  "summary": {
+    "cache_effectiveness": {
+      "simple_queries_speedup": 0.3844757367725789,
+      "complex_queries_speedup": 1.0149731793648007
+    },
+    "memory_impact": {
+      "cache_overhead_mb": -258.625
+    },
+    "best_strategies": {
+      "highest_hit_rate": {
+        "strategy": "TTL_size_20",
+        "hit_rate": 0.8442211055276382
+      },
+      "fastest_execution": {
+        "strategy": "MATERIALIZED_VIEW",
+        "time_ms": 0.5955183587502688
+      }
+    },
+    "recommendations": [
+      "简单查询缓存效果不明显",
+      "复杂查询缓存效果有限",
+      "缓存内存开销很小，可以放心使用",
+      "推荐使用 ML 驱逐策略"
+    ]
+  }
+}

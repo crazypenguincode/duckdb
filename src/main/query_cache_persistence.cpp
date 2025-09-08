@@ -14,7 +14,7 @@
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/common/file_system.hpp"
-#include <zlib.h>
+#include "miniz_wrapper.hpp"
 #include <thread>
 
 namespace duckdb {
@@ -35,7 +35,10 @@ unique_ptr<CachePersistenceInterface> CachePersistenceFactory::CreatePersistence
             }
             return make_uniq<MaterializedViewPersistence>(*context);
         case CachePersistenceStrategy::WAL_FORMAT:
-            return make_uniq<WALFormatPersistence>();
+            if (!context) {
+                throw InvalidInputException("WALFormatPersistence requires a ClientContext");
+            }
+            return make_uniq<WALFormatPersistence>(*context);
         case CachePersistenceStrategy::HYBRID:
             if (!context) {
                 throw InvalidInputException("HybridPersistence requires a ClientContext");
@@ -108,7 +111,7 @@ bool MaterializedViewPersistence::Initialize(const CachePersistenceConfig &confi
     try {
         // 创建专用的schema用于存储缓存物化视图
         string create_schema_sql = StringUtil::Format("CREATE SCHEMA IF NOT EXISTS %s", schema_name);
-        auto result = context.Query(create_schema_sql);
+        auto result = context.Query(create_schema_sql, false);
         if (result->HasError()) {
             printf("Failed to create cache schema: %s\n", result->GetError().c_str());
             return false;
@@ -127,7 +130,7 @@ bool MaterializedViewPersistence::Initialize(const CachePersistenceConfig &confi
             "execution_time_ms DOUBLE DEFAULT 0.0"
             ")", schema_name);
         
-        result = context.Query(create_metadata_table);
+        result = context.Query(create_metadata_table, false);
         if (result->HasError()) {
             printf("Failed to create metadata table: %s\n", result->GetError().c_str());
             return false;
@@ -149,7 +152,7 @@ bool MaterializedViewPersistence::PersistEntry(const string &key, const QueryCac
         
         // 删除已存在的表
         string drop_table_sql = StringUtil::Format("DROP TABLE IF EXISTS %s.%s", schema_name, table_name);
-        auto result = context.Query(drop_table_sql);
+        auto result = context.Query(drop_table_sql, false);
         if (result->HasError()) {
             printf("Failed to drop existing table: %s\n", result->GetError().c_str());
             return false;
@@ -168,7 +171,7 @@ bool MaterializedViewPersistence::PersistEntry(const string &key, const QueryCac
             schema_name, key, table_name, entry.access_count, entry.ml_score,
             static_cast<idx_t>(entry.ml_features.result_size_bytes), entry.ml_features.execution_time_ms);
         
-        result = context.Query(upsert_metadata_sql);
+        result = context.Query(upsert_metadata_sql, false);
         if (result->HasError()) {
             printf("Failed to update metadata: %s\n", result->GetError().c_str());
             return false;
@@ -193,8 +196,12 @@ unique_ptr<QueryCacheEntry> MaterializedViewPersistence::LoadEntry(const string 
             "SELECT COUNT(*) FROM information_schema.tables "
             "WHERE table_schema = '%s' AND table_name = '%s'", schema_name, table_name);
         
-        auto result = context.Query(check_table_sql);
-        if (result->HasError() || result->RowCount() == 0) {
+        auto result = context.Query(check_table_sql, false);
+        if (result->HasError()) {
+            return nullptr;
+        }
+        auto chunk = result->Fetch();
+        if (!chunk || chunk->size() == 0) {
             return nullptr;
         }
         
@@ -203,14 +210,14 @@ unique_ptr<QueryCacheEntry> MaterializedViewPersistence::LoadEntry(const string 
             "SELECT access_count, ml_score, result_size_bytes, execution_time_ms "
             "FROM %s.cache_metadata WHERE cache_key = '%s'", schema_name, key);
         
-        auto metadata_result = context.Query(metadata_sql);
-        if (metadata_result->HasError() || metadata_result->RowCount() == 0) {
+        auto metadata_result = context.Query(metadata_sql, false);
+        if (metadata_result->HasError()) {
             return nullptr;
         }
         
         // 查询物化视图数据
         string data_sql = StringUtil::Format("SELECT * FROM %s.%s", schema_name, table_name);
-        auto data_result = context.Query(data_sql);
+        auto data_result = context.Query(data_sql, false);
         if (data_result->HasError()) {
             return nullptr;
         }
@@ -222,8 +229,8 @@ unique_ptr<QueryCacheEntry> MaterializedViewPersistence::LoadEntry(const string 
         }
         
         // 创建缓存条目
-        auto cache_entry = make_uniq<QueryCacheEntry>(
-            make_uniq<MaterializedQueryResult>(std::move(*materialized_result)));
+        auto materialized_ptr = unique_ptr<MaterializedQueryResult>(static_cast<MaterializedQueryResult*>(data_result.release()));
+        auto cache_entry = make_uniq<QueryCacheEntry>(std::move(materialized_ptr));
         
         // 恢复元数据
         auto metadata_chunk = metadata_result->Fetch();
@@ -250,7 +257,7 @@ bool MaterializedViewPersistence::DeleteEntry(const string &key) {
         
         // 删除物化视图表
         string drop_table_sql = StringUtil::Format("DROP TABLE IF EXISTS %s.%s", schema_name, table_name);
-        auto result = context.Query(drop_table_sql);
+        auto result = context.Query(drop_table_sql, false);
         if (result->HasError()) {
             printf("Failed to drop table: %s\n", result->GetError().c_str());
             return false;
@@ -259,7 +266,7 @@ bool MaterializedViewPersistence::DeleteEntry(const string &key) {
         // 删除元数据
         string delete_metadata_sql = StringUtil::Format(
             "DELETE FROM %s.cache_metadata WHERE cache_key = '%s'", schema_name, key);
-        result = context.Query(delete_metadata_sql);
+        result = context.Query(delete_metadata_sql, false);
         if (result->HasError()) {
             printf("Failed to delete metadata: %s\n", result->GetError().c_str());
             return false;
@@ -281,7 +288,7 @@ bool MaterializedViewPersistence::EntryExists(const string &key) {
             "SELECT COUNT(*) FROM information_schema.tables "
             "WHERE table_schema = '%s' AND table_name = '%s'", schema_name, table_name);
         
-        auto result = context.Query(check_sql);
+        auto result = context.Query(check_sql, false);
         if (result->HasError()) {
             return false;
         }
@@ -299,7 +306,7 @@ vector<string> MaterializedViewPersistence::GetAllKeys() {
     
     try {
         string sql = StringUtil::Format("SELECT cache_key FROM %s.cache_metadata", schema_name);
-        auto result = context.Query(sql);
+        auto result = context.Query(sql, false);
         if (result->HasError()) {
             return keys;
         }
@@ -328,7 +335,7 @@ bool MaterializedViewPersistence::Clear() {
         
         // 清空元数据表
         string clear_sql = StringUtil::Format("DELETE FROM %s.cache_metadata", schema_name);
-        auto result = context.Query(clear_sql);
+        auto result = context.Query(clear_sql, false);
         return !result->HasError();
     } catch (std::exception &ex) {
         printf("Failed to clear cache: %s\n", ex.what());
@@ -364,7 +371,7 @@ bool MaterializedViewPersistence::CreateMaterializedViewTable(const string &key,
         }
         create_sql += ")";
         
-        auto create_result = context.Query(create_sql);
+        auto create_result = context.Query(create_sql, false);
         if (create_result->HasError()) {
             printf("Failed to create table: %s\n", create_result->GetError().c_str());
             return false;
@@ -397,13 +404,16 @@ string MaterializedViewPersistence::GetTableName(const string &key) const {
 // WALFormatPersistence (策略2: WAL格式)
 //===----------------------------------------------------------------------===//
 
+WALFormatPersistence::WALFormatPersistence(ClientContext &context) : context(context) {
+}
+
 bool WALFormatPersistence::Initialize(const CachePersistenceConfig &config) {
     lock_guard<mutex> lock(wal_mutex);
     this->config = config;
     
     try {
         // 创建存储目录
-        auto &fs = FileSystem::GetFileSystem();
+        auto &fs = FileSystem::GetFileSystem(context);
         if (!fs.DirectoryExists(config.persistence_path)) {
             fs.CreateDirectory(config.persistence_path);
         }
@@ -552,7 +562,7 @@ bool WALFormatPersistence::Clear() {
         }
         
         // 删除文件
-        auto &fs = FileSystem::GetFileSystem();
+        auto &fs = FileSystem::GetFileSystem(context);
         if (fs.FileExists(wal_file_path)) {
             fs.RemoveFile(wal_file_path);
         }
@@ -596,14 +606,16 @@ bool WALFormatPersistence::Sync() {
 
 idx_t WALFormatPersistence::GetStorageSize() const {
     try {
-        auto &fs = FileSystem::GetFileSystem();
+        auto &fs = FileSystem::GetFileSystem(context);
         idx_t total_size = 0;
         
         if (fs.FileExists(wal_file_path)) {
-            total_size += fs.GetFileSize(wal_file_path);
+            auto handle = fs.OpenFile(wal_file_path, FileFlags::FILE_FLAGS_READ);
+            total_size += fs.GetFileSize(*handle);
         }
         if (fs.FileExists(index_file_path)) {
-            total_size += fs.GetFileSize(index_file_path);
+            auto handle = fs.OpenFile(index_file_path, FileFlags::FILE_FLAGS_READ);
+            total_size += fs.GetFileSize(*handle);
         }
         
         return total_size;
@@ -737,7 +749,7 @@ bool WALFormatPersistence::FlushWALBuffer() {
 
 bool WALFormatPersistence::LoadIndex() {
     try {
-        auto &fs = FileSystem::GetFileSystem();
+        auto &fs = FileSystem::GetFileSystem(context);
         if (!fs.FileExists(index_file_path)) {
             return true; // 索引文件不存在是正常的
         }
@@ -757,7 +769,7 @@ bool WALFormatPersistence::LoadIndex() {
             index_file->read(reinterpret_cast<char*>(&key_len), sizeof(key_len));
             
             string key(key_len, '\0');
-            index_file->read(key.data(), key_len);
+            index_file->read(const_cast<char*>(key.data()), key_len);
             
             WALIndex index_entry;
             index_file->read(reinterpret_cast<char*>(&index_entry), sizeof(index_entry));
@@ -821,7 +833,7 @@ unique_ptr<QueryCacheEntry> WALFormatPersistence::DeserializeEntry(const vector<
 
 uint32_t WALFormatPersistence::CalculateChecksum(const void *data, uint32_t size) const {
     // 使用简单的CRC32校验和
-    return crc32(0, static_cast<const Bytef*>(data), size);
+    return duckdb_miniz::mz_crc32(0, static_cast<const unsigned char*>(data), size);
 }
 
 vector<uint8_t> WALFormatPersistence::CompressData(const vector<uint8_t> &data) const {
@@ -829,14 +841,14 @@ vector<uint8_t> WALFormatPersistence::CompressData(const vector<uint8_t> &data) 
         return data;
     }
     
-    // 使用zlib压缩
-    uLongf compressed_size = compressBound(data.size());
+    // 使用miniz压缩
+    duckdb_miniz::mz_ulong compressed_size = duckdb_miniz::mz_compressBound(data.size());
     vector<uint8_t> compressed_data(compressed_size);
     
-    int result = compress(compressed_data.data(), &compressed_size, 
-                         data.data(), data.size());
+    int result = duckdb_miniz::mz_compress(compressed_data.data(), &compressed_size, 
+                                          data.data(), data.size());
     
-    if (result == Z_OK) {
+    if (result == duckdb_miniz::MZ_OK) {
         compressed_data.resize(compressed_size);
         return compressed_data;
     }
@@ -860,7 +872,7 @@ vector<uint8_t> WALFormatPersistence::DecompressData(const vector<uint8_t> &data
 
 HybridPersistence::HybridPersistence(ClientContext &context) : context(context) {
     memory_storage = make_uniq<MemoryOnlyPersistence>();
-    disk_storage = make_uniq<WALFormatPersistence>();
+    disk_storage = make_uniq<WALFormatPersistence>(context);
 }
 
 bool HybridPersistence::Initialize(const CachePersistenceConfig &config) {
@@ -1070,7 +1082,8 @@ void HybridPersistence::CleanupColdData() {
     
     // 按最后访问时间排序
     std::sort(candidates.begin(), candidates.end(), 
-        [](const auto &a, const auto &b) {
+        [](const std::pair<string, std::chrono::steady_clock::time_point> &a, 
+           const std::pair<string, std::chrono::steady_clock::time_point> &b) {
             return a.second < b.second;
         });
     

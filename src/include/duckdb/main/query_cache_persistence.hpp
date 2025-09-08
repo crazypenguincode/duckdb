@@ -20,24 +20,24 @@
 
 namespace duckdb {
 
-//! 持久化策略类型
-enum class CachePersistenceStrategy {
-    MEMORY_ONLY,        // 策略3: 仅内存，不落盘
-    MATERIALIZED_VIEW,  // 策略1: 使用物化视图落盘
-    WAL_FORMAT,         // 策略2: 使用WAL格式顺序读写
-    HYBRID              // 策略4: 混合策略（热数据内存，冷数据落盘）
-};
-
-//! 持久化配置
-struct CachePersistenceConfig {
-    CachePersistenceStrategy strategy = CachePersistenceStrategy::MEMORY_ONLY;
-    string persistence_path = "cache_storage";
-    idx_t memory_threshold_bytes = 50 * 1024 * 1024; // 50MB
-    idx_t wal_buffer_size = 4 * 1024 * 1024; // 4MB WAL缓冲区
-    bool enable_compression = true;
-    bool enable_async_write = true;
-    idx_t sync_interval_ms = 5000; // 5秒同步间隔
-};
+////! 持久化策略类型
+//enum class CachePersistenceStrategy {
+//    MEMORY_ONLY,        // 策略3: 仅内存，不落盘
+//    MATERIALIZED_VIEW,  // 策略1: 使用物化视图落盘
+//    WAL_FORMAT,         // 策略2: 使用WAL格式顺序读写
+//    HYBRID              // 策略4: 混合策略（热数据内存，冷数据落盘）
+//};
+//
+////! 持久化配置
+//struct CachePersistenceConfig {
+//    CachePersistenceStrategy strategy = CachePersistenceStrategy::MEMORY_ONLY;
+//    string persistence_path = "cache_storage";
+//    idx_t memory_threshold_bytes = 50 * 1024 * 1024; // 50MB
+//    idx_t wal_buffer_size = 4 * 1024 * 1024; // 4MB WAL缓冲区
+//    bool enable_compression = true;
+//    bool enable_async_write = true;
+//    idx_t sync_interval_ms = 5000; // 5秒同步间隔
+//};
 
 //! WAL格式的记录类型
 enum class WALRecordType : uint8_t {
@@ -144,6 +144,7 @@ private:
 //! 策略2: WAL格式持久化实现
 class WALFormatPersistence : public CachePersistenceInterface {
 public:
+    WALFormatPersistence(ClientContext &context);
     bool Initialize(const CachePersistenceConfig &config) override;
     bool PersistEntry(const string &key, const QueryCacheEntry &entry) override;
     unique_ptr<QueryCacheEntry> LoadEntry(const string &key) override;
@@ -156,6 +157,7 @@ public:
     void Close() override;
 
 private:
+    ClientContext &context;
     CachePersistenceConfig config;
     string wal_file_path;
     string index_file_path;
@@ -240,7 +242,7 @@ private:
         idx_t data_size = 0;
     };
     unordered_map<string, AccessStats> access_stats;
-    mutex stats_mutex;
+    mutable mutex stats_mutex;
     
     //! 当前内存使用量
     std::atomic<idx_t> memory_usage{0};

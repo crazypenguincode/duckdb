@@ -23,7 +23,25 @@ namespace duckdb {
 // Forward declarations for persistence
 class CachePersistenceInterface;
 enum class CachePersistenceStrategy;
-struct CachePersistenceConfig;
+//struct CachePersistenceConfig;
+//! 持久化策略类型
+enum class CachePersistenceStrategy {
+	MEMORY_ONLY,        // 策略3: 仅内存，不落盘
+	MATERIALIZED_VIEW,  // 策略1: 使用物化视图落盘
+	WAL_FORMAT,         // 策略2: 使用WAL格式顺序读写
+	HYBRID              // 策略4: 混合策略（热数据内存，冷数据落盘）
+};
+
+//! 持久化配置
+struct CachePersistenceConfig {
+	CachePersistenceStrategy strategy = CachePersistenceStrategy::MEMORY_ONLY;
+	string persistence_path = "cache_storage";
+	idx_t memory_threshold_bytes = 50 * 1024 * 1024; // 50MB
+	idx_t wal_buffer_size = 4 * 1024 * 1024; // 4MB WAL缓冲区
+	bool enable_compression = true;
+	bool enable_async_write = true;
+	idx_t sync_interval_ms = 5000; // 5秒同步间隔
+};
 class ClientContext;
 
 

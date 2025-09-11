@@ -1,0 +1,21 @@
+graph TB
+    subgraph "测试集群架构"
+        A[主测试节点<br/>Primary Test Node]
+        B[辅助测试节点<br/>Secondary Test Node]
+        C[监控节点<br/>Monitoring Node]
+        D[存储节点<br/>Storage Node]
+    end
+    
+    subgraph "网络架构"
+        E[10GbE交换机<br/>10GbE Switch]
+        F[管理网络<br/>Management Network]
+    end
+    
+    A --> E
+    B --> E
+    C --> F
+    D --> E
+    E --> F
+    
+    style A fill:#e3f2fd
+    style C fill:#e8f5e8

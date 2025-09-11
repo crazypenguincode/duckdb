@@ -1,0 +1,14 @@
+graph TB
+    A[应用程序] --> B[SQL接口]
+    B --> C[查询处理器]
+    C --> D[缓冲池管理器]
+    D --> E[页面哈希表]
+    D --> F[空闲页面链表]
+    D --> G[脏页面链表]
+    E --> H[内存页面]
+    F --> H
+    G --> H
+    H --> I[磁盘存储]
+    
+    style D fill:#e3f2fd
+    style H fill:#e8f5e8

@@ -1,0 +1,12 @@
+graph LR
+    A[SQL查询] --> B[查询解析]
+    B --> C[缓存查找]
+    C --> D{缓存命中?}
+    D --> |是| E[返回缓存结果]
+    D --> |否| F[查询执行]
+    F --> G[结果缓存]
+    G --> H[返回查询结果]
+    
+    style C fill:#e3f2fd
+    style E fill:#e8f5e8
+    style G fill:#fff3e0

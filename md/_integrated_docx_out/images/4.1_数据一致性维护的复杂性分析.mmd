@@ -1,0 +1,15 @@
+graph TD
+    A[数据更新事务<br/>Data Update Transaction] --> B[识别影响范围<br/>Impact Analysis]
+    B --> C[构建依赖图<br/>Dependency Graph Construction]
+    C --> D[计算失效传播路径<br/>Invalidation Propagation Path]
+    D --> E[批量失效缓存<br/>Batch Cache Invalidation]
+    E --> F[验证一致性<br/>Consistency Verification]
+    
+    G[并发查询<br/>Concurrent Query] --> H{缓存状态检查<br/>Cache State Check}
+    H --> |有效<br/>Valid| I[返回缓存结果<br/>Return Cached Result]
+    H --> |失效<br/>Invalid| J[重新执行查询<br/>Re-execute Query]
+    H --> |更新中<br/>Updating| K[等待或降级处理<br/>Wait or Fallback]
+    
+    style E fill:#ffcdd2
+    style F fill:#c8e6c9
+    style K fill:#fff3e0

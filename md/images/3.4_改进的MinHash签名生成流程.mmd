@@ -1,0 +1,20 @@
+graph LR
+    A[标准化查询<br/>Normalized Query] --> B[AST解析<br/>AST Parsing]
+    B --> C[特征提取<br/>Feature Extraction]
+    C --> D[MinHash计算<br/>MinHash Computation]
+    D --> E[签名生成<br/>Signature Generation]
+    
+    C --> C1[表名集合<br/>Table Names]
+    C --> C2[列名集合<br/>Column Names]
+    C --> C3[操作符集合<br/>Operators]
+    C --> C4[函数集合<br/>Functions]
+    C --> C5[常量类型<br/>Literal Types]
+    
+    C1 --> D
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+    
+    style D fill:#e3f2fd
+    style E fill:#e8f5e8

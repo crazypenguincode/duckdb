@@ -1,0 +1,23 @@
+graph TD
+    A[CTE查询输入<br/>CTE Query Input] --> B[CTE结构解析<br/>CTE Structure Parsing]
+    B --> C[依赖图构建<br/>Dependency Graph Construction]
+    C --> D[拓扑排序<br/>Topological Sort]
+    D --> E[子图匹配<br/>Subgraph Matching]
+    
+    E --> F{匹配结果分析<br/>Match Result Analysis}
+    F --> |完全匹配<br/>Complete Match| G[直接返回结果<br/>Return Direct Result]
+    F --> |部分匹配<br/>Partial Match| H[组合缓存结果<br/>Combine Cached Results]
+    F --> |无匹配<br/>No Match| I[执行原始查询<br/>Execute Original Query]
+    
+    B --> B1[CTE1: 销售数据<br/>Sales Data]
+    B --> B2[CTE2: 客户信息<br/>Customer Info]
+    B --> B3[CTE3: 区域汇总<br/>Regional Summary]
+    B --> B4[主查询: 最终连接<br/>Main Query: Final Join]
+    
+    C --> C1[构建有向图<br/>Build Directed Graph]
+    C --> C2[标识依赖关系<br/>Identify Dependencies]
+    C --> C3[计算连通分量<br/>Compute Connected Components]
+    
+    style G fill:#e8f5e8
+    style H fill:#fff3e0
+    style I fill:#ffebee

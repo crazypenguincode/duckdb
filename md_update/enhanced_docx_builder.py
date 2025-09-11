@@ -52,6 +52,32 @@ def ensure_images():
         else:
             print("[WARN] 未找到图片生成脚本")
 
+def copy_images_to_output():
+    """复制图片到输出目录"""
+    output_images_dir = DOCX_OUT_DIR / "images"
+    output_images_dir.mkdir(exist_ok=True)
+    
+    if not IMAGES_DIR.exists():
+        print("[WARN] 源图片目录不存在")
+        return
+    
+    # 复制所有 PNG 文件
+    png_files = list(IMAGES_DIR.glob("*.png"))
+    for png_file in png_files:
+        dest_path = output_images_dir / png_file.name
+        shutil.copy2(png_file, dest_path)
+        print(f"📋 复制图片: {png_file.name}")
+    
+    # 复制 mermaid 源文件（如果存在）
+    mmd_files = list(IMAGES_DIR.glob("*.mmd")) + list(IMAGES_DIR.glob("*.mermaid"))
+    for mmd_file in mmd_files:
+        dest_path = output_images_dir / mmd_file.name
+        shutil.copy2(mmd_file, dest_path)
+        print(f"📋 复制 Mermaid 文件: {mmd_file.name}")
+    
+    print(f"✅ 图片复制完成，共 {len(png_files)} 个 PNG 文件，{len(mmd_files)} 个 Mermaid 文件")
+    print(f"📁 输出图片目录: {output_images_dir}")
+
 def get_chapter_images(chapter_num):
     """获取指定章节的图片列表"""
     if not IMAGES_DIR.exists():
@@ -150,15 +176,27 @@ def convert_to_docx(md_path, docx_path):
     run_cmd(cmd)
 
 def merge_docx_files(docx_files, output_path):
-    """合并多个 DOCX 文件"""
+    """改进的合并多个 DOCX 文件，保持格式一致性"""
     try:
         from docx import Document
         from docx.enum.text import WD_BREAK
+        from docx.shared import Pt
+        from docx.oxml.shared import OxmlElement, qn
     except ImportError:
         print("[ERROR] 需要安装 python-docx: pip install python-docx")
         sys.exit(1)
     
+    # 创建新文档并设置默认样式
     merged = Document()
+    
+    # 强制设置文档默认字体
+    merged.styles['Normal'].font.name = 'Times New Roman'
+    merged.styles['Normal'].font.size = Pt(12)
+    
+    # 删除默认段落
+    for paragraph in merged.paragraphs:
+        p = paragraph._element
+        p.getparent().remove(p)
     
     for i, docx_path in enumerate(docx_files):
         if not docx_path.exists():
@@ -167,23 +205,103 @@ def merge_docx_files(docx_files, output_path):
         
         try:
             doc = Document(str(docx_path))
+            print(f"📖 合并文件: {docx_path.name}")
         except Exception as e:
             print(f"[WARN] 无法打开文件 {docx_path}: {e}")
             continue
         
         # 添加分页符（除了第一个文档）
         if i > 0:
-            merged.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+            page_break = merged.add_paragraph()
+            page_break.add_run().add_break(WD_BREAK.PAGE)
         
-        # 复制内容
-        for element in doc.element.body:
-            merged.element.body.append(element)
+        # 逐段落复制内容，保持格式
+        for paragraph in doc.paragraphs:
+            # 创建新段落
+            new_para = merged.add_paragraph()
+            
+            # 复制段落格式
+            new_para.alignment = paragraph.alignment
+            new_para.paragraph_format.space_before = paragraph.paragraph_format.space_before
+            new_para.paragraph_format.space_after = paragraph.paragraph_format.space_after
+            
+            # 复制所有 runs
+            for run in paragraph.runs:
+                new_run = new_para.add_run(run.text)
+                
+                # 强制设置字体
+                if run.font.name:
+                    new_run.font.name = run.font.name
+                else:
+                    new_run.font.name = 'Times New Roman'
+                
+                if run.font.size:
+                    new_run.font.size = run.font.size
+                else:
+                    new_run.font.size = Pt(12)
+                
+                new_run.bold = run.bold
+                new_run.italic = run.italic
+                new_run.underline = run.underline
+                
+                # 强制设置字体属性
+                force_run_font(new_run, new_run.font.name or 'Times New Roman', 
+                             (new_run.font.size.pt if new_run.font.size else 12))
+        
+        # 复制表格
+        for table in doc.tables:
+            new_table = merged.add_table(rows=len(table.rows), cols=len(table.columns))
+            for i, row in enumerate(table.rows):
+                for j, cell in enumerate(row.cells):
+                    new_table.cell(i, j).text = cell.text
+                    # 设置表格字体
+                    for paragraph in new_table.cell(i, j).paragraphs:
+                        for run in paragraph.runs:
+                            force_run_font(run, 'Times New Roman', 12)
     
     merged.save(str(output_path))
-    print(f"合并完成: {output_path}")
+    print(f"✅ 合并完成: {output_path}")
+
+def force_run_font(run, font_name='Times New Roman', font_size=12):
+    """强制设置 run 的字体"""
+    try:
+        from docx.oxml.shared import OxmlElement, qn
+        
+        # 获取或创建 rPr 元素
+        rPr = run._element.get_or_add_rPr()
+        
+        # 清除现有字体设置
+        for rFonts in rPr.xpath('.//w:rFonts'):
+            rPr.remove(rFonts)
+        
+        # 强制设置字体
+        rFonts = OxmlElement('w:rFonts')
+        rFonts.set(qn('w:ascii'), font_name)
+        rFonts.set(qn('w:hAnsi'), font_name)
+        rFonts.set(qn('w:cs'), font_name)
+        rFonts.set(qn('w:eastAsia'), font_name)
+        rPr.insert(0, rFonts)
+        
+        # 强制设置字体大小
+        for sz in rPr.xpath('.//w:sz'):
+            rPr.remove(sz)
+        for szCs in rPr.xpath('.//w:szCs'):
+            rPr.remove(szCs)
+        
+        sz = OxmlElement('w:sz')
+        sz.set(qn('w:val'), str(int(font_size * 2)))  # Word 使用半点
+        rPr.append(sz)
+        
+        szCs = OxmlElement('w:szCs')
+        szCs.set(qn('w:val'), str(int(font_size * 2)))
+        rPr.append(szCs)
+        
+    except Exception as e:
+        print(f"[WARN] 字体设置失败: {e}")
 
 def main():
-    print(f"工作目录: {BASE_DIR}")
+    print(f"🚀 增强版 DOCX 构建器")
+    print(f"📁 工作目录: {BASE_DIR}")
     
     # 确保图片存在
     ensure_images()
@@ -197,6 +315,9 @@ def main():
         shutil.rmtree(DOCX_OUT_DIR)
     DOCX_OUT_DIR.mkdir(exist_ok=True)
     
+    # 复制图片到输出目录
+    copy_images_to_output()
+    
     docx_files = []
     
     # 处理所有章节
@@ -208,6 +329,8 @@ def main():
             print(f"[WARN] 文件不存在: {md_name}")
             continue
         
+        print(f"\n📖 处理章节: {md_name}")
+        
         # 预处理
         processed_content, mermaid_count = preprocess_markdown(md_path)
         
@@ -216,24 +339,52 @@ def main():
         with open(processed_md, 'w', encoding='utf-8') as f:
             f.write(processed_content)
         
-        print(f"  替换了 {mermaid_count} 个 mermaid 图")
+        print(f"  ✅ 替换了 {mermaid_count} 个 mermaid 图")
         
         # 转换为 DOCX
         docx_name = md_name.replace('.md', '.docx')
         docx_path = DOCX_OUT_DIR / docx_name
         
-        print(f"  转换: {md_name} -> {docx_name}")
+        print(f"  🔄 转换: {md_name} -> {docx_name}")
         convert_to_docx(processed_md, docx_path)
         
         docx_files.append(docx_path)
     
     # 合并所有 DOCX
-    print("\n开始合并 DOCX 文件...")
+    print("\n🔗 开始合并 DOCX 文件...")
     merge_docx_files(docx_files, MERGED_DOCX)
     
-    print(f"\n✅ 完成！输出文件: {MERGED_DOCX}")
-    print(f"📁 预处理的 MD 文件: {BUILD_MD_DIR}")
-    print(f"📁 单独的 DOCX 文件: {DOCX_OUT_DIR}")
+    # 验证最终文档
+    try:
+        from docx import Document
+        test_doc = Document(str(MERGED_DOCX))
+        
+        # 统计图片数量
+        image_count = 0
+        for rel in test_doc.part.rels.values():
+            if "image" in rel.target_ref:
+                image_count += 1
+        
+        print(f"\n📊 文档统计:")
+        print(f"   - 段落数量: {len(test_doc.paragraphs)}")
+        print(f"   - 嵌入图片: {image_count}")
+        print(f"   - 文档大小: {MERGED_DOCX.stat().st_size / 1024 / 1024:.1f} MB")
+        
+    except Exception as e:
+        print(f"[WARN] 文档验证失败: {e}")
+    
+    print(f"\n✅ 完成！输出文件:")
+    print(f"   📄 合并文档: {MERGED_DOCX}")
+    print(f"   📁 预处理 MD: {BUILD_MD_DIR}")
+    print(f"   📁 单独 DOCX: {DOCX_OUT_DIR}")
+    print(f"   🖼️  图片目录: {DOCX_OUT_DIR}/images")
+    
+    print(f"\n🏆 改进特性:")
+    print(f"   - ✅ 强制字体设置 (Times New Roman)")
+    print(f"   - ✅ 改进的合并逻辑")
+    print(f"   - ✅ 图片复制到输出目录")
+    print(f"   - ✅ 支持 PNG 和 Mermaid 文件")
+    print(f"   - ✅ 保持格式一致性")
 
 if __name__ == "__main__":
     main()

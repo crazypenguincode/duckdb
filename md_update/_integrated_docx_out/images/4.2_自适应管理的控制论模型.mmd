@@ -1,0 +1,12 @@
+graph LR
+    A[目标性能<br/>Target Performance] --> B[控制器<br/>Controller]
+    B --> C[缓存系统<br/>Cache System]
+    C --> D[实际性能<br/>Actual Performance]
+    D --> E[性能监控<br/>Performance Monitor]
+    E --> F[误差计算<br/>Error Calculation]
+    F --> B
+    
+    G[外部干扰<br/>查询模式变化<br/>Query Pattern Changes] --> C
+    
+    style B fill:#e3f2fd
+    style E fill:#f3e5f5

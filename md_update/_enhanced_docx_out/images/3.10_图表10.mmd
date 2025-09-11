@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant BF as 布隆过滤器<br/>Bloom Filter
+    participant CM as 缓存管理器<br/>Cache Manager
+    participant MC as 内存缓存<br/>Memory Cache
+    participant PS as 持久化存储<br/>Persistent Storage
+    participant VE as 有效性检查<br/>Validity Check
+    participant ML as 机器学习<br/>ML Engine
+    participant RS as 结果服务<br/>Result Service
+    
+    BF->>CM: 可能存在信号
+    CM->>MC: 查找缓存条目
+    
+    alt 内存中存在
+        MC->>VE: 检查条目有效性
+        alt 条目有效且未过期
+            VE->>ML: 更新访问统计
+            ML->>RS: 计算新的ML分数
+            RS->>RS: 深拷贝结果数据
+            RS-->>BF: 返回缓存结果 (Cache Hit)
+        else 条目过期或无效
+            VE->>MC: 标记条目为无效
+            MC->>PS: 检查持久化存储
+            alt 持久化存储中存在有效数据
+                PS->>MC: 加载到内存缓存
+                MC->>VE: 重新验证
+                VE->>RS: 返回结果
+                RS-->>BF: 返回缓存结果
+            else 持久化存储中无有效数据
+                PS-->>BF: 缓存未命中 (Cache Miss)
+            end
+        end
+    else 内存中不存在
+        MC->>PS: 尝试从持久化存储加载
+        alt 持久化存储中存在
+            PS->>VE: 验证数据完整性
+            VE->>MC: 加载到内存缓存
+            MC->>ML: 更新访问统计
+            ML->>RS: 返回结果
+            RS-->>BF: 返回缓存结果
+        else 持久化存储中不存在
+            PS-->>BF: 缓存未命中 (Cache Miss)
+        end
+    end

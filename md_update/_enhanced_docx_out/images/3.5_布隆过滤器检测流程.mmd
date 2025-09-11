@@ -1,0 +1,20 @@
+graph TD
+    A[查询签名<br/>Query Signature] --> B[计算双重哈希值<br/>Compute Double Hash]
+    B --> C["h1 = MurmurHash3(signature, seed1)"]
+    B --> D["h2 = MurmurHash3(signature, seed2)"]
+    
+    C --> E[生成k个哈希位置<br/>Generate k Hash Positions]
+    D --> E
+    E --> F["pos_i = (h1 + i*h2) mod m"]
+    
+    F --> G{检查所有位置<br/>Check All Positions}
+    G --> |所有位都为1<br/>All Bits Set| H[可能存在<br/>Might Exist]
+    G --> |任一位为0<br/>Any Bit Unset| I[确定不存在<br/>Definitely Not Exist]
+    
+    H --> J[进入精确匹配<br/>Proceed to Exact Match]
+    I --> K[跳过缓存查找<br/>Skip Cache Lookup]
+    
+    style H fill:#e8f5e8
+    style I fill:#ffebee
+    style J fill:#e3f2fd
+    style K fill:#fff3e0

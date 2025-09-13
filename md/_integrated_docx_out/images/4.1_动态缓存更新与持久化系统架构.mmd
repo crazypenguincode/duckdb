@@ -1,0 +1,23 @@
+graph TB
+    A[缓存更新请求] --> B[缓存更新管理层]
+    B --> C[策略决策层]
+    C --> D[LRU策略]
+    C --> E[TTL策略]
+    C --> F[ML策略]
+    C --> G[混合策略]
+    D --> H[持久化执行层]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[内存模式]
+    H --> J[WAL模式]
+    H --> K[物化视图模式]
+    H --> L[混合模式]
+    I --> M[存储适配层]
+    J --> M
+    K --> M
+    L --> M
+    
+    style C fill:#e3f2fd
+    style H fill:#e8f5e8
+    style M fill:#fff3e0

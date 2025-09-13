@@ -1,0 +1,15 @@
+{
+  "test_info": {
+    "timestamp": "1757753039",
+    "strategy": "Improved ML Cache",
+    "workload_size": 60
+  },
+  "results": {
+    "hit_rate": 0.466667,
+    "avg_response_time": 5.26897,
+    "cache_hits": 28,
+    "cache_misses": 32,
+    "current_cache_size": 10,
+    "memory_usage_mb": 2.29996
+  }
+}

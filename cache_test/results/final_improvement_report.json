@@ -1,0 +1,75 @@
+{
+  "test_summary": {
+    "test_date": "2025-09-13T16:44:56.108147",
+    "test_type": "TPC-H Cache Strategy Improvement Analysis",
+    "database": "/Users/max/test/tpc/tpch-sf1.db"
+  },
+  "original_results": [
+    {
+      "strategy": "No Cache",
+      "hit_rate": 0,
+      "avg_response_time": 7.0871,
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "current_cache_size": 0,
+      "max_cache_size": 0,
+      "memory_usage_mb": 0,
+      "total_execution_time": 354.355,
+      "total_cache_access_time": 0
+    },
+    {
+      "strategy": "LRU Cache",
+      "hit_rate": 0.52,
+      "avg_response_time": 5.97855,
+      "cache_hits": 26,
+      "cache_misses": 24,
+      "current_cache_size": 8,
+      "max_cache_size": 8,
+      "memory_usage_mb": 2.2533,
+      "total_execution_time": 285.927,
+      "total_cache_access_time": 13
+    },
+    {
+      "strategy": "TTL Cache",
+      "hit_rate": 0.2,
+      "avg_response_time": 6.38362,
+      "cache_hits": 10,
+      "cache_misses": 40,
+      "current_cache_size": 6,
+      "max_cache_size": 6,
+      "memory_usage_mb": 0.0220337,
+      "total_execution_time": 314.181,
+      "total_cache_access_time": 5
+    },
+    {
+      "strategy": "ML Cache",
+      "hit_rate": 0.48,
+      "avg_response_time": 6.08218,
+      "cache_hits": 24,
+      "cache_misses": 26,
+      "current_cache_size": 10,
+      "max_cache_size": 10,
+      "memory_usage_mb": 0.0264282,
+      "total_execution_time": 292.109,
+      "total_cache_access_time": 12
+    }
+  ],
+  "improved_result": {
+    "hit_rate": 0.466667,
+    "avg_response_time": 5.26897,
+    "cache_hits": 28,
+    "cache_misses": 32,
+    "current_cache_size": 10,
+    "memory_usage_mb": 2.29996
+  },
+  "improvement_analysis": {
+    "vs_original_ml": {
+      "hit_rate_improvement": -1.3332999999999984,
+      "response_time_improvement": 13.370370492159056
+    },
+    "vs_lru": {
+      "hit_rate_difference": -5.333300000000002,
+      "response_time_difference": 11.868764165224006
+    }
+  }
+}

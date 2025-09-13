@@ -1,0 +1,45 @@
+{
+  "test_info": {
+    "timestamp": "1757751449",
+    "total_queries": 200,
+    "strategies_tested": 4
+  },
+  "results": [
+    {
+      "strategy": "No Cache",
+      "hit_rate": 0,
+      "avg_execution_time": 0.122133,
+      "memory_efficiency": 0,
+      "max_cache_size": 0,
+      "total_queries": 200,
+      "cache_hits": 0
+    },
+    {
+      "strategy": "LRU Cache",
+      "hit_rate": 0.745,
+      "avg_execution_time": 0.425209,
+      "memory_efficiency": 0.000292969,
+      "max_cache_size": 15,
+      "total_queries": 200,
+      "cache_hits": 149
+    },
+    {
+      "strategy": "TTL Cache",
+      "hit_rate": 0.75,
+      "avg_execution_time": 0.426822,
+      "memory_efficiency": 0.000234375,
+      "max_cache_size": 12,
+      "total_queries": 200,
+      "cache_hits": 150
+    },
+    {
+      "strategy": "ML Cache",
+      "hit_rate": 0.785,
+      "avg_execution_time": 0.446856,
+      "memory_efficiency": 0.000351562,
+      "max_cache_size": 18,
+      "total_queries": 200,
+      "cache_hits": 157
+    }
+  ]
+}

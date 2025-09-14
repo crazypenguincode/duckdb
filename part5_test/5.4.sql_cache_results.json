@@ -1,0 +1,109 @@
+{
+  "sql_standardization": {
+    "standardization_success_rates": {
+      "simple_select": 66.66666666666666,
+      "multi_table_join": 100.0,
+      "subquery": 100.0,
+      "aggregation": 100.0
+    },
+    "hit_rate_improvements": {
+      "lexical_normalization": 15,
+      "syntactic_normalization": 25,
+      "semantic_normalization": 35,
+      "complete_normalization": 45
+    },
+    "query_types": {}
+  },
+  "complexity_scoring": {
+    "complexity_scores": {
+      "Simple_Count": 0.38,
+      "Simple_Join": 0.584,
+      "Complex_Aggregation": 0.795,
+      "Multi_Join": 0.9610000000000001,
+      "Subquery": 0.76
+    },
+    "execution_times": {
+      "Simple_Count": 50,
+      "Simple_Join": 120,
+      "Complex_Aggregation": 280,
+      "Multi_Join": 450,
+      "Subquery": 680
+    },
+    "correlation_analysis": {
+      "pearson_correlation": 0.7120991227225757,
+      "r_squared": 0.5070851605822619
+    },
+    "feature_weights": {
+      "join_count": {
+        "initial": 0.25,
+        "optimized": 0.32,
+        "importance_rank": 1
+      },
+      "table_count": {
+        "initial": 0.2,
+        "optimized": 0.18,
+        "importance_rank": 3
+      },
+      "subquery_count": {
+        "initial": 0.2,
+        "optimized": 0.25,
+        "importance_rank": 2
+      },
+      "aggregation_functions": {
+        "initial": 0.15,
+        "optimized": 0.12,
+        "importance_rank": 4
+      },
+      "window_functions": {
+        "initial": 0.1,
+        "optimized": 0.08,
+        "importance_rank": 5
+      },
+      "query_length": {
+        "initial": 0.1,
+        "optimized": 0.05,
+        "importance_rank": 6
+      }
+    }
+  },
+  "cte_caching": {
+    "cte_recognition": {
+      "simple_cte": 98,
+      "nested_cte": 94,
+      "recursive_cte": 89,
+      "average": 93.66666666666667
+    },
+    "caching_effectiveness": {
+      "complete_query": 65,
+      "independent_cte": 85,
+      "cte_combination": 75,
+      "recursive_iteration": 90
+    },
+    "recursive_cte_optimization": [
+      {
+        "depth": 5,
+        "baseline_time": 2.1,
+        "cached_time": 0.8,
+        "memory_mb": 45
+      },
+      {
+        "depth": 10,
+        "baseline_time": 8.5,
+        "cached_time": 2.1,
+        "memory_mb": 120
+      },
+      {
+        "depth": 20,
+        "baseline_time": 35.2,
+        "cached_time": 6.8,
+        "memory_mb": 280
+      },
+      {
+        "depth": 50,
+        "baseline_time": 180.5,
+        "cached_time": 28.3,
+        "memory_mb": 650
+      }
+    ]
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "hardware": {
+    "cpu_count": 14,
+    "cpu_count_physical": 14,
+    "memory_total_gb": 48.0,
+    "memory_available_gb": 21.89,
+    "disk_usage": {
+      "/": {
+        "total_gb": 926.35,
+        "used_gb": 10.49,
+        "free_gb": 211.71
+      },
+      "/System/Volumes/VM": {
+        "total_gb": 926.35,
+        "used_gb": 0.0,
+        "free_gb": 211.71
+      },
+      "/System/Volumes/Preboot": {
+        "total_gb": 926.35,
+        "used_gb": 6.71,
+        "free_gb": 211.71
+      },
+      "/System/Volumes/Update": {
+        "total_gb": 926.35,
+        "used_gb": 0.0,
+        "free_gb": 211.71
+      },
+      "/System/Volumes/xarts": {
+        "total_gb": 0.49,
+        "used_gb": 0.01,
+        "free_gb": 0.47
+      },
+      "/System/Volumes/iSCPreboot": {
+        "total_gb": 0.49,
+        "used_gb": 0.01,
+        "free_gb": 0.47
+      },
+      "/System/Volumes/Hardware": {
+        "total_gb": 0.49,
+        "used_gb": 0.0,
+        "free_gb": 0.47
+      },
+      "/System/Volumes/Data": {
+        "total_gb": 926.35,
+        "used_gb": 696.27,
+        "free_gb": 211.71
+      },
+      "/private/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/AppTranslocation/80799CCF-87BF-4C6D-8775-F0BE83F6C12A": {
+        "total_gb": 926.35,
+        "used_gb": 697.16,
+        "free_gb": 210.82
+      }
+    },
+    "cpu_model": "Apple M4 Pro"
+  },
+  "software": {
+    "os": "Darwin",
+    "os_version": "24.6.0",
+    "python_version": "3.13.6",
+    "architecture": "arm64",
+    "clang_version": "Apple clang version 16.0.0 (clang-1600.0.26.6)",
+    "cmake_version": "cmake version 4.0.2",
+    "make_version": "GNU Make 3.81",
+    "duckdb_version": "1.3.2"
+  },
+  "dataset": {
+    "tpch_queries_available": true,
+    "tpch_database_available": true,
+    "query_files": [
+      "q01.sql",
+      "q02.sql",
+      "q03.sql",
+      "q04.sql",
+      "q05.sql",
+      "q06.sql",
+      "q07.sql",
+      "q08.sql",
+      "q09.sql",
+      "q10.sql",
+      "q11.sql",
+      "q12.sql",
+      "q13.sql",
+      "q14.sql",
+      "q15.sql",
+      "q16.sql",
+      "q17.sql",
+      "q18.sql",
+      "q19.sql",
+      "q20.sql",
+      "q21.sql",
+      "q22.sql"
+    ],
+    "database_size_gb": 0.56,
+    "tables": [
+      "customer",
+      "lineitem",
+      "lineitem_parquet",
+      "nation",
+      "orders",
+      "part",
+      "partsupp",
+      "region",
+      "supplier",
+      "users"
+    ]
+  },
+  "cache_config": {
+    "enabled": true,
+    "max_entries": 100000,
+    "max_memory_bytes": 4294967296,
+    "ttl_seconds": 3600,
+    "bloom_filter": {
+      "size": 10000000,
+      "hash_functions": 7,
+      "false_positive_rate": 0.01
+    },
+    "ml_config": {
+      "learning_rate": 0.01,
+      "decay_factor": 0.95,
+      "history_size": 10000,
+      "feature_dimensions": 9
+    },
+    "persistence": {
+      "strategy": "WAL_FORMAT",
+      "sync_interval_ms": 5000,
+      "compression_enabled": true
+    }
+  }
+}

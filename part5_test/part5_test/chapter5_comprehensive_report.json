@@ -1,0 +1,39 @@
+{
+  "test_summary": {
+    "total_tests": 6,
+    "successful_tests": 0,
+    "failed_tests": 0,
+    "timeout_tests": 0,
+    "exception_tests": 0,
+    "success_rate": 0.0,
+    "total_execution_time": 4.410743713378906e-05
+  },
+  "test_results": {
+    "5.1.platform_setup.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.1.platform_setup.py"
+    },
+    "5.2.cache_performance.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.2.cache_performance.py"
+    },
+    "5.3.bloom_filter.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.3.bloom_filter.py"
+    },
+    "5.4.sql_cache.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.4.sql_cache.py"
+    },
+    "5.7.persistence.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.7.persistence.py"
+    },
+    "5.8.comprehensive.py": {
+      "status": "error",
+      "message": "Script not found: part5_test/5.8.comprehensive.py"
+    }
+  },
+  "performance_summary": {},
+  "timestamp": "2025-09-14 10:38:02"
+}

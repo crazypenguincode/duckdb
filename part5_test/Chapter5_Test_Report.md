@@ -1,44 +1,92 @@
-# 第五章 实验与分析 - 测试报告
+# 第五章实验测试报告
 
 ## 测试概览
 
-- **测试时间**: 2025-09-14 10:28:24
-- **总测试数**: 6
-- **成功测试**: 6 ✅
-- **失败测试**: 0 ❌
-- **成功率**: 100.0%
-- **总执行时间**: 0.88s
+**测试时间**: 2025-09-14T11:20:04.771883 - 2025-09-14T11:20:05.713209  
+**测试环境**: Apple M4 Pro, 48GB RAM, DuckDB 1.3.2  
+**总执行时间**: 0.94秒  
 
-## 测试结果详情
+## 测试结果统计
 
-| 测试脚本 | 状态 | 执行时间(s) | 备注 |
-|---------|------|-------------|------|
-| 5.1.platform_setup.py | ✅ success | 0.29 | - |
-| 5.2.cache_performance.py | ✅ success | 0.13 | - |
-| 5.3.bloom_filter.py | ✅ success | 0.33 | - |
-| 5.4.sql_cache.py | ✅ success | 0.05 | - |
-| 5.7.persistence.py | ✅ success | 0.03 | - |
-| 5.8.comprehensive.py | ✅ success | 0.05 | - |
+| 指标 | 数值 |
+|------|------|
+| 总测试数 | 6 |
+| 成功测试 | 3 ✅ |
+| 失败测试 | 3 ❌ |
+| 超时测试 | 0 ⏰ |
+| 异常测试 | 0 💥 |
+| 成功率 | 50.0% |
+
+## 详细测试结果
+
+### 5.1.platform_setup.py
+
+**状态**: ✅ success  
+**执行时间**: 0.37秒  
+
+### 5.2.cache_performance.py
+
+**状态**: ❌ failed  
+**执行时间**: 0.04秒  
+
+**错误信息**:
+```
+Traceback (most recent call last):
+  File "/Users/max/src/duckdb/part5_test/5.2.cache_performance.py", line 12, in <module>
+    import duckdb
+ModuleNotFoundError: No module named 'duckdb'
+
+```
+
+### 5.3.bloom_filter.py
+
+**状态**: ✅ success  
+**执行时间**: 0.43秒  
+
+### 5.4.sql_cache.py
+
+**状态**: ❌ failed  
+**执行时间**: 0.03秒  
+
+**错误信息**:
+```
+Traceback (most recent call last):
+  File "/Users/max/src/duckdb/part5_test/5.4.sql_cache.py", line 12, in <module>
+    import duckdb
+ModuleNotFoundError: No module named 'duckdb'
+
+```
+
+### 5.7.persistence.py
+
+**状态**: ✅ success  
+**执行时间**: 0.04秒  
+
+### 5.8.comprehensive.py
+
+**状态**: ❌ failed  
+**执行时间**: 0.03秒  
+
+**错误信息**:
+```
+Traceback (most recent call last):
+  File "/Users/max/src/duckdb/part5_test/5.8.comprehensive.py", line 11, in <module>
+    import duckdb
+ModuleNotFoundError: No module named 'duckdb'
+
+```
 
 ## 性能指标汇总
 
 - **platform_readiness**: ✅ 就绪
+- **bloom_filter**: ✅ 假阳性率 <1%
+- **persistence**: ✅ 9.1/10 混合策略评分
 
+## 总体评估
 
-## 测试建议
+成功率: **50.0%**
 
-根据测试结果，建议：
-
-1. **成功的测试项**: 继续保持当前配置
-2. **失败的测试项**: 检查相关配置和依赖
-3. **性能优化**: 根据具体指标进行针对性优化
-
-## 下一步行动
-
-- [ ] 修复失败的测试项
-- [ ] 优化性能瓶颈
-- [ ] 准备生产环境部署
-- [ ] 制定监控和维护计划
+🚨 **测试成功率较低，需要全面检查系统配置**
 
 ---
-*报告生成时间: 2025-09-14 10:28:24*
+*报告生成时间: 2025-09-14T11:20:05.713381*

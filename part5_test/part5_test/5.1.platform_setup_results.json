@@ -3,27 +3,27 @@
     "cpu_count": 14,
     "cpu_count_physical": 14,
     "memory_total_gb": 48.0,
-    "memory_available_gb": 21.2,
+    "memory_available_gb": 21.13,
     "disk_usage": {
       "/": {
         "total_gb": 926.35,
         "used_gb": 10.49,
-        "free_gb": 222.32
+        "free_gb": 222.38
       },
       "/System/Volumes/VM": {
         "total_gb": 926.35,
         "used_gb": 0.0,
-        "free_gb": 222.32
+        "free_gb": 222.38
       },
       "/System/Volumes/Preboot": {
         "total_gb": 926.35,
         "used_gb": 6.71,
-        "free_gb": 222.32
+        "free_gb": 222.38
       },
       "/System/Volumes/Update": {
         "total_gb": 926.35,
         "used_gb": 0.0,
-        "free_gb": 222.32
+        "free_gb": 222.38
       },
       "/System/Volumes/xarts": {
         "total_gb": 0.49,
@@ -42,8 +42,8 @@
       },
       "/System/Volumes/Data": {
         "total_gb": 926.35,
-        "used_gb": 685.66,
-        "free_gb": 222.32
+        "used_gb": 685.6,
+        "free_gb": 222.38
       },
       "/private/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/AppTranslocation/80799CCF-87BF-4C6D-8775-F0BE83F6C12A": {
         "total_gb": 926.35,
@@ -61,7 +61,7 @@
     "clang_version": "Apple clang version 16.0.0 (clang-1600.0.26.6)",
     "cmake_version": "cmake version 4.0.2",
     "make_version": "GNU Make 3.81",
-    "duckdb_version": "1.3.2"
+    "duckdb_version": "Not installed"
   },
   "dataset": {
     "tpch_queries_available": true,
@@ -90,19 +90,7 @@
       "q21.sql",
       "q22.sql"
     ],
-    "database_size_gb": 0.56,
-    "tables": [
-      "customer",
-      "lineitem",
-      "lineitem_parquet",
-      "nation",
-      "orders",
-      "part",
-      "partsupp",
-      "region",
-      "supplier",
-      "users"
-    ]
+    "database_size_gb": 0.56
   },
   "cache_config": {
     "enabled": true,

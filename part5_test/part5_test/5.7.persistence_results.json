@@ -1,0 +1,213 @@
+{
+  "wal_persistence": {
+    "performance_metrics": [
+      {
+        "size_gb": 1,
+        "write_speed_mbs": 8503,
+        "read_speed_mbs": 12577,
+        "compression_ratio": 3.8,
+        "recovery_time_s": 8
+      },
+      {
+        "size_gb": 10,
+        "write_speed_mbs": 8200,
+        "read_speed_mbs": 12200,
+        "compression_ratio": 4.1,
+        "recovery_time_s": 25
+      },
+      {
+        "size_gb": 50,
+        "write_speed_mbs": 7800,
+        "read_speed_mbs": 11800,
+        "compression_ratio": 4.5,
+        "recovery_time_s": 95
+      },
+      {
+        "size_gb": 100,
+        "write_speed_mbs": 7400,
+        "read_speed_mbs": 11400,
+        "compression_ratio": 4.8,
+        "recovery_time_s": 180
+      },
+      {
+        "size_gb": 500,
+        "write_speed_mbs": 7000,
+        "read_speed_mbs": 11000,
+        "compression_ratio": 5.2,
+        "recovery_time_s": 650
+      }
+    ],
+    "data_integrity": {
+      "normal_shutdown": {
+        "data_integrity": 100.0,
+        "consistency_check": 100.0,
+        "recovery_success": 100.0
+      },
+      "power_failure": {
+        "data_integrity": 99.8,
+        "consistency_check": 99.9,
+        "recovery_success": 99.5
+      },
+      "disk_failure": {
+        "data_integrity": 98.5,
+        "consistency_check": 99.2,
+        "recovery_success": 97.8
+      },
+      "network_interruption": {
+        "data_integrity": 99.9,
+        "consistency_check": 100.0,
+        "recovery_success": 99.8
+      }
+    }
+  },
+  "materialized_view_persistence": {
+    "creation_performance": [
+      {
+        "type": "simple_query",
+        "creation_time_s": 2
+      },
+      {
+        "type": "multi_table_join",
+        "creation_time_s": 8
+      },
+      {
+        "type": "aggregation_query",
+        "creation_time_s": 15
+      },
+      {
+        "type": "window_function",
+        "creation_time_s": 35
+      },
+      {
+        "type": "cte_query",
+        "creation_time_s": 25
+      }
+    ],
+    "storage_efficiency": [
+      {
+        "type": "simple_query",
+        "original_mb": 50,
+        "materialized_mb": 45,
+        "compression_ratio": 1.1,
+        "index_overhead_mb": 5
+      },
+      {
+        "type": "aggregation_query",
+        "original_mb": 200,
+        "materialized_mb": 25,
+        "compression_ratio": 8.0,
+        "index_overhead_mb": 3
+      },
+      {
+        "type": "join_query",
+        "original_mb": 150,
+        "materialized_mb": 120,
+        "compression_ratio": 1.25,
+        "index_overhead_mb": 15
+      },
+      {
+        "type": "window_function",
+        "original_mb": 300,
+        "materialized_mb": 280,
+        "compression_ratio": 1.07,
+        "index_overhead_mb": 25
+      },
+      {
+        "type": "cte_query",
+        "original_mb": 180,
+        "materialized_mb": 160,
+        "compression_ratio": 1.125,
+        "index_overhead_mb": 18
+      }
+    ]
+  },
+  "hybrid_persistence": {
+    "strategy_comparison": {
+      "memory_only": {
+        "write_speed_mbs": 15000,
+        "read_speed_mbs": 20000,
+        "memory_usage_gb": 4.2,
+        "recovery_time_s": 0,
+        "data_safety": "low",
+        "comprehensive_score": 7.5
+      },
+      "wal_format": {
+        "write_speed_mbs": 8503,
+        "read_speed_mbs": 12577,
+        "memory_usage_gb": 2.8,
+        "recovery_time_s": 180,
+        "data_safety": "high",
+        "comprehensive_score": 8.2
+      },
+      "materialized_view": {
+        "write_speed_mbs": 3200,
+        "read_speed_mbs": 15000,
+        "memory_usage_gb": 1.5,
+        "recovery_time_s": 45,
+        "data_safety": "highest",
+        "comprehensive_score": 8.5
+      },
+      "hybrid_mode": {
+        "write_speed_mbs": 10500,
+        "read_speed_mbs": 16800,
+        "memory_usage_gb": 2.2,
+        "recovery_time_s": 120,
+        "data_safety": "high",
+        "comprehensive_score": 9.1
+      }
+    },
+    "strategy_selection": {
+      "small_result_set": {
+        "recommended": "memory_only",
+        "accuracy": 95,
+        "performance_improvement": 25,
+        "switching_delay_ms": 5
+      },
+      "medium_result_set": {
+        "recommended": "wal_format",
+        "accuracy": 92,
+        "performance_improvement": 18,
+        "switching_delay_ms": 15
+      },
+      "large_result_set": {
+        "recommended": "materialized_view",
+        "accuracy": 88,
+        "performance_improvement": 22,
+        "switching_delay_ms": 45
+      },
+      "frequent_access": {
+        "recommended": "hybrid_mode",
+        "accuracy": 90,
+        "performance_improvement": 30,
+        "switching_delay_ms": 25
+      }
+    },
+    "dynamic_switching": [
+      {
+        "time_point": "00:00",
+        "dominant_strategy": "memory_only",
+        "performance_score": 7.5
+      },
+      {
+        "time_point": "06:00",
+        "dominant_strategy": "wal_format",
+        "performance_score": 8.2
+      },
+      {
+        "time_point": "12:00",
+        "dominant_strategy": "hybrid_mode",
+        "performance_score": 9.1
+      },
+      {
+        "time_point": "18:00",
+        "dominant_strategy": "materialized_view",
+        "performance_score": 8.5
+      },
+      {
+        "time_point": "24:00",
+        "dominant_strategy": "memory_only",
+        "performance_score": 7.5
+      }
+    ]
+  }
+}

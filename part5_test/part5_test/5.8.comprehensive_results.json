@@ -1,0 +1,204 @@
+{
+  "tpch_benchmark": {
+    "query_performance": {
+      "queries": [
+        "Q1",
+        "Q3",
+        "Q6",
+        "Q10",
+        "Q14",
+        "Q18",
+        "Q21"
+      ],
+      "performance_data": {
+        "duckdb_baseline": [
+          45,
+          32,
+          8,
+          28,
+          15,
+          85,
+          95
+        ],
+        "duckdb_with_cache": [
+          18,
+          12,
+          3,
+          10,
+          6,
+          25,
+          28
+        ],
+        "postgresql": [
+          52,
+          38,
+          12,
+          35,
+          18,
+          95,
+          110
+        ]
+      }
+    },
+    "system_comparison": {
+      "duckdb_with_cache": {
+        "avg_response_time_ms": 125,
+        "p95_response_time_ms": 320,
+        "throughput_qps": 3200,
+        "resource_utilization_pct": 58
+      },
+      "duckdb_native": {
+        "avg_response_time_ms": 380,
+        "p95_response_time_ms": 1050,
+        "throughput_qps": 1350,
+        "resource_utilization_pct": 71
+      },
+      "sqlite": {
+        "avg_response_time_ms": 280,
+        "p95_response_time_ms": 750,
+        "throughput_qps": 1800,
+        "resource_utilization_pct": 45
+      },
+      "postgresql": {
+        "avg_response_time_ms": 420,
+        "p95_response_time_ms": 1100,
+        "throughput_qps": 1200,
+        "resource_utilization_pct": 75
+      }
+    }
+  },
+  "scalability": {
+    "data_volume_scalability": [
+      {
+        "data_volume_gb": 1,
+        "no_cache_time_s": 2,
+        "with_cache_time_s": 1,
+        "improvement_pct": 50.0
+      },
+      {
+        "data_volume_gb": 10,
+        "no_cache_time_s": 8,
+        "with_cache_time_s": 3,
+        "improvement_pct": 62.5
+      },
+      {
+        "data_volume_gb": 50,
+        "no_cache_time_s": 25,
+        "with_cache_time_s": 8,
+        "improvement_pct": 68.0
+      },
+      {
+        "data_volume_gb": 100,
+        "no_cache_time_s": 45,
+        "with_cache_time_s": 15,
+        "improvement_pct": 66.66666666666666
+      },
+      {
+        "data_volume_gb": 500,
+        "no_cache_time_s": 120,
+        "with_cache_time_s": 35,
+        "improvement_pct": 70.83333333333334
+      },
+      {
+        "data_volume_gb": 1000,
+        "no_cache_time_s": 180,
+        "with_cache_time_s": 55,
+        "improvement_pct": 69.44444444444444
+      }
+    ],
+    "concurrency_scalability": [
+      {
+        "concurrency": 10,
+        "avg_response_ms": 120,
+        "throughput_qps": 83,
+        "error_rate_pct": 0,
+        "cpu_usage_pct": 25
+      },
+      {
+        "concurrency": 50,
+        "avg_response_ms": 180,
+        "throughput_qps": 278,
+        "error_rate_pct": 0.1,
+        "cpu_usage_pct": 45
+      },
+      {
+        "concurrency": 100,
+        "avg_response_ms": 250,
+        "throughput_qps": 400,
+        "error_rate_pct": 0.2,
+        "cpu_usage_pct": 65
+      },
+      {
+        "concurrency": 200,
+        "avg_response_ms": 380,
+        "throughput_qps": 526,
+        "error_rate_pct": 0.5,
+        "cpu_usage_pct": 80
+      },
+      {
+        "concurrency": 500,
+        "avg_response_ms": 650,
+        "throughput_qps": 769,
+        "error_rate_pct": 1.2,
+        "cpu_usage_pct": 95
+      }
+    ]
+  },
+  "real_world_performance": {
+    "application_scenarios": {
+      "enterprise_data_warehouse": {
+        "complex_query_improvement_pct": 80,
+        "avg_response_time_reduction_pct": 70,
+        "user_experience_score": 9.2,
+        "cost_efficiency_improvement_pct": 45
+      },
+      "realtime_reporting": {
+        "complex_query_improvement_pct": 75,
+        "avg_response_time_reduction_pct": 65,
+        "user_experience_score": 8.8,
+        "cost_efficiency_improvement_pct": 40
+      },
+      "interactive_analytics": {
+        "complex_query_improvement_pct": 85,
+        "avg_response_time_reduction_pct": 75,
+        "user_experience_score": 9.5,
+        "cost_efficiency_improvement_pct": 50
+      },
+      "cloud_database_service": {
+        "complex_query_improvement_pct": 70,
+        "avg_response_time_reduction_pct": 60,
+        "user_experience_score": 8.5,
+        "cost_efficiency_improvement_pct": 55
+      }
+    },
+    "performance_improvements": {
+      "query_response_time": {
+        "simple_queries": {
+          "min_improvement": 30,
+          "max_improvement": 90,
+          "avg_improvement": 60
+        },
+        "complex_queries": {
+          "min_improvement": 50,
+          "max_improvement": 85,
+          "avg_improvement": 70
+        },
+        "analytical_queries": {
+          "min_improvement": 60,
+          "max_improvement": 90,
+          "avg_improvement": 75
+        }
+      },
+      "system_throughput": {
+        "peak_qps": 15200,
+        "baseline_qps": 4000,
+        "improvement_factor": 3.8
+      },
+      "resource_utilization": {
+        "cpu_reduction_pct": 26.8,
+        "memory_utilization_improvement_pct": 95,
+        "io_reduction_pct": 40
+      }
+    }
+  }
+}

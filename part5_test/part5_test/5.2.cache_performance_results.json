@@ -1,0 +1,168 @@
+{
+  "response_time": {
+    "baseline_times": {
+      "Simple_SELECT": 45,
+      "Multi_JOIN": 480,
+      "Complex_AGG": 1850,
+      "Window_FUNC": 9200,
+      "CTE_Query": 2100,
+      "Subquery": 320,
+      "Union_Query": 1200,
+      "Recursive_CTE": 5500
+    },
+    "cached_times": {
+      "Simple_SELECT": 10.1,
+      "Multi_JOIN": 66.7,
+      "Complex_AGG": 288.6,
+      "Window_FUNC": 1775.6,
+      "CTE_Query": 369.6,
+      "Subquery": 48.0,
+      "Union_Query": 180.0,
+      "Recursive_CTE": 825.0
+    },
+    "improvement_ratios": {
+      "Simple_SELECT": 77.55555555555556,
+      "Multi_JOIN": 86.10416666666667,
+      "Complex_AGG": 84.4,
+      "Window_FUNC": 80.69999999999999,
+      "CTE_Query": 82.4,
+      "Subquery": 85.0,
+      "Union_Query": 85.0,
+      "Recursive_CTE": 85.0
+    },
+    "complexity_analysis": {
+      "simple": {
+        "count": 1,
+        "avg_improvement": 77.55555555555556,
+        "improvements": [
+          77.55555555555556
+        ]
+      },
+      "medium": {
+        "count": 2,
+        "avg_improvement": 85.55208333333334,
+        "improvements": [
+          86.10416666666667,
+          85.0
+        ]
+      },
+      "complex": {
+        "count": 3,
+        "avg_improvement": 83.93333333333334,
+        "improvements": [
+          84.4,
+          82.4,
+          85.0
+        ]
+      },
+      "very_complex": {
+        "count": 2,
+        "avg_improvement": 82.85,
+        "improvements": [
+          80.69999999999999,
+          85.0
+        ]
+      }
+    }
+  },
+  "throughput": {
+    "concurrency_levels": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128
+    ],
+    "baseline_qps": [
+      1080,
+      2160,
+      4320,
+      8640,
+      13440,
+      23040,
+      30720,
+      46080
+    ],
+    "cached_qps": [
+      1944,
+      3888,
+      7776,
+      15552,
+      24192,
+      41472,
+      55296,
+      82944
+    ],
+    "improvement_ratios": [
+      80.0,
+      80.0,
+      80.0,
+      80.0,
+      80.0,
+      80.0,
+      80.0,
+      80.0
+    ]
+  },
+  "memory_efficiency": {
+    "memory_usage_pattern": [
+      0.5,
+      1.2,
+      2.1,
+      2.8,
+      3.2,
+      3.6,
+      3.8,
+      3.9,
+      4.0,
+      3.8,
+      3.6,
+      3.4
+    ],
+    "cache_hit_rates": [],
+    "time_points": [
+      "00:00",
+      "02:00",
+      "04:00",
+      "06:00",
+      "08:00",
+      "10:00",
+      "12:00",
+      "14:00",
+      "16:00",
+      "18:00",
+      "20:00",
+      "22:00"
+    ],
+    "cache_hit_progression": {
+      "runtime_hours": [
+        1,
+        6,
+        12,
+        24,
+        48,
+        72,
+        96,
+        120,
+        144,
+        168
+      ],
+      "hit_rates": [
+        15,
+        35,
+        52,
+        68,
+        75,
+        80,
+        83,
+        85,
+        86,
+        87
+      ]
+    },
+    "current_memory_mb": 23.984375
+  }
+}

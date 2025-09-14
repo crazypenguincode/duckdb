@@ -1,0 +1,61 @@
+\documentclass[12pt,a4paper]{book}
+\usepackage[UTF8]{ctex}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+
+% 页面设置
+\geometry{left=3cm,right=2cm,top=2.5cm,bottom=2.5cm}
+
+% 代码高亮设置
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+% 超链接设置
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{基于缓存加速的数据库查询处理优化研究}
+\author{作者姓名}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+% 摘要
+\input{abstract}
+
+% 各章节
+\input{chapter1}
+\input{chapter2}
+\input{chapter3}
+\input{chapter4}
+\input{chapter5}
+\input{chapter6}
+
+% 参考文献
+\input{references}
+
+\end{document}

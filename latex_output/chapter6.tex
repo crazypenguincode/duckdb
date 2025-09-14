@@ -1,0 +1,163 @@
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_0\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_1\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_2\textbackslash{}_\textbackslash{}_
+
+随着大数据时代的到来，现代数据库系统在复杂分析型工作负载下暴露出重复计算多、资源浪费等问题。业界经验显示，在典型 OLAP 场景中，存在较高比例的结构相似或模式相近的查询，这为查询结果缓存与中间结果复用提供了优化空间。
+
+针对现有数据库缓存技术在复用粒度、识别效率与动态管理上的不足，本文构建了一个基于概率过滤与智能策略的动态缓存管理系统，在保证数据一致性与可用性的前提下，降低查询处理路径中的冗余开销，提升整体性能与资源利用效率。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_3\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_4\textbackslash{}_\textbackslash{}_
+
+提出“布隆过滤器 + 精确匹配”的两层过滤架构，用于高效判定可复用候选：在理论配置层面，依据目标假阳性率 p 与元素规模 n，采用 \textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_2\textbackslash{}_0\textbackslash{}_\textbackslash{}_ 估算位数组规模，在准确性与内存消耗之间取得均衡；在工程实现上，通过双重哈希生成 k 个哈希值以降低哈希计算成本并保持近似无偏；在效率表现上，于常见分析负载下实现约 0.1–0.5\textbackslash{}% 的低假阳性与低查找开销，相较传统纯哈希过滤展现出更优的过滤吞吐特性。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_6\textbackslash{}_\textbackslash{}_
+
+围绕查询价值评估，构建了由语法复杂度、执行性能、访问模式与业务属性组成的多维特征体系，并以增量更新的轻量在线学习机制支撑参数自适应与场景迁移；在代表性负载中，该策略相较 LRU/TTL 获得更高命中率与更稳定收益。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_7\textbackslash{}_\textbackslash{}_
+
+针对包含 CTE（Common Table Expression）的复杂分析查询，提出语义级细粒度复用：通过构建 CTE 依赖有向图以支持拓扑排序与循环依赖检测，并以子图同构识别完全或部分匹配以扩大相似结构的复用覆盖，同时对递归 CTE 的迭代结果进行分阶段缓存，从而缩短后续迭代与重用路径的计算时间。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_8\textbackslash{}_\textbackslash{}_
+
+在持久化层面，依据场景特征在内存、WAL、物化视图与混合策略之间动态选择：WAL 面向写放大与故障恢复提供顺序高吞吐的落盘路径与完整性保障，物化视图复用数据库内建机制并配合压缩以降低存储与读取成本，整体策略以查询画像与系统态为依据在时延、成本与一致性之间进行动态权衡。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_9\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_10\textbackslash{}_\textbackslash{}_
+
+综合评测显示在多项指标上具有改善：
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_11\textbackslash{}_\textbackslash{}_mermaid
+xychart-beta
+    title "核心性能指标提升效果"
+    x-axis ["查询响应时间", "系统吞吐量", "缓存命中率", "资源利用率"]
+    y-axis "提升比例(\textbackslash{}%)" 0 --> 400
+    bar [75, 330, 85, 95]
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_12\textbackslash{}_\textbackslash{}_
+
+图 6.1 核心性能指标提升效果
+
+在指标层面，查询响应时间在典型 OLAP 负载下可降低 30–90\textbackslash{}%，复杂查询改善更为明显；系统吞吐量相较基线提升至数倍量级并增强并发处理能力；缓存命中率在稳定阶段保持较高水平，重复与相似查询场景的收益尤为突出；CPU 与内存使用更为均衡，整体资源利用效率随之提升。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_13\textbackslash{}_\textbackslash{}_
+
+在组件层面，各技术以不同代价贡献整体收益：概率过滤以极低内存开销带来显著过滤加速，SQL 标准化提高相似查询识别的覆盖度与一致性，CTE 缓存对复杂分析型查询展现更高加速潜力，机器学习策略在负载变化时维持较高利用率与鲁棒性，而持久化机制则在可靠性与恢复能力方面提供必要保障。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_14\textbackslash{}_\textbackslash{}_
+
+在理论与学术层面，本文系统阐释了概率数据结构在数据库复用中的应用边界与配置方法，提出面向复用价值的学习型评估模型以促进数据库系统与机器学习的深度融合，并将 CTE 的语义与依赖建模用于支撑复杂查询的细粒度复用与优化。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_15\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_16\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_17\textbackslash{}_\textbackslash{}_
+
+持久化内存推动内存与存储边界的进一步融合，催生新型冷热分层与一致性方案；GPU 与其他异构加速要求针对异构内存分层重构缓存组织与迁移策略；新式加速（含量子计算等前沿探索）为策略搜索与优化打开新的可能路径。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_18\textbackslash{}_\textbackslash{}_mermaid
+graph TB
+    A[硬件技术发展] --> B[持久化内存]
+    A --> C[GPU加速]
+    A --> D[潜在新式加速]
+    B --> E[内存-存储融合架构]
+    C --> F[异构内存分层缓存]
+    D --> G[策略优化新范式]
+    E --> H[新一代缓存系统]
+    F --> H
+    G --> H
+    style H fill:\textbackslash{}#e8f5e8
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_19\textbackslash{}_\textbackslash{}_
+
+图 6.2 硬件技术发展对缓存系统的影响
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_20\textbackslash{}_\textbackslash{}_
+
+在软件架构演进方面，云原生推动面向弹性与隔离的多租户缓存池化与 QoS 管控，边缘计算强调在受限算力与不稳定网络下的轻量化设计与自治更新，而隐私计算则在合规框架内实现跨域协作与策略联动。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_21\textbackslash{}_\textbackslash{}_
+
+人工智能的融合体现在多方面：以深度模型进行查询模式识别与价值评估的表征学习，以强化学习将缓存管理抽象为序贯决策以优化长期收益，并通过 AutoML 实现参数自调与策略选择自动化，从而降低运维与迁移成本。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_22\textbackslash{}_\textbackslash{}_
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_23\textbackslash{}_\textbackslash{}_
+
+在智能化方面，将历史模式、业务周期与实时信号融合用于自适应查询预测，以支持前置预热与主动填充。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_24\textbackslash{}_\textbackslash{}_mermaid
+graph LR
+    A[历史日志] --> B[模式识别]
+    B --> C[趋势预测]
+    C --> D[主动缓存]
+    E[业务日历] --> C
+    F[实时监控] --> G[异常检测]
+    G --> H[策略调整]
+    style D fill:\textbackslash{}#e3f2fd
+    style H fill:\textbackslash{}#fff3e0
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_25\textbackslash{}_\textbackslash{}_
+
+图 6.3 智能查询预测架构
+
+进一步，计划联合 SQL、执行计划、数据分布与统计信息开展多模态融合，构建统一的价值评估体系；同时引入知识图谱、因果推理与元学习，增强跨场景迁移能力与可解释性。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_26\textbackslash{}_\textbackslash{}_
+
+在分布式缓存协同上，亟需贯通从 L1/L2 到本地 SSD、分布式缓存与云存储的端到端层次联动。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_27\textbackslash{}_\textbackslash{}_mermaid
+graph TB
+    A[L1 CPU缓存] --> B[L2 内存缓存]
+    B --> C[L3 本地SSD缓存]
+    C --> D[L4 分布式缓存]
+    D --> E[L5 云存储缓存]
+    F[智能调度器] --> A
+    F --> B
+    F --> C
+    F --> D
+    F --> E
+    style F fill:\textbackslash{}#e8f5e8
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_28\textbackslash{}_\textbackslash{}_
+
+图 6.4 多级缓存层次架构
+
+在一致性与运维层面，应依据业务需求在最终一致性、强一致性与因果一致性之间进行选择或组合，并以命中率与系统态为输入联动调度与容灾恢复。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_29\textbackslash{}_\textbackslash{}_
+
+在隐私与安全方面，可探索差分隐私缓存以在结果层面进行噪声注入与重写保护，并结合权限与审计体系；在可行范围内引入同态加密以支持加密态运算与健全的密钥治理；同时以秘密共享、安全聚合与零知识证明等工具构建跨域复用能力。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_30\textbackslash{}_\textbackslash{}_
+
+在应用拓展方面，实时流处理强调滑动窗口缓存、状态快照与毫秒级响应；图数据库聚焦路径、子图与算法中间结果的结构化复用；时序数据库则重视时间分片、降采样与预聚合的多精度存储。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_31\textbackslash{}_\textbackslash{}_
+
+面向技术挑战，超大规模可通过近似结构、分层架构与并行计算降低代价；高实时性依赖预计算、硬件加速与持久化内存以缩短关键路径；多租户与异构环境下可借助标准化接口、插件化适配与统一元数据管理控制复杂度；可靠性方面则需在一致性协议、版本时钟与补偿机制之间取得工程均衡。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_32\textbackslash{}_\textbackslash{}_
+
+在标准化与生态层面，统一 API、通讯与评测指标有助于提升互操作性，而以核心框架与插件生态为载体的开源协作将进一步推动产学研的协同与成果转化。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_33\textbackslash{}_\textbackslash{}_
+
+本文围绕分析型数据库的查询复用与动态缓存管理，提出并实现了多层概率过滤、CTE 细粒度缓存、学习型策略与多模式持久化等关键技术。在保持工程可落地性的同时，兼顾理论可解释性与场景适配性。实验结果表明，上述技术在复杂负载下可带来显著的响应与吞吐改进，并在资源占用与可靠性上取得较为均衡的表现。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_34\textbackslash{}_\textbackslash{}_
+
+本研究在理论上构建了以概率过滤与语义分析为核心的复用理论框架，在技术上给出了端到端的工程实现路径与组件化架构，在应用上于多类负载与场景中验证了有效性与稳定性，并在生态层面具备与云原生、边缘与隐私计算等方向进一步融合的潜力。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_35\textbackslash{}_\textbackslash{}_
+
+面向未来，智能化方向将沿深度与强化学习推进策略演进与自优化；覆盖范围将向流处理、图与时序场景以及跨系统协同扩展以提升泛化与迁移能力；性能方面将借力新硬件与软硬协同进一步压缩端到端关键路径；可靠性则在分布式一致性与容错方面持续增强工程韧性。
+
+\textbackslash{}_\textbackslash{}_PROTECTED\textbackslash{}_0\textbackslash{}_36\textbackslash{}_\textbackslash{}_
+
+感谢在研究与实现过程中给予支持的导师、同事与社区伙伴。后续工作将继续在查询复用、策略学习与工程可用性方向深入推进，促进下一代智能数据库系统的持续演进。
+
+图 6.5 研究成果的发展路径与价值实现

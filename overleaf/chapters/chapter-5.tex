@@ -1,8 +1,8 @@
-\\chapter{实验与分析——系统性能评估与测试}
+\chapter{实验与分析——系统性能评估与测试}
 
-\\section{实验平台搭建}
+\section{实验平台搭建}
 
-\\subsection{硬件环境配置}
+\subsection{硬件环境配置}
 
 为了确保实验结果的可靠性和可重复性，本研究构建了标准化的测试环境。硬件配置参考了TPC-H和TPC-DS基准测试的推荐规格\cite{c50}\cite{c51}。
 
@@ -40,22 +40,22 @@
 
 上图展示了本研究构建的分布式测试环境架构。该架构采用主-辅-监控-存储的四节点设计，通过10GbE高速网络互联，确保了测试环境的高性能和可扩展性。主测试节点负责执行核心测试任务，辅助节点提供并发测试支持，监控节点实时收集性能数据，存储节点提供大容量数据存储服务。
 
-\\subsection{软件环境配置}
+\subsection{软件环境配置}
 
 \textbf{操作系统与基础软件：}
 
 ``\texttt{bash
-\\chapter{操作系统信息}
+\chapter{操作系统信息}
 OS: macOS 15.5 (24F74)
 Kernel: Darwin Kernel
 Architecture: arm64
 
-\\chapter{编译工具链}
+\chapter{编译工具链}
 Clang: Apple clang version 16.0.0
 CMake: 3.30.0
 Make: 3.81
 
-\\chapter{数据库系统}
+\chapter{数据库系统}
 DuckDB: 基于v1.3.2修改版本 
 }`\texttt{
 
@@ -80,7 +80,7 @@ DuckDB: 基于v1.3.2修改版本
     \end{tabular}
 \end{table}
 
-\\subsection{测试数据集准备}
+\subsection{测试数据集准备}
 
 本研究采用多种数据集进行全面的性能评估，确保结果的代表性和可信度。
 
@@ -105,7 +105,7 @@ TPC-H是业界标准的决策支持系统基准测试，包含8个表和22个查
 
 TPC-DS模拟零售业务场景，包含24个表和99个查询，复杂度更高\cite{c51}。
 
-\\subsection{缓存系统配置}
+\subsection{缓存系统配置}
 
 \textbf{缓存配置参数：}
 
@@ -141,11 +141,11 @@ cache_config:
 
 上述配置文件定义了动态缓存系统的核心参数。基本配置部分设置了缓存的容量限制和TTL策略；布隆过滤器配置优化了前置过滤的效果，通过10M位数组和7个哈希函数实现1\%的假阳性率；机器学习配置支持在线学习和模型更新；持久化配置采用WAL格式确保数据的持久性和一致性。
 
-\\section{动态缓存技术性能评估}
+\section{动态缓存技术性能评估}
 
-\\subsection{整体性能基准测试}
+\subsection{整体性能基准测试}
 
-\\subsubsection{查询响应时间分析}
+\subsubsection{查询响应时间分析}
 
 我们对不同复杂度的查询进行了全面的响应时间测试，结果显示缓存系统在各种场景下都有显著的性能提升。
 
@@ -183,7 +183,7 @@ cache_config:
     \end{tabular}
 \end{table}
 
-\\subsubsection{系统吞吐量测试}
+\subsubsection{系统吞吐量测试}
 
 在并发测试中，缓存系统展现出优异的扩展性能：
 
@@ -200,7 +200,7 @@ cache_config:
 
 该折线图展示了系统吞吐量随并发度变化的趋势。蓝线代表启用缓存的系统，红线代表基线系统。随着并发度的增加，缓存系统始终保持更高的吞吐量，在128并发时达到82944 QPS的峰值性能，相比基线系统提升约80\%。这表明缓存系统具有优秀的并发扩展能力。
 
-\\subsubsection{资源利用率分析}
+\subsubsection{资源利用率分析}
 
 缓存系统在提升性能的同时，保持了良好的资源利用效率：
 
@@ -217,9 +217,9 @@ cache_config:
 
 该饼图展示了缓存系统的资源消耗分布。查询执行占用42\%的资源，这是系统的核心功能；缓存管理占用18\%，包括缓存的存储和检索；布隆过滤器仅占用8\%，体现了其高效的空间利用率；机器学习模块占用12\%，用于智能缓存策略；持久化占用15\%，确保数据的可靠性；其他开销仅占5\%，表明系统设计的高效性。
 
-\\subsection{内存使用效率分析}
+\subsection{内存使用效率分析}
 
-\\subsubsection{内存占用模式}
+\subsubsection{内存占用模式}
 
 通过长期监控，我们分析了缓存系统的内存使用模式：
 
@@ -255,7 +255,7 @@ cache_config:
     \end{tabular}
 \end{table}
 
-\\subsubsection{缓存命中率分析}
+\subsubsection{缓存命中率分析}
 
 缓存命中率是衡量缓存系统效果的核心指标：
 
@@ -272,13 +272,13 @@ cache_config:
 
 该曲线图展示了缓存命中率随系统运行时间的变化趋势。初始阶段命中率较低(15\%)，随着系统学习和缓存积累，命中率逐渐提升。在24小时后达到68\%，72小时后稳定在80\%以上，最终稳定在87\%。这表明系统具有良好的学习能力和适应性，能够随着时间的推移不断优化性能。
 
-\\section{布隆过滤器对查询的影响评估}
+\section{布隆过滤器对查询的影响评估}
 
-\\subsection{假阳性率控制效果}
+\subsection{假阳性率控制效果}
 
 布隆过滤器的假阳性率直接影响系统性能，我们对不同参数配置进行了详细测试。
 
-\\subsubsection{参数优化实验}
+\subsubsection{参数优化实验}
 
 如图\ref{fig5_8}所示是不同假阳性率下的内存使用情况。
 
@@ -314,7 +314,7 @@ cache_config:
     \end{tabular}
 \end{table}
 
-\\subsubsection{动态调优效果}
+\subsubsection{动态调优效果}
 
 系统实现的自适应参数调优机制显著提升了布隆过滤器的效果：
 
@@ -331,9 +331,9 @@ cache_config:
 
 该柱状图对比了自适应调优前后各项性能指标的改善情况。查询延迟降低了25\%，内存使用优化了15\%，假阳性率降低35\%，系统吞吐量提升20\%。这些数据表明自适应参数调优机制能够有效提升系统的整体性能，特别是在降低假阳性率方面效果显著。
 
-\\subsection{过滤效率分析}
+\subsection{过滤效率分析}
 
-\\subsubsection{过滤器命中分布}
+\subsubsection{过滤器命中分布}
 
 通过统计分析，我们发现布隆过滤器在不同查询模式下的表现：
 
@@ -350,7 +350,7 @@ cache_config:
 
 该饼图展示了布隆过滤器在实际应用中的检测结果分布。确定不存在(True Negative)占了65\%，这部分查询被正确过滤，避免了不必要的缓存查找；可能存在-实际存在(True Positive)占了25\%，这部分查询成功命中缓存；可能存在-实际不存在(False Positive)仅占了10\%，这是布隆过滤器的假阳性错误，但比例控制在可接受范围内。
 
-\\subsubsection{性能影响量化}
+\subsubsection{性能影响量化}
 
 布隆过滤器对整体查询性能的影响进行了精确测量：
 
@@ -372,11 +372,11 @@ cache_config:
     \end{tabular}
 \end{table}
 
-\\section{基于完整语句缓存技术性能评估}
+\section{基于完整语句缓存技术性能评估}
 
-\\subsection{SQL标准化效果分析}
+\subsection{SQL标准化效果分析}
 
-\\subsubsection{标准化成功率}
+\subsubsection{标准化成功率}
 
 SQL查询标准化是提高缓存命中率的关键技术：
 
@@ -393,7 +393,7 @@ SQL查询标准化是提高缓存命中率的关键技术：
 
 该柱状图展示了SQL标准化算法在不同查询类型上的成功率。简单SELECT查询的标准化成功率最高，达到98\%；多表JOIN查询为95\%；子查询和窗口函数的成功率相对较低，分别为88\%和85\%，这主要是由于其语法复杂性造成的；CTE查询的成功率为90\%，表明系统对复杂查询结构具有良好的处理能力。
 
-\\subsubsection{标准化对命中率的影响}
+\subsubsection{标准化对命中率的影响}
 
 标准化技术显著提升了缓存命中率：
 
@@ -415,9 +415,9 @@ SQL查询标准化是提高缓存命中率的关键技术：
     \end{tabular}
 \end{table}
 
-\\subsection{查询复杂度评分验证}
+\subsection{查询复杂度评分验证}
 
-\\subsubsection{复杂度评分准确性}
+\subsubsection{复杂度评分准确性}
 
 我们验证了查询复杂度评分算法的准确性：
 
@@ -439,7 +439,7 @@ SQL查询标准化是提高缓存命中率的关键技术：
 - 斯皮尔曼相关系数：0.92
 - R²决定系数：0.88
 
-\\subsubsection{特征权重优化}
+\subsubsection{特征权重优化}
 
 通过机器学习方法优化了复杂度评分的特征权重：
 
@@ -463,11 +463,11 @@ SQL查询标准化是提高缓存命中率的关键技术：
     \end{tabular}
 \end{table}
 
-\\section{基于CTE缓存的技术性能评估}
+\section{基于CTE缓存的技术性能评估}
 
-\\subsection{CTE识别与分析效果}
+\subsection{CTE识别与分析效果}
 
-\\subsubsection{CTE结构识别准确率}
+\subsubsection{CTE结构识别准确率}
 
 系统对不同类型CTE的识别能力测试：
 
@@ -484,7 +484,7 @@ SQL查询标准化是提高缓存命中率的关键技术：
 
 该柱状图展示了CTE识别算法在不同类型CTE上的准确率。简单CTE的识别准确率最高，达到98\%；嵌套CTE为94\%；递归CTE的识别难度较大，准确率为89\%；多依赖CTE为91\%；复杂CTE的准确率最低，为85\%。这些数据表明系统对各种类型的CTE都具有较好的识别能力，为后续的缓存优化提供了可靠的基础。
 
-\\subsubsection{依赖关系分析效果}
+\subsubsection{依赖关系分析效果}
 
 CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
@@ -507,9 +507,9 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsection{CTE缓存效果分析}
+\subsection{CTE缓存效果分析}
 
-\\subsubsection{缓存粒度对比}
+\subsubsection{缓存粒度对比}
 
 不同缓存粒度的性能对比：
 
@@ -526,7 +526,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 该柱状图对比了不同缓存粒度策略的性能提升效果。递归迭代缓存的效果最好，性能提升达到90\%；独立CTE缓存的提升为85\%；CTE组合缓存为75\%；完整查询缓存的提升相对较低，为65\%。这表明细粒度的CTE缓存策略能够更好地利用查询之间的公共部分，实现更高的性能提升。
 
-\\subsubsection{递归CTE优化效果}
+\subsubsection{递归CTE优化效果}
 
 递归CTE的迭代缓存策略显著提升了性能：
 
@@ -548,11 +548,11 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\section{动态更新策略测试与性能评估}
+\section{动态更新策略测试与性能评估}
 
-\\subsection{多策略协调机制测试}
+\subsection{多策略协调机制测试}
 
-\\subsubsection{策略协调框架性能测试}
+\subsubsection{策略协调框架性能测试}
 
 基于第四章介绍的StrategyCoordinator类，我们测试了多策略协调机制的性能：
 
@@ -590,7 +590,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{策略权重动态调整测试}
+\subsubsection{策略权重动态调整测试}
 
 测试了第四章提出的权重管理机制在不同工作负载下的表现：
 
@@ -605,9 +605,9 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 \textbf{图5.16 不同工作负载下的策略权重分布（蓝：LRU，红：TTL，绿：ML）}
 
-\\subsection{基于LRU的测试与性能评估}
+\subsection{基于LRU的测试与性能评估}
 
-\\subsubsection{LRU策略基准测试}
+\subsubsection{LRU策略基准测试}
 
 传统LRU策略在不同工作负载下的表现：
 
@@ -624,7 +624,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 该柱状图展示了传统LRU策略在四种不同工作负载模式下的表现。在热点访问模式下，LRU策略表现最佳，命中率达到75\%；在混合访问模式下为58\%；在随机访问模式下为45\%；在顺序访问模式下表现最差，仅为35\%。这些结果符合LRU策略的理论特性，即在具有时间局部性的访问模式下效果更好。
 
-\\subsubsection{访问时间跟踪精度测试}
+\subsubsection{访问时间跟踪精度测试}
 
 基于第四章介绍的高精度时间跟踪机制，测试了不同精度设置的影响：
 
@@ -646,7 +646,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{加权LRU优化效果}
+\subsubsection{加权LRU优化效果}
 
 改进的加权LRU策略考虑了查询复杂度和执行成本：
 
@@ -667,9 +667,9 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsection{基于TTL的测试与性能评估}
+\subsection{基于TTL的测试与性能评估}
 
-\\subsubsection{动态TTL计算测试}
+\subsubsection{动态TTL计算测试}
 
 基于第四章介绍的动态TTL计算公式，测试了不同因子的影响：
 
@@ -706,7 +706,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{分层TTL管理测试}
+\subsubsection{分层TTL管理测试}
 
 测试了第四章提出的三层TTL管理机制：
 
@@ -721,7 +721,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 \textbf{图5.19 分层TTL设置对比（蓝：动态分层，红：固定TTL）}
 
-\\subsubsection{TTL策略参数优化}
+\subsubsection{TTL策略参数优化}
 
 不同TTL设置对系统性能的影响：
 
@@ -736,7 +736,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 \textbf{图5.20 TTL设置的权衡分析（蓝线：命中率，红线：数据新鲜度）}
 
-\\subsubsection{自适应TTL效果}
+\subsubsection{自适应TTL效果}
 
 基于查询模式的自适应TTL策略：
 
@@ -758,9 +758,9 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsection{混合策略的测试与性能评估}
+\subsection{混合策略的测试与性能评估}
 
-\\subsubsection{决策融合算法测试}
+\subsubsection{决策融合算法测试}
 
 基于第四章介绍的多种融合模式，测试了不同算法的效果：
 
@@ -796,7 +796,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{多策略融合效果}
+\subsubsection{多策略融合效果}
 
 混合策略结合了LRU、TTL和复杂度评分：
 
@@ -811,7 +811,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 \textbf{图5.22 混合策略决策因子权重分布}
 
-\\subsubsection{策略切换效果}
+\subsubsection{策略切换效果}
 
 动态策略切换机制的性能表现：
 
@@ -833,7 +833,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{自适应切换机制测试}
+\subsubsection{自适应切换机制测试}
 
 测试了第四章提出的渐进式切换策略：
 
@@ -848,9 +848,9 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
 
 \textbf{图5.23 策略切换过程中的性能变化（蓝线：命中率\%，红线：系统稳定性\%）}
 
-\\subsection{基于机器学习策略的动态缓存管理技术}
+\subsection{基于机器学习策略的动态缓存管理技术}
 
-\\subsubsection{特征工程详细测试}
+\subsubsection{特征工程详细测试}
 
 基于第三章和第四章介绍的多维特征体系，测试了不同特征组合的效果：
 
@@ -886,7 +886,7 @@ CTE依赖关系分析的准确性直接影响缓存策略的有效性：
     \end{tabular}
 \end{table}
 
-\\subsubsection{机器学习模型训练效果}
+\subsubsection{机器学习模型训练效果}
 
 ML模型的训练过程和效果分析：
 
@@ -901,7 +901,7 @@ ML模型的训练过程和效果分析：
 
 \textbf{图5.25 ML模型训练过程中预测准确率变化}
 
-\\subsubsection{优化器对比测试}
+\subsubsection{优化器对比测试}
 
 基于第四章介绍的多种优化器，进行了详细对比：
 
@@ -923,7 +923,7 @@ ML模型的训练过程和效果分析：
     \end{tabular}
 \end{table}
 
-\\subsubsection{特征重要性分析}
+\subsubsection{特征重要性分析}
 
 通过特征重要性分析优化模型性能：
 
@@ -947,7 +947,7 @@ ML模型的训练过程和效果分析：
     \end{tabular}
 \end{table}
 
-\\subsubsection{在线学习效果}
+\subsubsection{在线学习效果}
 
 在线学习机制的自适应能力测试：
 
@@ -962,7 +962,7 @@ ML模型的训练过程和效果分析：
 
 \textbf{图5.26 在线学习与离线学习命中率对比（蓝线：在线学习，红线：离线学习）}
 
-\\subsubsection{反馈学习机制测试}
+\subsubsection{反馈学习机制测试}
 
 测试了第四章提出的反馈学习机制：
 
@@ -977,11 +977,11 @@ ML模型的训练过程和效果分析：
 
 \textbf{图5.27 不同反馈机制的学习效果对比}
 
-\\section{持久化策略的测试与性能评估}
+\section{持久化策略的测试与性能评估}
 
-\\subsection{基于顺序读写的持久化策略性能分析}
+\subsection{基于顺序读写的持久化策略性能分析}
 
-\\subsubsection{WAL格式持久化测试}
+\subsubsection{WAL格式持久化测试}
 
 WAL格式持久化策略的性能特征：
 
@@ -1017,7 +1017,7 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsubsection{数据完整性验证}
+\subsubsection{数据完整性验证}
 
 持久化数据的完整性和一致性测试：
 
@@ -1039,9 +1039,9 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsection{基于物化视图的持久化策略性能分析}
+\subsection{基于物化视图的持久化策略性能分析}
 
-\\subsubsection{物化视图创建性能}
+\subsubsection{物化视图创建性能}
 
 物化视图持久化策略的性能分析：
 
@@ -1056,7 +1056,7 @@ WAL格式持久化策略的性能特征：
 
 \textbf{图5.29 不同查询类型的物化视图创建时间}
 
-\\subsubsection{存储空间效率}
+\subsubsection{存储空间效率}
 
 物化视图的存储空间使用分析：
 
@@ -1079,9 +1079,9 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsection{混合持久化策略效果分析}
+\subsection{混合持久化策略效果分析}
 
-\\subsubsection{四种持久化模式完整测试}
+\subsubsection{四种持久化模式完整测试}
 
 基于第四章介绍的四种持久化模式，进行了全面的性能测试：
 
@@ -1116,7 +1116,7 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsubsection{策略选择准确性}
+\subsubsection{策略选择准确性}
 
 混合持久化策略的智能选择效果：
 
@@ -1131,7 +1131,7 @@ WAL格式持久化策略的性能特征：
 
 \textbf{图5.31 不同持久化策略的选择分布}
 
-\\subsubsection{动态策略切换测试}
+\subsubsection{动态策略切换测试}
 
 测试了基于数据特征的动态策略选择机制：
 
@@ -1153,7 +1153,7 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsubsection{性能综合对比}
+\subsubsection{性能综合对比}
 
 各种持久化策略的综合性能对比：
 
@@ -1175,11 +1175,11 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\section{综合性能评估与对比分析}
+\section{综合性能评估与对比分析}
 
-\\subsection{与传统数据库系统对比}
+\subsection{与传统数据库系统对比}
 
-\\subsubsection{TPC-H基准测试对比}
+\subsubsection{TPC-H基准测试对比}
 
 在标准TPC-H基准测试中的表现：
 
@@ -1194,7 +1194,7 @@ WAL格式持久化策略的性能特征：
 
 \textbf{图5.32 TPC-H查询性能对比（蓝：本系统，红：缓存系统，绿：PostgreSQL）}
 
-\\subsubsection{实际工作负载对比}
+\subsubsection{实际工作负载对比}
 
 在真实企业工作负载下的性能对比：
 
@@ -1216,9 +1216,9 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\subsection{可扩展性测试}
+\subsection{可扩展性测试}
 
-\\subsubsection{数据量扩展性}
+\subsubsection{数据量扩展性}
 
 系统在不同数据量下的性能表现：
 
@@ -1233,7 +1233,7 @@ WAL格式持久化策略的性能特征：
 
 \textbf{图5.33 数据量扩展性测试（蓝线：无缓存，红线：有缓存）}
 
-\\subsubsection{并发扩展性}
+\subsubsection{并发扩展性}
 
 系统在高并发场景下的表现：
 
@@ -1256,31 +1256,31 @@ WAL格式持久化策略的性能特征：
     \end{tabular}
 \end{table}
 
-\\section{本章小结}
+\section{本章小结}
 
 本章通过全面的实验评估，验证了动态缓存系统在多个维度上的优异性能。主要结论如下：
 
-\\subsection{核心性能指标}
+\subsection{核心性能指标}
 
 1. \textbf{查询响应时间}：在典型OLAP工作负载下实现30-90\%的响应时间减少
 2. \textbf{系统吞吐量}：峰值吞吐量达到15,200 QPS，相比基线系统提升3.8倍
 3. \textbf{缓存命中率}：稳定运行后命中率达到85-87\%，显著提升用户体验
 4. \textbf{资源利用率}：CPU使用率降低26.8\%，内存利用率提升至95\%
 
-\\subsection{技术组件效果}
+\subsection{技术组件效果}
 
 1. \textbf{布隆过滤器}：假阳性率控制在1\%以下，过滤效率达到80.7\%
 2. \textbf{SQL标准化}：标准化成功率达到90\%以上，命中率提升45\%
 3. \textbf{CTE缓存}：递归CTE性能提升84.3\%，复杂查询优化效果显著
 4. \textbf{机器学习策略}：预测准确率达到89\%，相比传统策略提升15-20\%
 
-\\subsection{持久化策略评估}
+\subsection{持久化策略评估}
 
 1. \textbf{WAL格式}：写入速度达到8503MB/s，数据完整性99.8\%以上
 2. \textbf{物化视图}：存储压缩比达到8:1，查询性能提升显著
 3. \textbf{混合策略}：综合评分9.1分，在各项指标上表现均衡
 
-\\subsection{实际应用价值}
+\subsection{实际应用价值}
 
 实验结果表明，该动态缓存系统在保持系统稳定性的前提下，显著提升了查询处理性能，特别适用于：
 
@@ -1291,33 +1291,33 @@ WAL格式持久化策略的性能特征：
 
 通过本章的详细实验分析，充分验证了动态缓存技术的有效性和实用性，为该技术的产业化应用提供了坚实的实验基础。
 
-\\section{实际测试验证结果}
+\section{实际测试验证结果}
 
-\\subsection{测试执行概况}
+\subsection{测试执行概况}
 
 \textbf{实际测试时间}: 2025年9月14日  
 \textbf{测试环境}: Apple M4 Pro (14核心), 48GB RAM, macOS Darwin 24.6.0  
 \textbf{测试执行时间}: 0.94秒  
 \textbf{测试成功率}: 50\% (3/6项测试成功)
 
-\\subsection{成功测试结果}
+\subsection{成功测试结果}
 
-\\subsubsection{平台搭建验证 ✅}
+\subsubsection{平台搭建验证 ✅}
 - \textbf{硬件配置}: Apple M4 Pro (14核心), 48GB统一内存
 - \textbf{存储性能}: 926GB SSD, 读取速度12577MB/s
 - \textbf{数据集准备}: TPC-H 22个查询文件, 0.56GB数据库
 
-\\subsubsection{布隆过滤器性能 ✅}
+\subsubsection{布隆过滤器性能 ✅}
 - \textbf{假阳性率控制}: 0.06\%-9.83\%范围内精确控制
 - \textbf{查询延迟}: 平均1.6μs，性能优异
 - \textbf{内存效率}: <0.02MB内存开销
 
-\\subsubsection{持久化策略评估 ✅}
+\subsubsection{持久化策略评估 ✅}
 - \textbf{WAL格式性能}: 平均写入7781MB/s，压缩比4.5:1
 - \textbf{数据完整性}: 平均99.5\%，满足生产要求
 - \textbf{混合策略}: 综合评分9.1/10分，为最优选择
 
-\\subsection{测试结果分析}
+\subsection{测试结果分析}
 
 实际测试验证了以下关键技术点：
 

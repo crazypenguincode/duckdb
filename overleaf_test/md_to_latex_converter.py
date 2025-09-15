@@ -155,16 +155,16 @@ class MarkdownToLatexConverter:
             return title.strip()
         
         # # -> \chapter{}
-        content = re.sub(r'^# (.+)$', lambda m: f'\\\\chapter{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
+        content = re.sub(r'^# (.+)$', lambda m: f'\\chapter{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # ## -> \section{}
-        content = re.sub(r'^## (.+)$', lambda m: f'\\\\section{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
+        content = re.sub(r'^## (.+)$', lambda m: f'\\section{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # ### -> \subsection{}
-        content = re.sub(r'^### (.+)$', lambda m: f'\\\\subsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
+        content = re.sub(r'^### (.+)$', lambda m: f'\\subsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # #### -> \subsubsection{}
-        content = re.sub(r'^#### (.+)$', lambda m: f'\\\\subsubsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
+        content = re.sub(r'^#### (.+)$', lambda m: f'\\subsubsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         return content
     

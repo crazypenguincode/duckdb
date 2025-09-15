@@ -1,0 +1,59 @@
+{
+  "timestamp": "20250915_212127",
+  "test_type": "tpc_cache_benchmark",
+  "repeat_counts": [
+    10,
+    50,
+    100,
+    200
+  ],
+  "summary": {
+    "total_tests": 8,
+    "successful_tests": 0,
+    "coverage_pct": 0.0,
+    "avg_improvement_pct": 0,
+    "improvement_std": 0
+  },
+  "detailed_results": {
+    "tpch": {
+      "tpc_type": "TPC-H",
+      "database": "/Users/max/test/tpc/tpch-sf1.db",
+      "queries_count": 10,
+      "queries_used": [
+        "TPC-H Qq01",
+        "TPC-H Qq02",
+        "TPC-H Qq03",
+        "TPC-H Qq04",
+        "TPC-H Qq05",
+        "TPC-H Qq06",
+        "TPC-H Qq07",
+        "TPC-H Qq08",
+        "TPC-H Qq09",
+        "TPC-H Qq10"
+      ],
+      "no_cache_results": {},
+      "cache_results": {},
+      "comparison_results": {}
+    },
+    "tpcds": {
+      "tpc_type": "TPC-DS",
+      "database": "/Users/max/test/tpc/tpcds_sf1.db",
+      "queries_count": 10,
+      "queries_used": [
+        "TPC-DS Q01",
+        "TPC-DS Q02",
+        "TPC-DS Q03",
+        "TPC-DS Q04",
+        "TPC-DS Q05",
+        "TPC-DS Q06",
+        "TPC-DS Q07",
+        "TPC-DS Q08",
+        "TPC-DS Q09",
+        "TPC-DS Q10"
+      ],
+      "no_cache_results": {},
+      "cache_results": {},
+      "comparison_results": {}
+    }
+  }
+}

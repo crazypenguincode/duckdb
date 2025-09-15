@@ -1,0 +1,178 @@
+{
+  "timestamp": "20250915_211752",
+  "test_method": "complete_table_5_7_test",
+  "test_summary": {
+    "total_tests": 4,
+    "successful_tests": 4,
+    "coverage_pct": 100.0,
+    "avg_improvement_pct": 57.948563548022015
+  },
+  "detailed_results": [
+    {
+      "dataset_name": "repeat_queries",
+      "total_queries": 5,
+      "successful_tests": 5,
+      "avg_no_cache_time_ms": 56.6042423248291,
+      "avg_cache_time_ms": 10.656380653381348,
+      "avg_improvement_pct": 81.52434511574313,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "no_cache_time": 0.1087188720703125,
+          "estimated_cache_time": 0.02171790599822998,
+          "improvement_pct": 80.02379385964913
+        },
+        {
+          "query_id": 2,
+          "no_cache_time": 0.0428011417388916,
+          "estimated_cache_time": 0.002368927001953125,
+          "improvement_pct": 94.46527147241827
+        },
+        {
+          "query_id": 3,
+          "no_cache_time": 0.04410815238952637,
+          "estimated_cache_time": 0.00026798248291015625,
+          "improvement_pct": 99.3924422847197
+        },
+        {
+          "query_id": 4,
+          "no_cache_time": 0.043615102767944336,
+          "estimated_cache_time": 0.02144908905029297,
+          "improvement_pct": 50.82187662284417
+        },
+        {
+          "query_id": 5,
+          "no_cache_time": 0.0437779426574707,
+          "estimated_cache_time": 0.007477998733520508,
+          "improvement_pct": 82.9183413390844
+        }
+      ],
+      "description": "重复查询集",
+      "target": "1000个查询，高重复率(80%)",
+      "test_goal": "缓存命中率测试"
+    },
+    {
+      "dataset_name": "parameterized_queries",
+      "total_queries": 5,
+      "successful_tests": 5,
+      "avg_no_cache_time_ms": 43.93668174743652,
+      "avg_cache_time_ms": 18.754172325134277,
+      "avg_improvement_pct": 57.41146218019802,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "no_cache_time": 0.045838117599487305,
+          "estimated_cache_time": 0.02172696590423584,
+          "improvement_pct": 52.60065848672883
+        },
+        {
+          "query_id": 2,
+          "no_cache_time": 0.043102264404296875,
+          "estimated_cache_time": 0.021152973175048828,
+          "improvement_pct": 50.923754314541114
+        },
+        {
+          "query_id": 3,
+          "no_cache_time": 0.042675018310546875,
+          "estimated_cache_time": 0.021230459213256836,
+          "improvement_pct": 50.25084919996424
+        },
+        {
+          "query_id": 4,
+          "no_cache_time": 0.0449519157409668,
+          "estimated_cache_time": 0.021897554397583008,
+          "improvement_pct": 51.286715957187255
+        },
+        {
+          "query_id": 5,
+          "no_cache_time": 0.043116092681884766,
+          "estimated_cache_time": 0.007762908935546875,
+          "improvement_pct": 81.99533294256865
+        }
+      ],
+      "description": "参数化查询集",
+      "target": "500个模板，参数变化",
+      "test_goal": "SQL标准化测试"
+    },
+    {
+      "dataset_name": "cte_queries",
+      "total_queries": 5,
+      "successful_tests": 5,
+      "avg_no_cache_time_ms": 49.719953536987305,
+      "avg_cache_time_ms": 7.2455644607543945,
+      "avg_improvement_pct": 85.1564393045386,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "no_cache_time": 0.04647111892700195,
+          "estimated_cache_time": 0.021881461143493652,
+          "improvement_pct": 52.913849184768665
+        },
+        {
+          "query_id": 2,
+          "no_cache_time": 0.050766706466674805,
+          "estimated_cache_time": 0.007554054260253906,
+          "improvement_pct": 85.12006236762144
+        },
+        {
+          "query_id": 3,
+          "no_cache_time": 0.04776811599731445,
+          "estimated_cache_time": 5.984306335449219e-05,
+          "improvement_pct": 99.87472174251575
+        },
+        {
+          "query_id": 4,
+          "no_cache_time": 0.0455629825592041,
+          "estimated_cache_time": 0.0011131763458251953,
+          "improvement_pct": 97.55684048036419
+        },
+        {
+          "query_id": 5,
+          "no_cache_time": 0.05803084373474121,
+          "estimated_cache_time": 0.0056192874908447266,
+          "improvement_pct": 90.31672274742294
+        }
+      ],
+      "description": "CTE查询集",
+      "target": "200个查询，复杂CTE结构",
+      "test_goal": "CTE缓存优化测试"
+    },
+    {
+      "dataset_name": "concurrent_queries",
+      "total_queries": 4,
+      "successful_tests": 4,
+      "avg_no_cache_time_ms": 49.18193817138672,
+      "avg_cache_time_ms": 45.38071155548096,
+      "avg_improvement_pct": 7.70200759160832,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "no_cache_time": 0.04788088798522949,
+          "cache_time": 0.04549694061279297,
+          "improvement_pct": 4.978912198061018
+        },
+        {
+          "query_id": 2,
+          "no_cache_time": 0.04922008514404297,
+          "cache_time": 0.04509305953979492,
+          "improvement_pct": 8.384840440991262
+        },
+        {
+          "query_id": 3,
+          "no_cache_time": 0.049347639083862305,
+          "cache_time": 0.045273780822753906,
+          "improvement_pct": 8.255426879055364
+        },
+        {
+          "query_id": 4,
+          "no_cache_time": 0.05027914047241211,
+          "cache_time": 0.04565906524658203,
+          "improvement_pct": 9.188850848325636
+        }
+      ],
+      "description": "并发查询集",
+      "target": "100个查询，高并发访问",
+      "test_goal": "并发性能测试"
+    }
+  ]
+}

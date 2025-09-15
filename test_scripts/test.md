@@ -61,6 +61,9 @@ CPU性能:
 ## prompt
 简单sql测试语句和数据库（要给出对应创建语句）自动生成，复杂语句参考extension/tpcds/dsdgen/queries 和extension/tpch/dbgen/queries，对应sf=1的数据库为/Users/max/test/tpc/tpch-sf1.db和tpcds_sf1.db
 
+在part5_test下，写一个测试缓存的脚本，并给出对应的结论，更新进md/第五章-实验与分析.md中的5.2.9 ，运行10次 50次 100次 200次的结果。/md/第五章-实验与分析.md
+
+注意避免避免“"每次调用 subprocess.run 都会创建新的 DuckDB 进程和 ClientContext，缓存无法在进程间共享"的问题
 ## 为什么缓存没有提升
 python3 run_simple_cache_test.py /Users/max/src/duckdb/build/release/duckdb为什么重复sql 查询效率没有提升，是否开启了缓存？
 ### 结论：
@@ -187,3 +190,43 @@ python3 run_all_cache_tests.py /Users/max/src/duckdb/build/release/duckdb
 提供缓存命中率分析
 支持绘图和表格制作的数据格式
 现在您可以使用这个完整的测试框架来验证DuckDB查询缓存在不同场景下的性能表现！
+
+## 执行自定义数据集非表5.7的 - 10次 50次 100次 200次的结果-python3 multi_iteration_cache_test.py /Users/max/src/duckdb/build/release/duckdb
+
+```bash
+
+cd part5_test/scripts && python3 multi_iteration_cache_test.py /Users/max/src/duckdb/build/release/duckdb
+
+实验执行
+测试配置：
+测试次数：12次、50次、100次、200次
+查询类型：4类（简单聚合、多表连接、复杂分析、窗口函数）
+测试平台：Apple M4 Pro, 48GB RAM
+总执行时间：约7分钟
+📊 核心发现
+性能提升对比：
+12次测试：平均提升65.99%
+50次测试：平均提升63.14%
+100次测试：平均提升61.95%
+200次测试：平均提升60.12%
+最佳表现：
+多表连接查询：各测试次数下均保持76-79%的稳定提升
+窗口函数查询：平均提升60-76%
+复杂分析查询：稳定在55-56%提升
+简单聚合查询：31-59%提升（随测试次数变化）
+📈 生成的图表
+性能提升对比折线图 (performance_improvement_comparison.png)
+展示不同测试次数下各查询类型的性能提升趋势
+执行时间对比图 (execution_time_comparison.png)
+对比无缓存和缓存命中的执行时间，包含误差棒
+标准差变化趋势图 (std_deviation_trend.png)
+分析测试稳定性随测试次数的变化
+📝 文档更新
+在第五章5.2部分新增了5.2.7节"多次数测试对比验证"，包含：
+实验设计：详细的测试配置和目标
+结果对比：不同测试次数的性能数据对比
+趋势分析：性能提升和稳定性趋势
+统计验证：样本量充足性和结果一致性分析
+建议指南：不同应用场景的测试次数选择建议
+
+```

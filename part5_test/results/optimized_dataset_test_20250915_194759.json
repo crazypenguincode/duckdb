@@ -1,0 +1,22 @@
+{
+  "timestamp": "20250915_194759",
+  "test_method": "optimized_single_session",
+  "test_summary": {
+    "total_tests": 2,
+    "successful_tests": 2,
+    "coverage_pct": 100.0,
+    "avg_improvement_pct": 0
+  },
+  "detailed_results": [
+    {
+      "dataset_name": "repeat_queries",
+      "with_cache": null,
+      "without_cache": null
+    },
+    {
+      "dataset_name": "parameterized_queries",
+      "with_cache": null,
+      "without_cache": null
+    }
+  ]
+}

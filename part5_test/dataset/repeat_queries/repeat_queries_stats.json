@@ -1,0 +1,47 @@
+{
+  "total_queries": 1000,
+  "unique_queries": 96,
+  "repeat_rate": 0.904,
+  "most_frequent_queries": [
+    [
+      "SELECT p.product_name, SUM(oi.quantity) FROM products p JOIN order_items oi ON p.product_id = oi.pro...",
+      98
+    ],
+    [
+      "SELECT \n            c.customer_name, \n            p.product_name, \n            SUM(oi.quantity * oi....",
+      90
+    ],
+    [
+      "SELECT * FROM products WHERE price > (SELECT AVG(price) FROM products);...",
+      73
+    ],
+    [
+      "SELECT category_id, AVG(price), COUNT(*) FROM products GROUP BY category_id ORDER BY AVG(price) DESC...",
+      61
+    ],
+    [
+      "SELECT product_id, price, ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) as rank F...",
+      47
+    ],
+    [
+      "SELECT DATE(order_date), SUM(total_amount) FROM orders GROUP BY DATE(order_date) ORDER BY DATE(order...",
+      36
+    ],
+    [
+      "SELECT customer_id, order_date, total_amount, SUM(total_amount) OVER (PARTITION BY customer_id ORDER...",
+      35
+    ],
+    [
+      "SELECT SUM(total_amount) FROM orders WHERE status = 'processing';...",
+      23
+    ],
+    [
+      "SELECT customer_id, COUNT(*) as order_count FROM orders GROUP BY customer_id HAVING COUNT(*) > 6;...",
+      21
+    ],
+    [
+      "SELECT c.customer_name, COUNT(o.order_id) FROM customers c LEFT JOIN orders o ON c.customer_id = o.c...",
+      19
+    ]
+  ]
+}

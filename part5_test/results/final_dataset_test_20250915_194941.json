@@ -1,0 +1,128 @@
+{
+  "timestamp": "20250915_194941",
+  "test_method": "final_verified_method",
+  "test_summary": {
+    "total_tests": 2,
+    "successful_tests": 2,
+    "coverage_pct": 100.0,
+    "avg_improvement_pct": -5.882405174615149
+  },
+  "detailed_results": [
+    {
+      "dataset_name": "repeat_queries",
+      "total_queries": 3,
+      "successful_tests": 3,
+      "avg_cache_time_ms": 54.16350894504124,
+      "avg_no_cache_time_ms": 46.96782430013021,
+      "avg_improvement_pct": -15.891811798945438,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "avg_cache_time_s": 0.06773702303568523,
+          "avg_no_cache_time_s": 0.04556910196940104,
+          "improvement_pct": -48.64682451098029,
+          "cache_times": [
+            0.10190105438232422,
+            0.048480987548828125,
+            0.05282902717590332
+          ],
+          "no_cache_times": [
+            0.045580148696899414,
+            0.045368194580078125,
+            0.045758962631225586
+          ]
+        },
+        {
+          "query_id": 2,
+          "avg_cache_time_s": 0.048894405364990234,
+          "avg_no_cache_time_s": 0.0465848445892334,
+          "improvement_pct": -4.9577513805651225,
+          "cache_times": [
+            0.04503297805786133,
+            0.046621084213256836,
+            0.05502915382385254
+          ],
+          "no_cache_times": [
+            0.04727768898010254,
+            0.04616975784301758,
+            0.04630708694458008
+          ]
+        },
+        {
+          "query_id": 3,
+          "avg_cache_time_s": 0.04585909843444824,
+          "avg_no_cache_time_s": 0.04874952634175619,
+          "improvement_pct": 5.929140494709098,
+          "cache_times": [
+            0.04661297798156738,
+            0.04497528076171875,
+            0.045989036560058594
+          ],
+          "no_cache_times": [
+            0.05367398262023926,
+            0.04633784294128418,
+            0.04623675346374512
+          ]
+        }
+      ]
+    },
+    {
+      "dataset_name": "parameterized_queries",
+      "total_queries": 3,
+      "successful_tests": 3,
+      "avg_cache_time_ms": 46.75976435343424,
+      "avg_no_cache_time_ms": 48.78505071004232,
+      "avg_improvement_pct": 4.127001449715141,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "avg_cache_time_s": 0.04699563980102539,
+          "avg_no_cache_time_s": 0.04946668942769369,
+          "improvement_pct": 4.995381043803775,
+          "cache_times": [
+            0.04829287528991699,
+            0.046378135681152344,
+            0.046315908432006836
+          ],
+          "no_cache_times": [
+            0.04660487174987793,
+            0.05317521095275879,
+            0.048619985580444336
+          ]
+        },
+        {
+          "query_id": 2,
+          "avg_cache_time_s": 0.046419223149617515,
+          "avg_no_cache_time_s": 0.04915928840637207,
+          "improvement_pct": 5.5738505287220255,
+          "cache_times": [
+            0.046185970306396484,
+            0.04721260070800781,
+            0.04585909843444824
+          ],
+          "no_cache_times": [
+            0.046890974044799805,
+            0.04608297348022461,
+            0.0545039176940918
+          ]
+        },
+        {
+          "query_id": 3,
+          "avg_cache_time_s": 0.04686443010965983,
+          "avg_no_cache_time_s": 0.047729174296061196,
+          "improvement_pct": 1.8117727766196228,
+          "cache_times": [
+            0.04711604118347168,
+            0.04622006416320801,
+            0.047257184982299805
+          ],
+          "no_cache_times": [
+            0.04556989669799805,
+            0.04628801345825195,
+            0.051329612731933594
+          ]
+        }
+      ]
+    }
+  ]
+}

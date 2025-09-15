@@ -1,0 +1,57 @@
+{
+  "test_info": {
+    "timestamp": "2025-09-15T19:29:29.665912",
+    "duckdb_path": "/Users/max/src/duckdb/build/release/duckdb",
+    "test_method": "single_session_table_5_7"
+  },
+  "datasets": {
+    "重复查询集": {
+      "dataset_name": "重复查询集",
+      "query_count": 5,
+      "no_cache_runs": 3,
+      "cache_runs": 5,
+      "no_cache_avg_ms": 0.26666666666666666,
+      "cache_avg_ms": 0.08,
+      "cache_hit_avg_ms": 0.05,
+      "improvement_percent": 81.25,
+      "total_test_time": 0.025770187377929688,
+      "success": true
+    },
+    "参数化查询集": {
+      "dataset_name": "参数化查询集",
+      "query_count": 5,
+      "no_cache_runs": 3,
+      "cache_runs": 5,
+      "no_cache_avg_ms": 0.2,
+      "cache_avg_ms": 0.16,
+      "cache_hit_avg_ms": 0.15000000000000002,
+      "improvement_percent": 24.999999999999996,
+      "total_test_time": 0.02764105796813965,
+      "success": true
+    },
+    "CTE查询集": {
+      "dataset_name": "CTE查询集",
+      "query_count": 3,
+      "no_cache_runs": 3,
+      "cache_runs": 5,
+      "no_cache_avg_ms": 0.6666666666666666,
+      "cache_avg_ms": 0.3333333333333333,
+      "cache_hit_avg_ms": 0.3333333333333333,
+      "improvement_percent": 50.0,
+      "total_test_time": 0.03164482116699219,
+      "success": true
+    },
+    "并发查询集": {
+      "dataset_name": "并发查询集",
+      "query_count": 5,
+      "no_cache_runs": 3,
+      "cache_runs": 5,
+      "no_cache_avg_ms": 0.2,
+      "cache_avg_ms": 0.12000000000000001,
+      "cache_hit_avg_ms": 0.1,
+      "improvement_percent": 50.0,
+      "total_test_time": 0.0266721248626709,
+      "success": true
+    }
+  }
+}

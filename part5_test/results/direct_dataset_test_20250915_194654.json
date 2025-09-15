@@ -1,0 +1,116 @@
+{
+  "timestamp": "20250915_194654",
+  "test_method": "direct_python_calls",
+  "test_summary": {
+    "total_tests": 4,
+    "successful_tests": 2,
+    "coverage_pct": 50.0,
+    "avg_improvement_pct": 0.6135413843680014
+  },
+  "detailed_results": [
+    {
+      "dataset_name": "repeat_queries",
+      "total_queries": 5,
+      "successful_tests": 5,
+      "avg_first_run_ms": 57.46936798095703,
+      "avg_second_run_ms": 44.41261291503906,
+      "avg_no_cache_ms": 45.711421966552734,
+      "avg_cache_improvement_pct": 15.728664426274417,
+      "avg_vs_no_cache_improvement_pct": 2.1543286851275627,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "first_run_cached": 0.09940791130065918,
+          "second_run_cached": 0.05051112174987793,
+          "no_cache_run": 0.05765390396118164,
+          "cache_improvement": 49.18802629590811,
+          "vs_no_cache_improvement": 12.389069465465763
+        },
+        {
+          "query_id": 2,
+          "first_run_cached": 0.0431208610534668,
+          "second_run_cached": 0.042294979095458984,
+          "no_cache_run": 0.04120993614196777,
+          "cache_improvement": 1.9152724176443918,
+          "vs_no_cache_improvement": -2.632964413614353
+        },
+        {
+          "query_id": 3,
+          "first_run_cached": 0.043711185455322266,
+          "second_run_cached": 0.043350934982299805,
+          "no_cache_run": 0.04316425323486328,
+          "cache_improvement": 0.8241608395422663,
+          "vs_no_cache_improvement": -0.4324915490157089
+        },
+        {
+          "query_id": 4,
+          "first_run_cached": 0.057913780212402344,
+          "second_run_cached": 0.04350900650024414,
+          "no_cache_run": 0.043591976165771484,
+          "cache_improvement": 24.87279134487131,
+          "vs_no_cache_improvement": 0.19033242542578677
+        },
+        {
+          "query_id": 5,
+          "first_run_cached": 0.04319310188293457,
+          "second_run_cached": 0.04239702224731445,
+          "no_cache_run": 0.04293704032897949,
+          "cache_improvement": 1.843071233406011,
+          "vs_no_cache_improvement": 1.2576974973763264
+        }
+      ]
+    },
+    {
+      "dataset_name": "parameterized_queries",
+      "total_queries": 5,
+      "successful_tests": 5,
+      "avg_first_run_ms": 47.914791107177734,
+      "avg_second_run_ms": 46.04010581970215,
+      "avg_no_cache_ms": 45.92461585998535,
+      "avg_cache_improvement_pct": 3.3009575741009343,
+      "avg_vs_no_cache_improvement_pct": -0.9272459163915598,
+      "detailed_results": [
+        {
+          "query_id": 1,
+          "first_run_cached": 0.04603314399719238,
+          "second_run_cached": 0.0470280647277832,
+          "no_cache_run": 0.05464601516723633,
+          "cache_improvement": -2.1613138799546294,
+          "vs_no_cache_improvement": 13.940541531051212
+        },
+        {
+          "query_id": 2,
+          "first_run_cached": 0.042256832122802734,
+          "second_run_cached": 0.04269719123840332,
+          "no_cache_run": 0.04177999496459961,
+          "cache_improvement": -1.0421015809250838,
+          "vs_no_cache_improvement": -2.195300106141362
+        },
+        {
+          "query_id": 3,
+          "first_run_cached": 0.042897939682006836,
+          "second_run_cached": 0.043411970138549805,
+          "no_cache_run": 0.04279589653015137,
+          "cache_improvement": -1.1982637402946752,
+          "vs_no_cache_improvement": -1.4395623373946373
+        },
+        {
+          "query_id": 4,
+          "first_run_cached": 0.05866599082946777,
+          "second_run_cached": 0.05258011817932129,
+          "no_cache_run": 0.044744014739990234,
+          "cache_improvement": 10.373766068039487,
+          "vs_no_cache_improvement": -17.513188042841158
+        },
+        {
+          "query_id": 5,
+          "first_run_cached": 0.049720048904418945,
+          "second_run_cached": 0.044483184814453125,
+          "no_cache_run": 0.04565715789794922,
+          "cache_improvement": 10.532701003639572,
+          "vs_no_cache_improvement": 2.571279373368146
+        }
+      ]
+    }
+  ]
+}

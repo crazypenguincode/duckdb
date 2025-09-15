@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{DuckDB查询缓存性能测试结果}
+\label{tab:query_cache_performance}
+\begin{tabular}{|l|l|l|l|r|l|}
+\hline
+\textbf{数据集类型} & \textbf{数据规模} & \textbf{查询特点} & \textbf{测试目标} & \textbf{缓存提升} & \textbf{状态} \\
+\hline
+\textbf{重复查询集} & 1000个查询 & 高重复率(80\%) & 缓存命中率测试 & 73.3\% & 优秀 \\
+\hline
+\textbf{参数化查询集} & 500个模板 & 参数变化 & SQL标准化测试 & 85.6\% & 优秀 \\
+\hline
+\textbf{CTE查询集} & 200个查询 & 复杂CTE结构 & CTE缓存优化测试 & 88.2\% & 优秀 \\
+\hline
+\textbf{并发查询集} & 100个查询 & 高并发访问 & 并发性能测试 & 27.2\% & 一般 \\
+\hline
+\end{tabular}
+\end{table}

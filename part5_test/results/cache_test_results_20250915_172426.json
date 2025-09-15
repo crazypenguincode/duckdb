@@ -1,0 +1,101 @@
+{
+  "test_info": {
+    "start_time": "2025-09-15T17:24:24.710420",
+    "duckdb_path": "/Users/max/src/duckdb/build/release/duckdb",
+    "base_dir": "/Users/max/src/duckdb/part5_test",
+    "end_time": "2025-09-15T17:24:26.156331"
+  },
+  "dataset_generation": {
+    "重复查询集": {
+      "success": true,
+      "generation_time": 0.030040740966796875,
+      "output": "生成重复查询集...\n生成完成！\n总查询数: 1000\n唯一查询数: 96\n重复率: 90.40%\n文件保存在: /Users/max/src/duckdb/part5_test/dataset/repeat_queries\n",
+      "script_path": "/Users/max/src/duckdb/part5_test/dataset/repeat_queries/generate_repeat_queries.py"
+    },
+    "参数化查询集": {
+      "success": true,
+      "generation_time": 0.03974199295043945,
+      "output": "生成参数化查询集...\n生成完成！\n总查询数: 520\n模板数: 13\n平均每模板查询数: 40.0\n文件保存在: /Users/max/src/duckdb/part5_test/dataset/parameterized_queries\n",
+      "script_path": "/Users/max/src/duckdb/part5_test/dataset/parameterized_queries/generate_parameterized_queries.py"
+    },
+    "CTE查询集": {
+      "success": true,
+      "generation_time": 0.0890500545501709,
+      "output": "生成CTE查询集...\n生成完成！\n总查询数: 200\n模板数: 10\n复杂度分布: {'high': 70, 'very_high': 69, 'medium': 61}\n文件保存在: /Users/max/src/duckdb/part5_test/dataset/cte_queries\n",
+      "script_path": "/Users/max/src/duckdb/part5_test/dataset/cte_queries/generate_cte_queries.py"
+    },
+    "并发查询集": {
+      "success": true,
+      "generation_time": 0.10309505462646484,
+      "output": "生成并发查询集...\n生成完成！\n总查询数: 2335\n测试场景数: 5\n持续时间分布: {'fast': 1731, 'medium': 513, 'slow': 91}\n文件保存在: /Users/max/src/duckdb/part5_test/dataset/concurrent_queries\n",
+      "script_path": "/Users/max/src/duckdb/part5_test/dataset/concurrent_queries/generate_concurrent_queries.py"
+    }
+  },
+  "performance_tests": {
+    "cache_comparison": {
+      "success": false,
+      "error": "",
+      "db_path": "/Users/max/src/duckdb/part5_test/results/cache_test.db"
+    },
+    "TPC-H SF=1": {
+      "success": true,
+      "queries_tested": 5,
+      "avg_cached_time_ms": 44.106197357177734,
+      "avg_uncached_time_ms": 54.944801330566406,
+      "improvement_pct": 19.726350284133314,
+      "cached_times": [
+        46.79703712463379,
+        37.139892578125,
+        51.06806755065918,
+        46.4630126953125,
+        39.0629768371582
+      ],
+      "uncached_times": [
+        72.00193405151367,
+        57.47413635253906,
+        58.654069900512695,
+        46.6609001159668,
+        39.932966232299805
+      ]
+    },
+    "TPC-DS SF=1": {
+      "success": true,
+      "queries_tested": 5,
+      "avg_cached_time_ms": 56.56132698059082,
+      "avg_uncached_time_ms": 59.26690101623535,
+      "improvement_pct": 4.565067498473349,
+      "cached_times": [
+        43.63298416137695,
+        37.17780113220215,
+        30.75695037841797,
+        132.1721076965332,
+        39.06679153442383
+      ],
+      "uncached_times": [
+        52.78968811035156,
+        41.14699363708496,
+        34.60693359375,
+        126.9528865814209,
+        40.838003158569336
+      ]
+    }
+  },
+  "summary": {
+    "dataset_generation": {
+      "successful": 4,
+      "total": 4,
+      "success_rate": 100.0
+    },
+    "performance_tests": {
+      "successful": 2,
+      "total": 3,
+      "success_rate": 66.66666666666666,
+      "avg_improvement_pct": 12.145708891303332,
+      "improvements": [
+        19.726350284133314,
+        4.565067498473349
+      ]
+    },
+    "overall_success": true
+  }
+}

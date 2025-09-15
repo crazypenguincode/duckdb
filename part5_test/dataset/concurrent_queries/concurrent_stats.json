@@ -1,0 +1,53 @@
+{
+  "total_queries": 2335,
+  "total_scenarios": 5,
+  "scenario_stats": {
+    "高并发轻量查询": {
+      "query_count": 1000,
+      "concurrent_users": 50,
+      "queries_per_user": 20,
+      "ramp_up_time": 10
+    },
+    "中等并发混合查询": {
+      "query_count": 300,
+      "concurrent_users": 20,
+      "queries_per_user": 15,
+      "ramp_up_time": 15
+    },
+    "低并发重型查询": {
+      "query_count": 50,
+      "concurrent_users": 5,
+      "queries_per_user": 10,
+      "ramp_up_time": 5
+    },
+    "混合负载测试": {
+      "query_count": 360,
+      "concurrent_users": 30,
+      "queries_per_user": 12,
+      "ramp_up_time": 20
+    },
+    "缓存命中测试": {
+      "query_count": 625,
+      "concurrent_users": 25,
+      "queries_per_user": 25,
+      "ramp_up_time": 8
+    }
+  },
+  "duration_distribution": {
+    "fast": 1731,
+    "medium": 513,
+    "slow": 91
+  },
+  "template_usage": {
+    "1": 368,
+    "2": 349,
+    "6": 363,
+    "5": 305,
+    "10": 346,
+    "8": 144,
+    "3": 176,
+    "4": 193,
+    "7": 57,
+    "9": 34
+  }
+}

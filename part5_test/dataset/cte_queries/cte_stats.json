@@ -1,0 +1,63 @@
+{
+  "total_queries": 200,
+  "total_templates": 10,
+  "complexity_distribution": {
+    "high": 70,
+    "very_high": 69,
+    "medium": 61
+  },
+  "template_usage": {
+    "1": 27,
+    "3": 25,
+    "7": 20,
+    "9": 11,
+    "5": 27,
+    "2": 22,
+    "4": 21,
+    "8": 13,
+    "10": 17,
+    "6": 17
+  },
+  "template_details": {
+    "1": {
+      "name": "递归CTE - 组织层级",
+      "complexity": "high"
+    },
+    "2": {
+      "name": "多层CTE - 销售分析",
+      "complexity": "high"
+    },
+    "3": {
+      "name": "窗口函数CTE - 产品趋势",
+      "complexity": "very_high"
+    },
+    "4": {
+      "name": "嵌套CTE - 客户细分",
+      "complexity": "high"
+    },
+    "5": {
+      "name": "复杂聚合CTE - 供应商绩效",
+      "complexity": "very_high"
+    },
+    "6": {
+      "name": "时间序列CTE - 销售预测",
+      "complexity": "very_high"
+    },
+    "7": {
+      "name": "基础CTE - 产品统计",
+      "complexity": "medium"
+    },
+    "8": {
+      "name": "双CTE - 订单分析",
+      "complexity": "medium"
+    },
+    "9": {
+      "name": "过滤CTE - 活跃客户",
+      "complexity": "medium"
+    },
+    "10": {
+      "name": "排名CTE - 热销产品",
+      "complexity": "medium"
+    }
+  }
+}

@@ -6,42 +6,42 @@
         "optimal_hash_functions": 9,
         "actual_fp_rate": 0.0006,
         "memory_usage_mb": 0.017139315605163574,
-        "query_latency_us": 1.620626449584961
+        "query_latency_us": 1.0393857955932617
       },
       "0.005": {
         "optimal_size": 110277,
         "optimal_hash_functions": 7,
         "actual_fp_rate": 0.0041,
         "memory_usage_mb": 0.013146042823791504,
-        "query_latency_us": 1.6161918640136719
+        "query_latency_us": 0.9958267211914062
       },
       "0.01": {
         "optimal_size": 95850,
         "optimal_hash_functions": 6,
         "actual_fp_rate": 0.0095,
         "memory_usage_mb": 0.011426210403442383,
-        "query_latency_us": 1.6595840454101562
+        "query_latency_us": 1.0067939758300781
       },
       "0.02": {
         "optimal_size": 81423,
         "optimal_hash_functions": 5,
         "actual_fp_rate": 0.0216,
         "memory_usage_mb": 0.009706377983093262,
-        "query_latency_us": 1.6403913497924805
+        "query_latency_us": 1.3174772262573242
       },
       "0.05": {
         "optimal_size": 62352,
         "optimal_hash_functions": 4,
         "actual_fp_rate": 0.0515,
         "memory_usage_mb": 0.0074329376220703125,
-        "query_latency_us": 1.583099365234375
+        "query_latency_us": 1.1809110641479492
       },
       "0.1": {
         "optimal_size": 47925,
         "optimal_hash_functions": 3,
         "actual_fp_rate": 0.0983,
         "memory_usage_mb": 0.005713105201721191,
-        "query_latency_us": 1.5295982360839844
+        "query_latency_us": 1.0762929916381836
       }
     },
     "false_positive_rates": {},

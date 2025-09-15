@@ -134,18 +134,37 @@ class MarkdownToLatexConverter:
         print(f"共处理 {len(bib_content)} 条参考文献")
     
     def convert_headers(self, content: str) -> str:
-        """转换标题格式"""
+        """转换标题格式，去除序号"""
+        def remove_numbering(match):
+            title = match.group(1).strip()
+            # 去除各种格式的序号
+            # 1. 去除"第X章"格式
+            title = re.sub(r'^第[一二三四五六七八九十\d]+章\s*', '', title)
+            # 2. 去除数字序号如 1.1、2.1.1、6.1.2.1等
+            title = re.sub(r'^\d+(\.\d+)*\s+', '', title)
+            # 3. 去除"第X节"格式
+            title = re.sub(r'^第[一二三四五六七八九十\d]+节\s*', '', title)
+            # 4. 去除中文序号如"一、"、"二、"等
+            title = re.sub(r'^[一二三四五六七八九十]+[、\.]\s*', '', title)
+            # 5. 去除字母序号如"A."、"B."等
+            title = re.sub(r'^[A-Za-z]+\.\s*', '', title)
+            # 6. 去除括号序号如"(1)"、"（一）"等
+            title = re.sub(r'^[\(（]\d+[\)）]\s*', '', title)
+            title = re.sub(r'^[\(（][一二三四五六七八九十]+[\)）]\s*', '', title)
+            
+            return title.strip()
+        
         # # -> \chapter{}
-        content = re.sub(r'^# (.+)$', r'\\chapter{\1}', content, flags=re.MULTILINE)
+        content = re.sub(r'^# (.+)$', lambda m: f'\\\\chapter{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # ## -> \section{}
-        content = re.sub(r'^## (.+)$', r'\\section{\1}', content, flags=re.MULTILINE)
+        content = re.sub(r'^## (.+)$', lambda m: f'\\\\section{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # ### -> \subsection{}
-        content = re.sub(r'^### (.+)$', r'\\subsection{\1}', content, flags=re.MULTILINE)
+        content = re.sub(r'^### (.+)$', lambda m: f'\\\\subsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         # #### -> \subsubsection{}
-        content = re.sub(r'^#### (.+)$', r'\\subsubsection{\1}', content, flags=re.MULTILINE)
+        content = re.sub(r'^#### (.+)$', lambda m: f'\\\\subsubsection{{{remove_numbering(m)}}}', content, flags=re.MULTILINE)
         
         return content
     

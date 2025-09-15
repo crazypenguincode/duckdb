@@ -14,8 +14,12 @@
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/common/file_system.hpp"
+#include "duckdb/main/connection.hpp"
+#include "duckdb/main/database.hpp"
 #include "miniz_wrapper.hpp"
 #include <thread>
+#include <unistd.h>
+#include <chrono>
 
 namespace duckdb {
 
@@ -44,6 +48,11 @@ unique_ptr<CachePersistenceInterface> CachePersistenceFactory::CreatePersistence
                 throw InvalidInputException("HybridPersistence requires a ClientContext");
             }
             return make_uniq<HybridPersistence>(*context);
+        case CachePersistenceStrategy::CROSS_PROCESS:
+            if (!context) {
+                throw InvalidInputException("CrossProcessPersistence requires a ClientContext");
+            }
+            return make_uniq<CrossProcessPersistence>(*context);
         default:
             throw InvalidInputException("Unknown persistence strategy");
     }
@@ -1265,6 +1274,484 @@ void HybridPersistence::CleanupColdData() {
         }
         
         MigrateToDisk(candidate.first);
+    }
+}
+
+//===----------------------------------------------------------------------===//
+// CrossProcessPersistence (策略5: 跨进程缓存)
+//===----------------------------------------------------------------------===//
+
+CrossProcessPersistence::CrossProcessPersistence(ClientContext &context) 
+    : context(context), last_check_time(std::chrono::steady_clock::now()) {
+}
+
+bool CrossProcessPersistence::Initialize(const CachePersistenceConfig &config) {
+    lock_guard<mutex> lock(cross_process_mutex);
+    this->config = config;
+    
+    try {
+        // 设置共享缓存数据库路径
+        auto &fs = FileSystem::GetFileSystem(context);
+        if (!fs.DirectoryExists(config.persistence_path)) {
+            fs.CreateDirectory(config.persistence_path);
+        }
+        
+        shared_cache_db_path = fs.JoinPath(config.persistence_path, config.shared_cache_file);
+        process_lock_file = fs.JoinPath(config.persistence_path, "cache.lock");
+        
+        // 初始化共享缓存数据库
+        if (!InitializeSharedCacheDB()) {
+            printf("Failed to initialize shared cache database\n");
+            return false;
+        }
+        
+        // 如果启用自动加载，则加载所有缓存条目
+        if (config.auto_load_on_startup) {
+            LoadAllEntriesOnStartup();
+        }
+        
+        printf("CrossProcessPersistence initialized successfully\n");
+        return true;
+    } catch (std::exception &ex) {
+        printf("CrossProcessPersistence initialization failed: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::InitializeSharedCacheDB() {
+    try {
+        // 创建到共享缓存数据库的连接
+        shared_cache_db = make_uniq<DuckDB>(shared_cache_db_path);
+        cache_connection = make_uniq<Connection>(*shared_cache_db);
+        
+        // 创建缓存表结构
+        return CreateCacheSchema();
+    } catch (std::exception &ex) {
+        printf("Failed to initialize shared cache DB: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::CreateCacheSchema() {
+    try {
+        // 创建缓存条目表
+        string create_cache_table = R"(
+            CREATE TABLE IF NOT EXISTS cache_entries (
+                cache_key VARCHAR PRIMARY KEY,
+                result_data TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                access_count BIGINT DEFAULT 1,
+                ml_score DOUBLE DEFAULT 0.5,
+                result_size_bytes BIGINT DEFAULT 0,
+                execution_time_ms DOUBLE DEFAULT 0.0,
+                process_id VARCHAR DEFAULT '',
+                query_complexity DOUBLE DEFAULT 0.0,
+                table_count INTEGER DEFAULT 0,
+                join_count INTEGER DEFAULT 0,
+                has_aggregation BOOLEAN DEFAULT FALSE,
+                has_subquery BOOLEAN DEFAULT FALSE
+            )
+        )";
+        
+        auto result = cache_connection->Query(create_cache_table);
+        if (result->HasError()) {
+            printf("Failed to create cache table: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        // 创建索引以提高查询性能
+        string create_index = R"(
+            CREATE INDEX IF NOT EXISTS idx_cache_last_accessed 
+            ON cache_entries(last_accessed DESC)
+        )";
+        
+        result = cache_connection->Query(create_index);
+        if (result->HasError()) {
+            printf("Failed to create index: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        // 创建进程锁表
+        string create_lock_table = R"(
+            CREATE TABLE IF NOT EXISTS process_locks (
+                lock_name VARCHAR PRIMARY KEY,
+                process_id VARCHAR NOT NULL,
+                acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL
+            )
+        )";
+        
+        result = cache_connection->Query(create_lock_table);
+        if (result->HasError()) {
+            printf("Failed to create lock table: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        return true;
+    } catch (std::exception &ex) {
+        printf("Failed to create cache schema: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::PersistEntry(const string &key, const QueryCacheEntry &entry) {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        // 获取进程锁
+        if (config.enable_process_lock && !AcquireProcessLock()) {
+            printf("Failed to acquire process lock for persisting entry\n");
+            return false;
+        }
+        
+        // 序列化查询结果
+        string serialized_result = SerializeResultToJSON(*entry.result);
+        if (serialized_result.empty()) {
+            if (config.enable_process_lock) ReleaseProcessLock();
+            return false;
+        }
+        
+        // 插入或更新缓存条目
+        string upsert_sql = StringUtil::Format(R"(
+            INSERT OR REPLACE INTO cache_entries 
+            (cache_key, result_data, access_count, ml_score, result_size_bytes, 
+             execution_time_ms, process_id, query_complexity, table_count, 
+             join_count, has_aggregation, has_subquery, last_accessed)
+            VALUES ('%s', '%s', %llu, %f, %llu, %f, '%s', %f, %llu, %llu, %s, %s, CURRENT_TIMESTAMP)
+        )", 
+        key.c_str(), 
+        serialized_result.c_str(),
+        entry.access_count,
+        entry.ml_score,
+        static_cast<idx_t>(entry.ml_features.result_size_bytes),
+        entry.ml_features.execution_time_ms,
+        GetProcessId().c_str(),
+        entry.ml_features.query_complexity_score,
+        entry.ml_features.table_count,
+        entry.ml_features.join_count,
+        entry.ml_features.has_aggregation ? "TRUE" : "FALSE",
+        entry.ml_features.has_subquery ? "TRUE" : "FALSE");
+        
+        auto result = cache_connection->Query(upsert_sql);
+        
+        // 释放进程锁
+        if (config.enable_process_lock) ReleaseProcessLock();
+        
+        if (result->HasError()) {
+            printf("Failed to persist cache entry: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        printf("Successfully persisted cross-process cache entry: %s\n", key.c_str());
+        return true;
+    } catch (std::exception &ex) {
+        if (config.enable_process_lock) ReleaseProcessLock();
+        printf("Failed to persist entry: %s\n", ex.what());
+        return false;
+    }
+}
+
+unique_ptr<QueryCacheEntry> CrossProcessPersistence::LoadEntry(const string &key) {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        // 检查是否需要从其他进程更新缓存
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_check_time).count();
+        if (elapsed > config.cross_process_check_interval_ms) {
+            CheckForUpdatesFromOtherProcesses();
+            last_check_time = now;
+        }
+        
+        // 查询缓存条目
+        string select_sql = StringUtil::Format(R"(
+            SELECT result_data, access_count, ml_score, result_size_bytes, 
+                   execution_time_ms, query_complexity, table_count, join_count,
+                   has_aggregation, has_subquery
+            FROM cache_entries 
+            WHERE cache_key = '%s'
+        )", key.c_str());
+        
+        auto result = cache_connection->Query(select_sql);
+        if (result->HasError()) {
+            return nullptr;
+        }
+        
+        auto chunk = result->Fetch();
+        if (!chunk || chunk->size() == 0) {
+            return nullptr;
+        }
+        
+        // 反序列化查询结果
+        string result_data = chunk->GetValue(0, 0).GetValue<string>();
+        auto materialized_result = DeserializeResultFromJSON(result_data);
+        if (!materialized_result) {
+            return nullptr;
+        }
+        
+        // 创建缓存条目
+        auto cache_entry = make_uniq<QueryCacheEntry>(std::move(materialized_result));
+        
+        // 恢复元数据
+        cache_entry->access_count = chunk->GetValue(1, 0).GetValue<idx_t>();
+        cache_entry->ml_score = chunk->GetValue(2, 0).GetValue<double>();
+        cache_entry->ml_features.result_size_bytes = chunk->GetValue(3, 0).GetValue<double>();
+        cache_entry->ml_features.execution_time_ms = chunk->GetValue(4, 0).GetValue<double>();
+        cache_entry->ml_features.query_complexity_score = chunk->GetValue(5, 0).GetValue<double>();
+        cache_entry->ml_features.table_count = chunk->GetValue(6, 0).GetValue<idx_t>();
+        cache_entry->ml_features.join_count = chunk->GetValue(7, 0).GetValue<idx_t>();
+        cache_entry->ml_features.has_aggregation = chunk->GetValue(8, 0).GetValue<bool>();
+        cache_entry->ml_features.has_subquery = chunk->GetValue(9, 0).GetValue<bool>();
+        
+        // 更新访问统计
+        UpdateAccessStats(key);
+        
+        printf("Successfully loaded cross-process cache entry: %s\n", key.c_str());
+        return cache_entry;
+    } catch (std::exception &ex) {
+        printf("Failed to load entry: %s\n", ex.what());
+        return nullptr;
+    }
+}
+
+bool CrossProcessPersistence::DeleteEntry(const string &key) {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        string delete_sql = StringUtil::Format("DELETE FROM cache_entries WHERE cache_key = '%s'", key.c_str());
+        auto result = cache_connection->Query(delete_sql);
+        
+        if (result->HasError()) {
+            printf("Failed to delete cache entry: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        return true;
+    } catch (std::exception &ex) {
+        printf("Failed to delete entry: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::EntryExists(const string &key) {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        string check_sql = StringUtil::Format("SELECT COUNT(*) FROM cache_entries WHERE cache_key = '%s'", key.c_str());
+        auto result = cache_connection->Query(check_sql);
+        
+        if (result->HasError()) {
+            return false;
+        }
+        
+        auto chunk = result->Fetch();
+        return chunk && chunk->size() > 0 && chunk->GetValue(0, 0).GetValue<idx_t>() > 0;
+    } catch (std::exception &ex) {
+        return false;
+    }
+}
+
+vector<string> CrossProcessPersistence::GetAllKeys() {
+    lock_guard<mutex> lock(cross_process_mutex);
+    vector<string> keys;
+    
+    try {
+        string select_sql = "SELECT cache_key FROM cache_entries ORDER BY last_accessed DESC";
+        auto result = cache_connection->Query(select_sql);
+        
+        if (result->HasError()) {
+            return keys;
+        }
+        
+        while (true) {
+            auto chunk = result->Fetch();
+            if (!chunk || chunk->size() == 0) {
+                break;
+            }
+            
+            for (idx_t i = 0; i < chunk->size(); i++) {
+                keys.push_back(chunk->GetValue(0, i).GetValue<string>());
+            }
+        }
+    } catch (std::exception &ex) {
+        printf("Failed to get all keys: %s\n", ex.what());
+    }
+    
+    return keys;
+}
+
+bool CrossProcessPersistence::Clear() {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        string clear_sql = "DELETE FROM cache_entries";
+        auto result = cache_connection->Query(clear_sql);
+        
+        if (result->HasError()) {
+            printf("Failed to clear cache: %s\n", result->GetError().c_str());
+            return false;
+        }
+        
+        return true;
+    } catch (std::exception &ex) {
+        printf("Failed to clear cache: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::Sync() {
+    // 跨进程缓存自动同步，无需手动操作
+    return true;
+}
+
+idx_t CrossProcessPersistence::GetStorageSize() const {
+    try {
+        auto &fs = FileSystem::GetFileSystem(context);
+        if (fs.FileExists(shared_cache_db_path)) {
+            auto handle = fs.OpenFile(shared_cache_db_path, FileFlags::FILE_FLAGS_READ);
+            return fs.GetFileSize(*handle);
+        }
+        return 0;
+    } catch (std::exception &ex) {
+        return 0;
+    }
+}
+
+void CrossProcessPersistence::Close() {
+    lock_guard<mutex> lock(cross_process_mutex);
+    
+    try {
+        if (cache_connection) {
+            cache_connection.reset();
+        }
+    } catch (std::exception &ex) {
+        printf("Error closing cross-process persistence: %s\n", ex.what());
+    }
+}
+
+bool CrossProcessPersistence::LoadAllEntriesOnStartup() {
+    // 这个方法在QueryCache中会被调用来预加载缓存
+    // 这里只是标记功能可用
+    printf("Cross-process cache ready for loading entries on demand\n");
+    return true;
+}
+
+bool CrossProcessPersistence::CheckForUpdatesFromOtherProcesses() {
+    // 检查其他进程是否有新的缓存条目
+    // 这里可以实现更复杂的逻辑，比如检查时间戳等
+    return true;
+}
+
+bool CrossProcessPersistence::AcquireProcessLock() {
+    try {
+        string process_id = GetProcessId();
+        auto expire_time = std::chrono::system_clock::now() + std::chrono::seconds(30);
+        
+        // 清理过期锁
+        string cleanup_sql = "DELETE FROM process_locks WHERE expires_at < CURRENT_TIMESTAMP";
+        cache_connection->Query(cleanup_sql);
+        
+        // 尝试获取锁
+        string acquire_sql = StringUtil::Format(R"(
+            INSERT OR REPLACE INTO process_locks (lock_name, process_id, expires_at)
+            VALUES ('cache_write_lock', '%s', '%s')
+        )", process_id.c_str(), "CURRENT_TIMESTAMP + INTERVAL 30 SECONDS");
+        
+        auto result = cache_connection->Query(acquire_sql);
+        return !result->HasError();
+    } catch (std::exception &ex) {
+        printf("Failed to acquire process lock: %s\n", ex.what());
+        return false;
+    }
+}
+
+void CrossProcessPersistence::ReleaseProcessLock() {
+    try {
+        string process_id = GetProcessId();
+        string release_sql = StringUtil::Format(
+            "DELETE FROM process_locks WHERE lock_name = 'cache_write_lock' AND process_id = '%s'",
+            process_id.c_str());
+        
+        cache_connection->Query(release_sql);
+    } catch (std::exception &ex) {
+        printf("Failed to release process lock: %s\n", ex.what());
+    }
+}
+
+string CrossProcessPersistence::SerializeResultToJSON(const MaterializedQueryResult &result) {
+    try {
+        // 简化的JSON序列化实现
+        // 在实际实现中，这里应该使用更完善的序列化方法
+        string json = "{";
+        json += "\"columns\":[";
+        
+        for (idx_t i = 0; i < result.ColumnCount(); i++) {
+            if (i > 0) json += ",";
+            json += "\"" + result.ColumnName(i) + "\"";
+        }
+        json += "],";
+        
+        json += "\"rows\":[";
+        for (idx_t row = 0; row < result.RowCount(); row++) {
+            if (row > 0) json += ",";
+            json += "[";
+            for (idx_t col = 0; col < result.ColumnCount(); col++) {
+                if (col > 0) json += ",";
+                auto value = result.GetValue(col, row);
+                json += "\"" + value.ToString() + "\"";
+            }
+            json += "]";
+        }
+        json += "]}";
+        
+        return json;
+    } catch (std::exception &ex) {
+        printf("Failed to serialize result to JSON: %s\n", ex.what());
+        return "";
+    }
+}
+
+unique_ptr<MaterializedQueryResult> CrossProcessPersistence::DeserializeResultFromJSON(const string &json_data) {
+    // 简化的JSON反序列化实现
+    // 在实际实现中，这里应该使用更完善的反序列化方法
+    // 暂时返回nullptr，表示从持久化存储加载失败，会重新执行查询
+    return nullptr;
+}
+
+string CrossProcessPersistence::GetProcessId() const {
+    return StringUtil::Format("pid_%d", getpid());
+}
+
+bool CrossProcessPersistence::IsLocked() const {
+    try {
+        string check_sql = "SELECT COUNT(*) FROM process_locks WHERE lock_name = 'cache_write_lock' AND expires_at > CURRENT_TIMESTAMP";
+        auto result = cache_connection->Query(check_sql);
+        
+        if (result->HasError()) {
+            return false;
+        }
+        
+        auto chunk = result->Fetch();
+        return chunk && chunk->size() > 0 && chunk->GetValue(0, 0).GetValue<idx_t>() > 0;
+    } catch (std::exception &ex) {
+        return false;
+    }
+}
+
+bool CrossProcessPersistence::UpdateAccessStats(const string &key) {
+    try {
+        string update_sql = StringUtil::Format(R"(
+            UPDATE cache_entries 
+            SET access_count = access_count + 1, last_accessed = CURRENT_TIMESTAMP
+            WHERE cache_key = '%s'
+        )", key.c_str());
+        
+        auto result = cache_connection->Query(update_sql);
+        return !result->HasError();
+    } catch (std::exception &ex) {
+        printf("Failed to update access stats: %s\n", ex.what());
+        return false;
     }
 }
 

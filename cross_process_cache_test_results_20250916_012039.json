@@ -1,0 +1,62 @@
+{
+  "test_info": {
+    "start_time": "2025-09-16T01:20:36.377054",
+    "duckdb_path": "build/release/duckdb",
+    "test_db_path": "cross_process_cache_test.db",
+    "cache_storage_path": "cross_process_cache_storage"
+  },
+  "effectiveness_test": {
+    "simple_aggregation": {
+      "complexity": "simple",
+      "first_execution_ms": 25.91681480407715,
+      "cached_execution_ms": 32.94491767883301,
+      "uncached_execution_ms": 23.55504035949707,
+      "cache_speedup": 0.714982522922833,
+      "improvement_pct": -39.86355861007925,
+      "output_lines": 48
+    },
+    "complex_window_functions": {
+      "complexity": "complex",
+      "first_execution_ms": 27.28128433227539,
+      "cached_execution_ms": 26.870012283325195,
+      "uncached_execution_ms": 24.29986000061035,
+      "cache_speedup": 0.9043486748121135,
+      "improvement_pct": -10.576819301223496,
+      "output_lines": 59
+    },
+    "recursive_cte": {
+      "complexity": "complex",
+      "first_execution_ms": 23.09703826904297,
+      "cached_execution_ms": 22.83620834350586,
+      "uncached_execution_ms": 21.84319496154785,
+      "cache_speedup": 0.9565158380489027,
+      "improvement_pct": -4.546099523014288,
+      "output_lines": 79
+    },
+    "multi_table_join": {
+      "complexity": "complex",
+      "first_execution_ms": 35.03012657165527,
+      "cached_execution_ms": 25.83599090576172,
+      "uncached_execution_ms": 23.75173568725586,
+      "cache_speedup": 0.9193274519213023,
+      "improvement_pct": -8.775170143141073,
+      "output_lines": 92
+    }
+  },
+  "concurrent_test": {
+    "initial_time_ms": 23.967981338500977,
+    "concurrent_avg_ms": 24.08599853515625,
+    "concurrent_min_ms": 24.08599853515625,
+    "concurrent_max_ms": 24.08599853515625,
+    "successful_processes": 1,
+    "speedup_ratio": 0.9951001742160279
+  },
+  "summary": {
+    "total_queries_tested": 4,
+    "avg_improvement_pct": -15.940411894364527,
+    "avg_speedup_ratio": 0.8737936219262878,
+    "max_improvement_pct": -4.546099523014288,
+    "min_improvement_pct": -39.86355861007925,
+    "concurrent_test_success": true
+  }
+}

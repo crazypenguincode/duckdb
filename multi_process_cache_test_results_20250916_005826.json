@@ -1,0 +1,112 @@
+{
+  "test_info": {
+    "start_time": "2025-09-16T00:58:25.384649",
+    "duckdb_path": "build/release/duckdb",
+    "test_type": "multi_process_cache_persistence",
+    "end_time": "2025-09-16T00:58:26.728525"
+  },
+  "scenarios": {
+    "no_persistence": {
+      "scenario_name": "no_persistence",
+      "num_processes": 5,
+      "queries": {
+        "simple_aggregation": {
+          "execution_times": [
+            22.715091705322266,
+            19.840002059936523,
+            19.725799560546875,
+            20.138263702392578,
+            19.977807998657227
+          ],
+          "avg_time": 20.479393005371094,
+          "std_dev": 1.2592685633394356,
+          "success_rate": 1.0,
+          "complexity": "simple"
+        },
+        "complex_join": {
+          "execution_times": [
+            25.89583396911621,
+            24.387836456298828,
+            22.216796875,
+            20.57170867919922,
+            20.676136016845703
+          ],
+          "avg_time": 22.749662399291992,
+          "std_dev": 2.3403498413894317,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        },
+        "window_function": {
+          "execution_times": [
+            21.059036254882812,
+            21.142959594726562,
+            20.880937576293945,
+            20.856857299804688,
+            22.17388153076172
+          ],
+          "avg_time": 21.222734451293945,
+          "std_dev": 0.5450993230069036,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        },
+        "recursive_cte": {
+          "execution_times": [
+            21.772146224975586,
+            21.299123764038086,
+            20.63584327697754,
+            21.326065063476562,
+            20.84493637084961
+          ],
+          "avg_time": 21.175622940063477,
+          "std_dev": 0.4456571011443061,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        }
+      }
+    },
+    "with_persistence": {
+      "scenario_name": "with_persistence",
+      "num_processes": 5,
+      "queries": {
+        "simple_aggregation": {
+          "execution_times": [],
+          "avg_time": 0,
+          "std_dev": 0,
+          "success_rate": 0,
+          "complexity": "simple",
+          "cache_path": "/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/multi_process_cache_test_w_musc0l/cache/simple_aggregation_cache"
+        },
+        "complex_join": {
+          "execution_times": [],
+          "avg_time": 0,
+          "std_dev": 0,
+          "success_rate": 0,
+          "complexity": "complex",
+          "cache_path": "/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/multi_process_cache_test_w_musc0l/cache/complex_join_cache"
+        },
+        "window_function": {
+          "execution_times": [],
+          "avg_time": 0,
+          "std_dev": 0,
+          "success_rate": 0,
+          "complexity": "complex",
+          "cache_path": "/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/multi_process_cache_test_w_musc0l/cache/window_function_cache"
+        },
+        "recursive_cte": {
+          "execution_times": [],
+          "avg_time": 0,
+          "std_dev": 0,
+          "success_rate": 0,
+          "complexity": "complex",
+          "cache_path": "/var/folders/w9/tynpqmqn77jgr605vxz8_6c80000gn/T/multi_process_cache_test_w_musc0l/cache/recursive_cte_cache"
+        }
+      }
+    },
+    "mixed_workload": {
+      "scenario_name": "mixed_workload",
+      "num_processes": 10,
+      "queries": {}
+    }
+  },
+  "summary": {}
+}

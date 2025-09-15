@@ -1124,6 +1124,56 @@ struct QueryCacheMaxSizeSetting {
     static Value GetSetting(const ClientContext &context);
 };
 
+struct QueryCachePersistenceStrategySetting {
+    using RETURN_TYPE = string;
+    static constexpr const char *Name = "query_cache_persistence_strategy";
+    static constexpr const char *Description = "Query cache persistence strategy (MEMORY_ONLY, MATERIALIZED_VIEW, WAL_FORMAT, HYBRID, CROSS_PROCESS)";
+    static constexpr const char *InputType = "VARCHAR";
+    static void SetLocal(ClientContext &context, const Value &parameter);
+    static void ResetLocal(ClientContext &context);
+    static Value GetSetting(const ClientContext &context);
+};
+
+struct QueryCachePersistencePathSetting {
+    using RETURN_TYPE = string;
+    static constexpr const char *Name = "query_cache_persistence_path";
+    static constexpr const char *Description = "Path for query cache persistence storage";
+    static constexpr const char *InputType = "VARCHAR";
+    static void SetLocal(ClientContext &context, const Value &parameter);
+    static void ResetLocal(ClientContext &context);
+    static Value GetSetting(const ClientContext &context);
+};
+
+struct QueryCacheAutoLoadOnStartupSetting {
+    using RETURN_TYPE = bool;
+    static constexpr const char *Name = "query_cache_auto_load_on_startup";
+    static constexpr const char *Description = "Automatically load cache entries on startup for cross-process caching";
+    static constexpr const char *InputType = "BOOLEAN";
+    static void SetLocal(ClientContext &context, const Value &parameter);
+    static void ResetLocal(ClientContext &context);
+    static Value GetSetting(const ClientContext &context);
+};
+
+struct QueryCacheAggressivePersistenceSetting {
+    using RETURN_TYPE = bool;
+    static constexpr const char *Name = "query_cache_aggressive_persistence";
+    static constexpr const char *Description = "Enable aggressive persistence for cross-process caching";
+    static constexpr const char *InputType = "BOOLEAN";
+    static void SetLocal(ClientContext &context, const Value &parameter);
+    static void ResetLocal(ClientContext &context);
+    static Value GetSetting(const ClientContext &context);
+};
+
+struct QueryCacheCrossProcessCheckIntervalSetting {
+    using RETURN_TYPE = idx_t;
+    static constexpr const char *Name = "query_cache_cross_process_check_interval";
+    static constexpr const char *Description = "Interval in milliseconds to check for cross-process cache updates";
+    static constexpr const char *InputType = "BIGINT";
+    static void SetLocal(ClientContext &context, const Value &parameter);
+    static void ResetLocal(ClientContext &context);
+    static Value GetSetting(const ClientContext &context);
+};
+
 struct ScalarSubqueryErrorOnMultipleRowsSetting {
     using RETURN_TYPE = bool;
     static constexpr const char *Name = "scalar_subquery_error_on_multiple_rows";

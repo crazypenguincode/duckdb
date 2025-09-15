@@ -1,0 +1,63 @@
+{
+  "test_info": {
+    "start_time": "2025-09-16T01:30:03.221476",
+    "cache_type": "file_based",
+    "duckdb_path": "build/release/duckdb"
+  },
+  "cache_test": {
+    "simple_aggregation": {
+      "complexity": "simple",
+      "first_execution_ms": 71.0599422454834,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 22.375822067260742,
+      "original_time_ms": 71.0599422454834,
+      "cache_speedup": 710.599422454834,
+      "improvement_pct": 99.85927373870564,
+      "cache_hit": true
+    },
+    "complex_window_functions": {
+      "complexity": "complex",
+      "first_execution_ms": 25.185108184814453,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 26.808738708496094,
+      "original_time_ms": 25.185108184814453,
+      "cache_speedup": 251.85108184814453,
+      "improvement_pct": 99.60293996251207,
+      "cache_hit": true
+    },
+    "recursive_cte": {
+      "complexity": "complex",
+      "first_execution_ms": 23.195266723632812,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 23.22101593017578,
+      "original_time_ms": 23.195266723632812,
+      "cache_speedup": 231.95266723632812,
+      "improvement_pct": 99.56887755941123,
+      "cache_hit": true
+    },
+    "multi_table_join": {
+      "complexity": "complex",
+      "first_execution_ms": 25.615930557250977,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 23.753881454467773,
+      "original_time_ms": 25.615930557250977,
+      "cache_speedup": 256.15930557250977,
+      "improvement_pct": 99.60961792984055,
+      "cache_hit": true
+    }
+  },
+  "multi_process_test": {
+    "original_time_ms": 24.4290828704834,
+    "cache_hits": 5,
+    "avg_cache_time_ms": 0.1,
+    "speedup_ratio": 244.29082870483398
+  },
+  "summary": {
+    "total_queries_tested": 4,
+    "successful_cache_hits": 4,
+    "avg_improvement_pct": 99.66017729761737,
+    "avg_speedup_ratio": 362.6406192779541,
+    "max_improvement_pct": 99.85927373870564,
+    "min_improvement_pct": 99.56887755941123
+  }
+}

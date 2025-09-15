@@ -1,0 +1,196 @@
+{
+  "test_info": {
+    "start_time": "2025-09-16T00:59:49.390152",
+    "duckdb_path": "build/release/duckdb",
+    "test_type": "multi_process_cache_persistence",
+    "end_time": "2025-09-16T00:59:50.757700"
+  },
+  "scenarios": {
+    "no_persistence": {
+      "scenario_name": "no_persistence",
+      "num_processes": 5,
+      "queries": {
+        "simple_aggregation": {
+          "execution_times": [
+            21.38495445251465,
+            20.492076873779297,
+            20.69711685180664,
+            20.29895782470703,
+            21.556854248046875
+          ],
+          "avg_time": 20.8859920501709,
+          "std_dev": 0.5555339224805176,
+          "success_rate": 1.0,
+          "complexity": "simple"
+        },
+        "complex_join": {
+          "execution_times": [
+            21.940946578979492,
+            22.856950759887695,
+            21.732807159423828,
+            22.08685874938965,
+            22.66407012939453
+          ],
+          "avg_time": 22.25632667541504,
+          "std_dev": 0.4819908406584239,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        },
+        "window_function": {
+          "execution_times": [
+            30.08413314819336,
+            25.752782821655273,
+            21.93593978881836,
+            21.83985710144043,
+            24.2612361907959
+          ],
+          "avg_time": 24.774789810180664,
+          "std_dev": 3.3941948154163972,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        },
+        "recursive_cte": {
+          "execution_times": [
+            22.289037704467773,
+            21.802902221679688,
+            22.60112762451172,
+            21.441936492919922,
+            22.5982666015625
+          ],
+          "avg_time": 22.14665412902832,
+          "std_dev": 0.511264458584862,
+          "success_rate": 1.0,
+          "complexity": "complex"
+        }
+      }
+    },
+    "with_persistence": {
+      "scenario_name": "with_persistence",
+      "num_processes": 5,
+      "queries": {
+        "simple_aggregation": {
+          "execution_times": [
+            20.869016647338867,
+            20.249128341674805,
+            20.25008201599121,
+            21.710872650146484,
+            25.413990020751953
+          ],
+          "avg_time": 21.698617935180664,
+          "std_dev": 2.161692311589107,
+          "success_rate": 1.0,
+          "complexity": "simple",
+          "first_execution": 20.869016647338867,
+          "subsequent_avg": 21.906018257141113,
+          "cache_improvement": -4.969096662896574
+        },
+        "complex_join": {
+          "execution_times": [
+            26.453018188476562,
+            21.937131881713867,
+            20.64681053161621,
+            21.371126174926758,
+            21.358966827392578
+          ],
+          "avg_time": 22.353410720825195,
+          "std_dev": 2.337004239021572,
+          "success_rate": 1.0,
+          "complexity": "complex",
+          "first_execution": 26.453018188476562,
+          "subsequent_avg": 21.328508853912354,
+          "cache_improvement": 19.372115869925732
+        },
+        "window_function": {
+          "execution_times": [
+            19.996166229248047,
+            21.80790901184082,
+            21.335124969482422,
+            21.372079849243164,
+            21.406173706054688
+          ],
+          "avg_time": 21.183490753173828,
+          "std_dev": 0.6906128016276217,
+          "success_rate": 1.0,
+          "complexity": "complex",
+          "first_execution": 19.996166229248047,
+          "subsequent_avg": 21.480321884155273,
+          "cache_improvement": -7.422201025396447
+        },
+        "recursive_cte": {
+          "execution_times": [
+            22.69577980041504,
+            21.638154983520508,
+            23.13709259033203,
+            27.97985076904297,
+            23.78392219543457
+          ],
+          "avg_time": 23.846960067749023,
+          "std_dev": 2.4388884284492773,
+          "success_rate": 1.0,
+          "complexity": "complex",
+          "first_execution": 22.69577980041504,
+          "subsequent_avg": 24.13475513458252,
+          "cache_improvement": -6.340277121216896
+        }
+      }
+    },
+    "mixed_workload": {
+      "scenario_name": "mixed_workload",
+      "num_processes": 10,
+      "queries": {
+        "mixed_workload": {
+          "no_cache_times": [
+            22.22418785095215,
+            20.990371704101562,
+            21.86107635498047,
+            21.953105926513672,
+            21.824121475219727,
+            21.765947341918945,
+            21.429061889648438,
+            21.956682205200195,
+            20.8590030670166,
+            22.578001022338867
+          ],
+          "with_cache_times": [
+            20.647287368774414,
+            24.98793601989746,
+            23.42081069946289,
+            21.420955657958984,
+            21.603822708129883,
+            21.557092666625977,
+            21.947145462036133,
+            20.966053009033203,
+            21.04806900024414,
+            21.8508243560791
+          ],
+          "avg_no_cache": 21.744155883789062,
+          "avg_with_cache": 21.94499969482422,
+          "improvement": -0.9236680058244592,
+          "total_no_cache_time": 217.44155883789062,
+          "total_with_cache_time": 219.4499969482422,
+          "query_sequence": [
+            "simple_aggregation",
+            "simple_aggregation",
+            "simple_aggregation",
+            "simple_aggregation",
+            "simple_aggregation",
+            "recursive_cte",
+            "complex_join",
+            "simple_aggregation",
+            "simple_aggregation",
+            "complex_join"
+          ]
+        }
+      }
+    }
+  },
+  "summary": {
+    "avg_improvement": 0.6228292498766107,
+    "improvements": [
+      -3.890769866510202,
+      -0.4362087545982959,
+      14.495780123757374,
+      -7.677484503142433
+    ]
+  }
+}

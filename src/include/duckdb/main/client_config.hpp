@@ -165,6 +165,21 @@ struct ClientConfig {
 	//! Maximum size of the query cache (e.g., '100MB', '1GB')
 	string query_cache_max_size = "100MB";
 
+	//! Query cache persistence strategy
+	string query_cache_persistence_strategy = "MEMORY_ONLY";
+
+	//! Path for query cache persistence storage
+	string query_cache_persistence_path = "cache_storage";
+
+	//! Automatically load cache entries on startup for cross-process caching
+	bool query_cache_auto_load_on_startup = true;
+
+	//! Enable aggressive persistence for cross-process caching
+	bool query_cache_aggressive_persistence = true;
+
+	//! Interval in milliseconds to check for cross-process cache updates
+	idx_t query_cache_cross_process_check_interval = 1000;
+
 public:
 	static ClientConfig &GetConfig(ClientContext &context);
 	static const ClientConfig &GetConfig(const ClientContext &context);

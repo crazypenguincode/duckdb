@@ -29,7 +29,8 @@ enum class CachePersistenceStrategy {
 	MEMORY_ONLY,        // 策略3: 仅内存，不落盘
 	MATERIALIZED_VIEW,  // 策略1: 使用物化视图落盘
 	WAL_FORMAT,         // 策略2: 使用WAL格式顺序读写
-	HYBRID              // 策略4: 混合策略（热数据内存，冷数据落盘）
+	HYBRID,             // 策略4: 混合策略（热数据内存，冷数据落盘）
+	CROSS_PROCESS       // 策略5: 跨进程缓存策略（专为多进程环境优化）
 };
 
 //! 持久化配置
@@ -41,6 +42,13 @@ struct CachePersistenceConfig {
 	bool enable_compression = true;
 	bool enable_async_write = true;
 	idx_t sync_interval_ms = 5000; // 5秒同步间隔
+	
+	// 跨进程缓存专用配置
+	bool auto_load_on_startup = true;        // 启动时自动加载缓存
+	bool aggressive_persistence = true;      // 积极持久化策略
+	idx_t cross_process_check_interval_ms = 1000; // 跨进程缓存检查间隔
+	string shared_cache_file = "shared_cache.db"; // 共享缓存文件名
+	bool enable_process_lock = true;         // 启用进程锁防止冲突
 };
 class ClientContext;
 

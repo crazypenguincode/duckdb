@@ -779,6 +779,41 @@
         "custom_implementation": true
     },
     {
+        "name": "query_cache_persistence_strategy",
+        "description": "Query cache persistence strategy (MEMORY_ONLY, MATERIALIZED_VIEW, WAL_FORMAT, HYBRID, CROSS_PROCESS)",
+        "type": "VARCHAR",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
+        "name": "query_cache_persistence_path",
+        "description": "Path for query cache persistence storage",
+        "type": "VARCHAR",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
+        "name": "query_cache_auto_load_on_startup",
+        "description": "Automatically load cache entries on startup for cross-process caching",
+        "type": "BOOLEAN",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
+        "name": "query_cache_aggressive_persistence",
+        "description": "Enable aggressive persistence for cross-process caching",
+        "type": "BOOLEAN",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
+        "name": "query_cache_cross_process_check_interval",
+        "description": "Interval in milliseconds to check for cross-process cache updates",
+        "type": "BIGINT",
+        "scope": "local",
+        "custom_implementation": true
+    },
+    {
         "name": "scalar_subquery_error_on_multiple_rows",
         "description": "When a scalar subquery returns multiple rows - return a random row instead of returning an error.",
         "type": "BOOLEAN",

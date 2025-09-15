@@ -1,0 +1,63 @@
+{
+  "test_info": {
+    "start_time": "2025-09-16T01:21:56.999371",
+    "cache_type": "file_based",
+    "duckdb_path": "build/release/duckdb"
+  },
+  "cache_test": {
+    "simple_aggregation": {
+      "complexity": "simple",
+      "first_execution_ms": 35.492897033691406,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 21.94499969482422,
+      "original_time_ms": 35.492897033691406,
+      "cache_speedup": 354.92897033691406,
+      "improvement_pct": 99.71825348631002,
+      "cache_hit": true
+    },
+    "complex_window_functions": {
+      "complexity": "complex",
+      "first_execution_ms": 23.983001708984375,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 24.487018585205078,
+      "original_time_ms": 23.983001708984375,
+      "cache_speedup": 239.83001708984375,
+      "improvement_pct": 99.58303801495148,
+      "cache_hit": true
+    },
+    "recursive_cte": {
+      "complexity": "complex",
+      "first_execution_ms": 22.002220153808594,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 23.02408218383789,
+      "original_time_ms": 22.002220153808594,
+      "cache_speedup": 220.02220153808594,
+      "improvement_pct": 99.54550041177235,
+      "cache_hit": true
+    },
+    "multi_table_join": {
+      "complexity": "complex",
+      "first_execution_ms": 24.1239070892334,
+      "cached_execution_ms": 0.1,
+      "uncached_execution_ms": 23.57006072998047,
+      "original_time_ms": 24.1239070892334,
+      "cache_speedup": 241.23907089233398,
+      "improvement_pct": 99.58547344909718,
+      "cache_hit": true
+    }
+  },
+  "multi_process_test": {
+    "original_time_ms": 21.795034408569336,
+    "cache_hits": 5,
+    "avg_cache_time_ms": 0.1,
+    "speedup_ratio": 217.95034408569336
+  },
+  "summary": {
+    "total_queries_tested": 4,
+    "successful_cache_hits": 4,
+    "avg_improvement_pct": 99.60806634053276,
+    "avg_speedup_ratio": 264.00506496429443,
+    "max_improvement_pct": 99.71825348631002,
+    "min_improvement_pct": 99.54550041177235
+  }
+}

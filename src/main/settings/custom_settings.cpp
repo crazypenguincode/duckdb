@@ -949,6 +949,128 @@ Value QueryCacheMaxSizeSetting::GetSetting(const ClientContext &context) {
 }
 
 //===----------------------------------------------------------------------===//
+// Query Cache Persistence Strategy
+//===----------------------------------------------------------------------===//
+void QueryCachePersistenceStrategySetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_persistence_strategy = input.ToString();
+	
+	// Update query cache configuration if it exists
+	if (context.query_cache) {
+		QueryCacheConfig cache_config;
+		cache_config.enabled = config.enable_query_cache;
+		cache_config.max_memory_bytes = DBConfig::ParseMemoryLimit(config.query_cache_max_size);
+		
+		// Parse persistence strategy
+		string strategy_str = StringUtil::Upper(config.query_cache_persistence_strategy);
+		if (strategy_str == "MEMORY_ONLY") {
+			cache_config.persistence_strategy = CachePersistenceStrategy::MEMORY_ONLY;
+		} else if (strategy_str == "MATERIALIZED_VIEW") {
+			cache_config.persistence_strategy = CachePersistenceStrategy::MATERIALIZED_VIEW;
+		} else if (strategy_str == "WAL_FORMAT") {
+			cache_config.persistence_strategy = CachePersistenceStrategy::WAL_FORMAT;
+		} else if (strategy_str == "HYBRID") {
+			cache_config.persistence_strategy = CachePersistenceStrategy::HYBRID;
+		} else if (strategy_str == "CROSS_PROCESS") {
+			cache_config.persistence_strategy = CachePersistenceStrategy::CROSS_PROCESS;
+		} else {
+			throw ParserException("Invalid query cache persistence strategy: %s. Valid options: MEMORY_ONLY, MATERIALIZED_VIEW, WAL_FORMAT, HYBRID, CROSS_PROCESS", strategy_str);
+		}
+		
+		cache_config.persistence_config.strategy = cache_config.persistence_strategy;
+		cache_config.persistence_config.persistence_path = config.query_cache_persistence_path;
+		cache_config.persistence_config.auto_load_on_startup = config.query_cache_auto_load_on_startup;
+		cache_config.persistence_config.aggressive_persistence = config.query_cache_aggressive_persistence;
+		cache_config.persistence_config.cross_process_check_interval_ms = config.query_cache_cross_process_check_interval;
+		
+		context.query_cache->UpdateConfig(cache_config);
+		context.query_cache->SetPersistenceStrategy(cache_config.persistence_strategy, &context);
+	}
+}
+
+void QueryCachePersistenceStrategySetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_persistence_strategy = ClientConfig().query_cache_persistence_strategy;
+}
+
+Value QueryCachePersistenceStrategySetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value(config.query_cache_persistence_strategy);
+}
+
+//===----------------------------------------------------------------------===//
+// Query Cache Persistence Path
+//===----------------------------------------------------------------------===//
+void QueryCachePersistencePathSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_persistence_path = input.ToString();
+}
+
+void QueryCachePersistencePathSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_persistence_path = ClientConfig().query_cache_persistence_path;
+}
+
+Value QueryCachePersistencePathSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value(config.query_cache_persistence_path);
+}
+
+//===----------------------------------------------------------------------===//
+// Query Cache Auto Load On Startup
+//===----------------------------------------------------------------------===//
+void QueryCacheAutoLoadOnStartupSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_auto_load_on_startup = input.GetValue<bool>();
+}
+
+void QueryCacheAutoLoadOnStartupSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_auto_load_on_startup = ClientConfig().query_cache_auto_load_on_startup;
+}
+
+Value QueryCacheAutoLoadOnStartupSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value::BOOLEAN(config.query_cache_auto_load_on_startup);
+}
+
+//===----------------------------------------------------------------------===//
+// Query Cache Aggressive Persistence
+//===----------------------------------------------------------------------===//
+void QueryCacheAggressivePersistenceSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_aggressive_persistence = input.GetValue<bool>();
+}
+
+void QueryCacheAggressivePersistenceSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_aggressive_persistence = ClientConfig().query_cache_aggressive_persistence;
+}
+
+Value QueryCacheAggressivePersistenceSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value::BOOLEAN(config.query_cache_aggressive_persistence);
+}
+
+//===----------------------------------------------------------------------===//
+// Query Cache Cross Process Check Interval
+//===----------------------------------------------------------------------===//
+void QueryCacheCrossProcessCheckIntervalSetting::SetLocal(ClientContext &context, const Value &input) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_cross_process_check_interval = input.GetValue<idx_t>();
+}
+
+void QueryCacheCrossProcessCheckIntervalSetting::ResetLocal(ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	config.query_cache_cross_process_check_interval = ClientConfig().query_cache_cross_process_check_interval;
+}
+
+Value QueryCacheCrossProcessCheckIntervalSetting::GetSetting(const ClientContext &context) {
+	auto &config = ClientConfig::GetConfig(context);
+	return Value::BIGINT(config.query_cache_cross_process_check_interval);
+}
+
+//===----------------------------------------------------------------------===//
 // Enable Profiling
 //===----------------------------------------------------------------------===//
 void EnableProfilingSetting::SetLocal(ClientContext &context, const Value &input) {

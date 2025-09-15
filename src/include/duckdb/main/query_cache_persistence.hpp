@@ -263,6 +263,65 @@ private:
     void CleanupColdData();
 };
 
+//===----------------------------------------------------------------------===//
+// CrossProcessPersistence (策略5: 跨进程缓存)
+//===----------------------------------------------------------------------===//
+
+class CrossProcessPersistence : public CachePersistenceInterface {
+public:
+    CrossProcessPersistence(ClientContext &context);
+    
+    bool Initialize(const CachePersistenceConfig &config) override;
+    bool PersistEntry(const string &key, const QueryCacheEntry &entry) override;
+    unique_ptr<QueryCacheEntry> LoadEntry(const string &key) override;
+    bool DeleteEntry(const string &key) override;
+    bool EntryExists(const string &key) override;
+    vector<string> GetAllKeys() override;
+    bool Clear() override;
+    bool Sync() override;
+    idx_t GetStorageSize() const override;
+    void Close() override;
+    
+    //! 跨进程专用方法
+    bool LoadAllEntriesOnStartup();
+    bool CheckForUpdatesFromOtherProcesses();
+    bool AcquireProcessLock();
+    void ReleaseProcessLock();
+    
+private:
+    ClientContext &context;
+    CachePersistenceConfig config;
+    
+    string shared_cache_db_path;
+    string process_lock_file;
+    unique_ptr<DuckDB> shared_cache_db;
+    unique_ptr<Connection> cache_connection;
+    
+    mutable mutex cross_process_mutex;
+    std::chrono::steady_clock::time_point last_check_time;
+    
+    //! 初始化共享缓存数据库
+    bool InitializeSharedCacheDB();
+    
+    //! 创建缓存表结构
+    bool CreateCacheSchema();
+    
+    //! 序列化查询结果到JSON
+    string SerializeResultToJSON(const MaterializedQueryResult &result);
+    
+    //! 从JSON反序列化查询结果
+    unique_ptr<MaterializedQueryResult> DeserializeResultFromJSON(const string &json_data);
+    
+    //! 获取进程ID
+    string GetProcessId() const;
+    
+    //! 检查文件锁
+    bool IsLocked() const;
+    
+    //! 更新缓存访问统计
+    bool UpdateAccessStats(const string &key);
+};
+
 //! 持久化工厂类
 class CachePersistenceFactory {
 public:

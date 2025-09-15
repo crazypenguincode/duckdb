@@ -84,7 +84,35 @@ QueryCache::~QueryCache() {
 
 bool QueryCache::InitializeWithContext(ClientContext *context) {
     client_context = context;
-    return InitializePersistence();
+    
+    // 初始化持久化层
+    if (!InitializePersistence()) {
+        return false;
+    }
+    
+    // 如果使用跨进程缓存策略，自动加载现有缓存条目
+    if (config.persistence_strategy == CachePersistenceStrategy::CROSS_PROCESS && persistence) {
+        printf("Loading existing cross-process cache entries...\n");
+        
+        // 获取所有缓存键
+        auto keys = persistence->GetAllKeys();
+        printf("Found %zu existing cache entries to load\n", keys.size());
+        
+        // 预加载热点缓存条目（限制数量避免内存过载）
+        idx_t max_preload = std::min(static_cast<idx_t>(keys.size()), config.max_entries / 2);
+        for (idx_t i = 0; i < max_preload; i++) {
+            auto entry = persistence->LoadEntry(keys[i]);
+            if (entry) {
+                lock_guard<mutex> lock(cache_mutex);
+                cache[keys[i]] = std::move(entry);
+                bloom_filter.Add(keys[i]);
+            }
+        }
+        
+        printf("Pre-loaded %zu cache entries from cross-process storage\n", cache.size());
+    }
+    
+    return true;
 }
 
 bool QueryCache::MightBeCached(const string &query_hash) const {

@@ -1,0 +1,27 @@
+{
+  "performance_comparison": {
+    "query_names": [],
+    "uncached_times": [],
+    "cached_times": [],
+    "complexities": []
+  },
+  "speedup_analysis": {
+    "query_names": [],
+    "speedup_ratios": [],
+    "complexities": []
+  },
+  "complexity_analysis": {
+    "simple": {
+      "queries": [],
+      "speedups": []
+    },
+    "medium": {
+      "queries": [],
+      "speedups": []
+    },
+    "complex": {
+      "queries": [],
+      "speedups": []
+    }
+  }
+}

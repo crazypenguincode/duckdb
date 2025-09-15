@@ -1,0 +1,74 @@
+{
+  "performance_comparison": {
+    "strategies": [
+      "memory",
+      "wal",
+      "materialized",
+      "hybrid"
+    ],
+    "write_times": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "read_times": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "p95_write_times": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "p95_read_times": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "resource_usage": {
+    "strategies": [
+      "memory",
+      "wal",
+      "materialized",
+      "hybrid"
+    ],
+    "storage_sizes": [
+      0.0,
+      1.0,
+      5.0,
+      1.0
+    ],
+    "memory_usage": [
+      60.0,
+      30.0,
+      25.0,
+      45.0
+    ],
+    "reliability_scores": [
+      1,
+      2,
+      3,
+      2
+    ]
+  },
+  "hit_rates": {
+    "strategies": [
+      "memory",
+      "wal",
+      "materialized",
+      "hybrid"
+    ],
+    "hit_rates": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "execution_time_comparison": {
+    "query_names": [
+      "simple_count",
+      "simple_sum",
+      "simple_avg",
+      "simple_minmax",
+      "medium_group",
+      "medium_join",
+      "medium_window",
+      "medium_distinct",
+      "complex_analytics",
+      "complex_subquery",
+      "complex_cte",
+      "complex_multiple_joins"
+    ],
+    "first_run_times": [
+      23.061916496468864,
+      23.498138834838755,
+      24.53740983037278,
+      23.021666665348068,
+      27.51948600052856,
+      25.158277834028315,
+      26.11076417088043,
+      27.11461833435654,
+      30.368812501061864,
+      28.799611168021027,
+      26.80106949992478,
+      25.342805332911666
+    ],
+    "second_run_times": [
+      21.412416664437234,
+      21.828298498197302,
+      20.25320150278276,
+      21.3897223341822,
+      22.431090333460208,
+      21.267722334111266,
+      21.34527800080832,
+      22.52690983004868,
+      21.984132331757184,
+      21.00249983050162,
+      21.504180501021136,
+      21.584771001168217
+    ],
+    "complexities": [
+      "Simple",
+      "Simple",
+      "Simple",
+      "Simple",
+      "Medium",
+      "Medium",
+      "Medium",
+      "Medium",
+      "Complex",
+      "Complex",
+      "Complex",
+      "Complex"
+    ]
+  },
+  "speedup_analysis": {
+    "query_names": [
+      "simple_count",
+      "simple_sum",
+      "simple_avg",
+      "simple_minmax",
+      "medium_group",
+      "medium_join",
+      "medium_window",
+      "medium_distinct",
+      "complex_analytics",
+      "complex_subquery",
+      "complex_cte",
+      "complex_multiple_joins"
+    ],
+    "speedup_ratios": [
+      1.0770347344665303,
+      1.0764988776738305,
+      1.2115324002973742,
+      1.0762957230425527,
+      1.226845667839786,
+      1.1829324005080222,
+      1.2232571611337948,
+      1.2036545863999646,
+      1.3813969113164675,
+      1.371246823018457,
+      1.2463190354383473,
+      1.1741058235707043
+    ],
+    "complexities": [
+      "Simple",
+      "Simple",
+      "Simple",
+      "Simple",
+      "Medium",
+      "Medium",
+      "Medium",
+      "Medium",
+      "Complex",
+      "Complex",
+      "Complex",
+      "Complex"
+    ]
+  },
+  "complexity_breakdown": {
+    "simple": {
+      "queries": [
+        "simple_count",
+        "simple_sum",
+        "simple_avg",
+        "simple_minmax"
+      ],
+      "speedups": [
+        1.0770347344665303,
+        1.0764988776738305,
+        1.2115324002973742,
+        1.0762957230425527
+      ],
+      "first_times": [
+        23.061916496468864,
+        23.498138834838755,
+        24.53740983037278,
+        23.021666665348068
+      ],
+      "second_times": [
+        21.412416664437234,
+        21.828298498197302,
+        20.25320150278276,
+        21.3897223341822
+      ]
+    },
+    "medium": {
+      "queries": [
+        "medium_group",
+        "medium_join",
+        "medium_window",
+        "medium_distinct"
+      ],
+      "speedups": [
+        1.226845667839786,
+        1.1829324005080222,
+        1.2232571611337948,
+        1.2036545863999646
+      ],
+      "first_times": [
+        27.51948600052856,
+        25.158277834028315,
+        26.11076417088043,
+        27.11461833435654
+      ],
+      "second_times": [
+        22.431090333460208,
+        21.267722334111266,
+        21.34527800080832,
+        22.52690983004868
+      ]
+    },
+    "complex": {
+      "queries": [
+        "complex_analytics",
+        "complex_subquery",
+        "complex_cte",
+        "complex_multiple_joins"
+      ],
+      "speedups": [
+        1.3813969113164675,
+        1.371246823018457,
+        1.2463190354383473,
+        1.1741058235707043
+      ],
+      "first_times": [
+        30.368812501061864,
+        28.799611168021027,
+        26.80106949992478,
+        25.342805332911666
+      ],
+      "second_times": [
+        21.984132331757184,
+        21.00249983050162,
+        21.504180501021136,
+        21.584771001168217
+      ]
+    }
+  },
+  "summary_stats": {
+    "total_queries": 12,
+    "avg_speedup": 1.2042600120588194,
+    "max_speedup": 1.3813969113164675,
+    "min_speedup": 1.0762957230425527
+  }
+}

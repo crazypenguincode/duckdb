@@ -1,0 +1,12 @@
+graph LR
+    A[查询执行] --> B{缓存检查}
+    B -->|命中| C[从缓存返回结果]
+    B -->|未命中| D[执行查询]
+    D --> E[存储到缓存]
+    E --> F[返回结果]
+    C --> G[性能提升: 1.20x]
+    F --> H[首次执行基准]
+    
+    style C fill:#e8f5e8
+    style G fill:#c8e6c9
+    style H fill:#ffecb3

@@ -1,0 +1,43 @@
+{
+  "conversion_summary": {
+    "total_chapters": 6,
+    "chapters_converted": 6,
+    "total_figures": 39,
+    "total_tables": 28,
+    "total_references": 51
+  },
+  "chapter_details": {
+    "chapter_1": {
+      "figures": 0,
+      "tables": 0
+    },
+    "chapter_2": {
+      "figures": 2,
+      "tables": 0
+    },
+    "chapter_3": {
+      "figures": 1,
+      "tables": 0
+    },
+    "chapter_4": {
+      "figures": 1,
+      "tables": 0
+    },
+    "chapter_5": {
+      "figures": 33,
+      "tables": 28
+    },
+    "chapter_6": {
+      "figures": 2,
+      "tables": 0
+    }
+  },
+  "files_generated": [
+    "overleaf/chapters/chapter-1.tex",
+    "overleaf/chapters/chapter-2.tex",
+    "overleaf/chapters/chapter-3.tex",
+    "overleaf/chapters/chapter-4.tex",
+    "overleaf/chapters/chapter-5.tex",
+    "overleaf/chapters/chapter-6.tex"
+  ]
+}

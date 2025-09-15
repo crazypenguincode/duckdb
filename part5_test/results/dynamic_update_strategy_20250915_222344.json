@@ -1,0 +1,47 @@
+{
+  "test_info": {
+    "timestamp": "20250915_222344",
+    "duckdb_path": "/Users/max/src/duckdb/build/release/duckdb",
+    "tpch_database": "/Users/max/test/tpc/tpch-sf1.db",
+    "test_date": "2025-09-15T22:23:44.481106"
+  },
+  "strategy_tests": {
+    "coordination": {
+      "random_access": {
+        "pattern_info": {
+          "name": "随机访问模式",
+          "description": "随机访问不同查询，测试缓存命中率",
+          "pattern": "random"
+        },
+        "results": {}
+      },
+      "sequential_access": {
+        "pattern_info": {
+          "name": "顺序访问模式",
+          "description": "按顺序访问查询，测试预取效果",
+          "pattern": "sequential"
+        },
+        "results": {}
+      },
+      "hotspot_access": {
+        "pattern_info": {
+          "name": "热点访问模式",
+          "description": "频繁访问少数热点查询",
+          "pattern": "hotspot"
+        },
+        "results": {}
+      },
+      "mixed_access": {
+        "pattern_info": {
+          "name": "混合访问模式",
+          "description": "混合多种访问模式",
+          "pattern": "mixed"
+        },
+        "results": {}
+      }
+    },
+    "lru": {},
+    "ttl": {},
+    "hybrid": {}
+  }
+}

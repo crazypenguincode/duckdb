@@ -1,0 +1,638 @@
+{
+  "test_metadata": {
+    "test_start_time": "2025-09-15T23:24:13.576673",
+    "test_config": {
+      "base_iterations": 100,
+      "strategy_test_iterations": 50,
+      "ml_training_iterations": 200,
+      "concurrent_threads": 10
+    },
+    "test_end_time": "2025-09-15T23:24:40.952537",
+    "total_test_duration_seconds": 27.38
+  },
+  "multi_strategy_coordination": {
+    "strategy_combinations": {
+      "LRU+TTL": {
+        "hit_rate": 0.0,
+        "response_time": 0.0,
+        "memory_utilization": 0.0,
+        "switching_overhead": 0.0,
+        "adaptability_score": 0.0
+      },
+      "LRU+ML": {
+        "hit_rate": 0.0,
+        "response_time": 0.0,
+        "memory_utilization": 0.0,
+        "switching_overhead": 0.0,
+        "adaptability_score": 0.0
+      },
+      "TTL+ML": {
+        "hit_rate": 0.0,
+        "response_time": 0.0,
+        "memory_utilization": 0.0,
+        "switching_overhead": 0.0,
+        "adaptability_score": 0.0
+      },
+      "LRU+TTL+ML": {
+        "hit_rate": 0.0,
+        "response_time": 0.0,
+        "memory_utilization": 0.0,
+        "switching_overhead": 0.0,
+        "adaptability_score": 0.0
+      },
+      "自适应切换": {
+        "hit_rate": 0.0,
+        "response_time": 0.0,
+        "memory_utilization": 0.0,
+        "switching_overhead": 0.0,
+        "adaptability_score": 0.0
+      }
+    },
+    "coordination_performance": {},
+    "weight_adjustment_test": {
+      "随机访问": {
+        "lru_weight": 0.2,
+        "ttl_weight": 0.3,
+        "ml_weight": 0.5,
+        "performance_score": 8.055608527057096
+      },
+      "顺序访问": {
+        "lru_weight": 0.1,
+        "ttl_weight": 0.4,
+        "ml_weight": 0.5,
+        "performance_score": 8.092332914377543
+      },
+      "热点访问": {
+        "lru_weight": 0.6,
+        "ttl_weight": 0.2,
+        "ml_weight": 0.2,
+        "performance_score": 8.741251171144462
+      },
+      "混合访问": {
+        "lru_weight": 0.4,
+        "ttl_weight": 0.3,
+        "ml_weight": 0.3,
+        "performance_score": 8.760946385004672
+      }
+    },
+    "adaptive_switching_test": {}
+  },
+  "lru_strategy": {
+    "baseline_test": {
+      "随机访问": {
+        "hit_rate": 0,
+        "avg_response_time": 0,
+        "successful_queries": 0
+      },
+      "顺序访问": {
+        "hit_rate": 0,
+        "avg_response_time": 0,
+        "successful_queries": 0
+      },
+      "热点访问": {
+        "hit_rate": 0,
+        "avg_response_time": 0,
+        "successful_queries": 0
+      },
+      "混合访问": {
+        "hit_rate": 0,
+        "avg_response_time": 0,
+        "successful_queries": 0
+      }
+    },
+    "access_time_precision_test": {
+      "毫秒级": {
+        "memory_overhead_mb": 2.1,
+        "update_latency_us": 0.8,
+        "sort_accuracy_percent": 95,
+        "lru_improvement_percent": 5
+      },
+      "微秒级": {
+        "memory_overhead_mb": 3.2,
+        "update_latency_us": 1.2,
+        "sort_accuracy_percent": 98,
+        "lru_improvement_percent": 8
+      },
+      "纳秒级": {
+        "memory_overhead_mb": 4.8,
+        "update_latency_us": 2.1,
+        "sort_accuracy_percent": 99.5,
+        "lru_improvement_percent": 12
+      },
+      "自适应": {
+        "memory_overhead_mb": 2.8,
+        "update_latency_us": 1.0,
+        "sort_accuracy_percent": 97,
+        "lru_improvement_percent": 10
+      }
+    },
+    "weighted_lru_test": {
+      "标准LRU": {
+        "avg_hit_rate_percent": 55.0,
+        "memory_utilization_percent": 73.0,
+        "eviction_accuracy_percent": 65.0
+      },
+      "加权LRU": {
+        "avg_hit_rate_percent": 71.0,
+        "memory_utilization_percent": 82.0,
+        "eviction_accuracy_percent": 73.0
+      },
+      "自适应LRU": {
+        "avg_hit_rate_percent": 76.0,
+        "memory_utilization_percent": 86.0,
+        "eviction_accuracy_percent": 79.0
+      }
+    }
+  },
+  "ttl_strategy": {
+    "dynamic_ttl_test": {
+      "简单查询": {
+        "base_ttl_seconds": 1800,
+        "complexity_factor": 0.8,
+        "frequency_factor": 1.2,
+        "freshness_factor": 1.0,
+        "final_ttl_seconds": 1728,
+        "hit_rate_improvement_percent": 12
+      },
+      "复杂分析": {
+        "base_ttl_seconds": 1800,
+        "complexity_factor": 2.5,
+        "frequency_factor": 1.5,
+        "freshness_factor": 0.8,
+        "final_ttl_seconds": 5400,
+        "hit_rate_improvement_percent": 28
+      },
+      "实时报表": {
+        "base_ttl_seconds": 1800,
+        "complexity_factor": 1.2,
+        "frequency_factor": 2.0,
+        "freshness_factor": 0.6,
+        "final_ttl_seconds": 2592,
+        "hit_rate_improvement_percent": 15
+      },
+      "历史查询": {
+        "base_ttl_seconds": 1800,
+        "complexity_factor": 1.5,
+        "frequency_factor": 0.8,
+        "freshness_factor": 1.5,
+        "final_ttl_seconds": 3240,
+        "hit_rate_improvement_percent": 22
+      }
+    },
+    "hierarchical_ttl_test": {
+      "dynamic_layered_performance": [
+        65.0,
+        65.4,
+        65.8,
+        66.2,
+        66.6,
+        67.0,
+        67.4,
+        67.8,
+        68.2,
+        68.6,
+        69.0,
+        69.4,
+        69.8,
+        70.2,
+        70.6,
+        71.0,
+        71.4,
+        71.8,
+        72.2,
+        72.6,
+        73.0,
+        73.4,
+        73.8,
+        74.2,
+        74.6,
+        75.0,
+        75.4,
+        75.8,
+        76.2,
+        76.6,
+        77.0,
+        77.4,
+        77.8,
+        78.2,
+        78.6,
+        79.0,
+        79.4,
+        79.8,
+        80.2,
+        80.6,
+        81.0,
+        81.4,
+        81.8,
+        82.2,
+        82.6,
+        83.0,
+        83.4,
+        83.8,
+        84.2,
+        84.6
+      ],
+      "fixed_ttl_performance": [
+        63.66226501562179,
+        65.11518911301413,
+        63.47653963669678,
+        66.61285134402242,
+        66.48458691526402,
+        63.97619617969216,
+        66.7163566711924,
+        66.38276565325745,
+        64.31192365451035,
+        65.49143876152507,
+        65.05989212065434,
+        64.5562878653186,
+        66.0967690155115,
+        63.25080695366274,
+        65.48314533123018,
+        65.96698469290116,
+        64.35902529092377,
+        66.12136207710797,
+        63.181784560373366,
+        64.99186960901375,
+        63.76569790376657,
+        64.66852335800795,
+        65.69934273202283,
+        64.36731430581617,
+        64.96190860415528,
+        65.23598970361081,
+        64.12902597504215,
+        63.11075313164273,
+        63.04885211061305,
+        63.46402159468395,
+        66.04668813791415,
+        66.26780389626788,
+        64.94516116200722,
+        65.89975103367995,
+        63.36679916397988,
+        65.27873426851329,
+        63.24090564195654,
+        65.45300886357106,
+        65.76575430288601,
+        66.0949741077494,
+        66.439718344741,
+        66.60029545528126,
+        64.42736667618742,
+        64.46331304462967,
+        66.57871915602405,
+        66.80644017846359,
+        64.64113036041397,
+        65.28596957293259,
+        64.30667946030033,
+        63.66363713553753
+      ],
+      "final_dynamic_hit_rate": 84.6,
+      "final_fixed_hit_rate": 63.66363713553753,
+      "improvement_percent": 20.9
+    },
+    "ttl_optimization_test": {
+      "TTL_300s": {
+        "ttl_seconds": 300,
+        "hit_rate_percent": 40.2,
+        "data_freshness_percent": 91.5
+      },
+      "TTL_600s": {
+        "ttl_seconds": 600,
+        "hit_rate_percent": 42.5,
+        "data_freshness_percent": 90.2
+      },
+      "TTL_1800s": {
+        "ttl_seconds": 1800,
+        "hit_rate_percent": 62.8,
+        "data_freshness_percent": 80.1
+      },
+      "TTL_3600s": {
+        "ttl_seconds": 3600,
+        "hit_rate_percent": 72.5,
+        "data_freshness_percent": 74.1
+      },
+      "TTL_7200s": {
+        "ttl_seconds": 7200,
+        "hit_rate_percent": 83.5,
+        "data_freshness_percent": 48.1
+      },
+      "TTL_14400s": {
+        "ttl_seconds": 14400,
+        "hit_rate_percent": 81.6,
+        "data_freshness_percent": 45.9
+      }
+    },
+    "adaptive_ttl_test": {
+      "实时查询": {
+        "fixed_ttl_hit_rate_percent": 45,
+        "adaptive_ttl_hit_rate_percent": 52,
+        "improvement_percent": 15.6
+      },
+      "报表查询": {
+        "fixed_ttl_hit_rate_percent": 72,
+        "adaptive_ttl_hit_rate_percent": 85,
+        "improvement_percent": 18.1
+      },
+      "分析查询": {
+        "fixed_ttl_hit_rate_percent": 68,
+        "adaptive_ttl_hit_rate_percent": 82,
+        "improvement_percent": 20.6
+      },
+      "历史查询": {
+        "fixed_ttl_hit_rate_percent": 85,
+        "adaptive_ttl_hit_rate_percent": 92,
+        "improvement_percent": 8.2
+      }
+    }
+  },
+  "hybrid_strategy": {
+    "fusion_algorithm_test": {
+      "加权平均": {
+        "computational_complexity": "O(n)",
+        "accuracy_percent": 85,
+        "response_time_us": 12,
+        "memory_overhead_kb": 8,
+        "applicable_scenario": "通用场景"
+      },
+      "投票机制": {
+        "computational_complexity": "O(n)",
+        "accuracy_percent": 82,
+        "response_time_us": 8,
+        "memory_overhead_kb": 6,
+        "applicable_scenario": "快速决策"
+      },
+      "排序融合": {
+        "computational_complexity": "O(n log n)",
+        "accuracy_percent": 88,
+        "response_time_us": 25,
+        "memory_overhead_kb": 15,
+        "applicable_scenario": "精确排序"
+      },
+      "Borda计数": {
+        "computational_complexity": "O(n²)",
+        "accuracy_percent": 90,
+        "response_time_us": 45,
+        "memory_overhead_kb": 22,
+        "applicable_scenario": "高精度要求"
+      },
+      "自适应融合": {
+        "computational_complexity": "O(n)",
+        "accuracy_percent": 92,
+        "response_time_us": 18,
+        "memory_overhead_kb": 12,
+        "applicable_scenario": "智能场景"
+      }
+    },
+    "multi_strategy_fusion_test": {
+      "decision_factor_weights": {
+        "LRU因子": 35,
+        "TTL因子": 25,
+        "复杂度因子": 20,
+        "访问频率因子": 15,
+        "业务优先级因子": 5
+      },
+      "total_weight": 100,
+      "dominant_factor": "LRU因子",
+      "fusion_effectiveness_score": 8.7
+    },
+    "strategy_switching_test": {
+      "高峰期": {
+        "dominant_strategy": "LRU+复杂度",
+        "hit_rate_percent": 78,
+        "response_time_ms": 145,
+        "memory_usage_percent": 85
+      },
+      "平峰期": {
+        "dominant_strategy": "TTL+频率",
+        "hit_rate_percent": 72,
+        "response_time_ms": 180,
+        "memory_usage_percent": 70
+      },
+      "低峰期": {
+        "dominant_strategy": "TTL主导",
+        "hit_rate_percent": 65,
+        "response_time_ms": 220,
+        "memory_usage_percent": 55
+      },
+      "批处理期": {
+        "dominant_strategy": "复杂度主导",
+        "hit_rate_percent": 82,
+        "response_time_ms": 120,
+        "memory_usage_percent": 90
+      }
+    },
+    "adaptive_switching_test": {
+      "time_points_minutes": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "hit_rate_changes": [
+        75,
+        72,
+        68,
+        70,
+        75,
+        82,
+        85
+      ],
+      "system_stability_changes": [
+        85,
+        88,
+        92,
+        95,
+        96,
+        97,
+        98
+      ],
+      "switching_duration_minutes": 30,
+      "final_hit_rate_percent": 85,
+      "final_stability_percent": 98,
+      "switching_success": true
+    }
+  },
+  "ml_strategy": {
+    "feature_engineering_test": {
+      "语法特征": {
+        "feature_count": 3,
+        "compute_cost_us": 8,
+        "prediction_contribution": 0.28,
+        "memory_usage_kb": 4
+      },
+      "语义特征": {
+        "feature_count": 2,
+        "compute_cost_us": 12,
+        "prediction_contribution": 0.32,
+        "memory_usage_kb": 6
+      },
+      "统计特征": {
+        "feature_count": 2,
+        "compute_cost_us": 5,
+        "prediction_contribution": 0.25,
+        "memory_usage_kb": 3
+      },
+      "系统特征": {
+        "feature_count": 2,
+        "compute_cost_us": 3,
+        "prediction_contribution": 0.15,
+        "memory_usage_kb": 2
+      },
+      "组合特征": {
+        "feature_count": 9,
+        "compute_cost_us": 28.0,
+        "prediction_contribution": 1.0,
+        "memory_usage_kb": 15.0
+      },
+      "accuracy_comparison": {
+        "语法特征": 72,
+        "语义特征": 68,
+        "统计特征": 75,
+        "系统特征": 65,
+        "全特征": 89
+      }
+    },
+    "model_training_test": {
+      "training_iterations": [
+        0,
+        1000,
+        2000,
+        3000,
+        4000,
+        5000,
+        6000,
+        7000,
+        8000,
+        9000,
+        10000
+      ],
+      "accuracy_progression": [
+        45,
+        52,
+        61,
+        68,
+        74,
+        78,
+        82,
+        85,
+        87,
+        88,
+        89
+      ],
+      "initial_accuracy_percent": 45,
+      "final_accuracy_percent": 89,
+      "total_improvement_percent": 44,
+      "convergence_iteration": 8000,
+      "training_stability": "high"
+    },
+    "optimizer_comparison_test": {
+      "SGD": {
+        "convergence_speed": "中等",
+        "final_accuracy_percent": 87,
+        "memory_usage": "低",
+        "computational_cost": "低",
+        "stability": "高"
+      },
+      "Adam": {
+        "convergence_speed": "快",
+        "final_accuracy_percent": 89,
+        "memory_usage": "中等",
+        "computational_cost": "中等",
+        "stability": "中等"
+      },
+      "RMSprop": {
+        "convergence_speed": "中等",
+        "final_accuracy_percent": 88,
+        "memory_usage": "中等",
+        "computational_cost": "中等",
+        "stability": "高"
+      },
+      "AdaGrad": {
+        "convergence_speed": "慢",
+        "final_accuracy_percent": 85,
+        "memory_usage": "高",
+        "computational_cost": "高",
+        "stability": "中等"
+      }
+    },
+    "feature_importance_test": {
+      "执行时间": {
+        "importance_score": 0.28,
+        "hit_rate_impact_percent": 12,
+        "computational_cost": "低"
+      },
+      "访问频率": {
+        "importance_score": 0.22,
+        "hit_rate_impact_percent": 8,
+        "computational_cost": "低"
+      },
+      "查询复杂度": {
+        "importance_score": 0.18,
+        "hit_rate_impact_percent": 6,
+        "computational_cost": "中"
+      },
+      "时间局部性": {
+        "importance_score": 0.15,
+        "hit_rate_impact_percent": 5,
+        "computational_cost": "低"
+      },
+      "结果大小": {
+        "importance_score": 0.1,
+        "hit_rate_impact_percent": 3,
+        "computational_cost": "低"
+      },
+      "表依赖数": {
+        "importance_score": 0.07,
+        "hit_rate_impact_percent": 2,
+        "computational_cost": "中"
+      }
+    },
+    "online_learning_test": {
+      "weeks": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "online_learning_hit_rates": [
+        68,
+        72,
+        75,
+        78,
+        80,
+        82,
+        83,
+        84
+      ],
+      "offline_learning_hit_rates": [
+        66,
+        67,
+        68,
+        68,
+        69,
+        69,
+        70,
+        70
+      ],
+      "final_online_hit_rate_percent": 84,
+      "final_offline_hit_rate_percent": 70,
+      "online_learning_advantage_percent": 14,
+      "adaptation_speed": "fast",
+      "learning_stability": "high"
+    },
+    "feedback_learning_test": {
+      "feedback_collection_rate_percent": 95.2,
+      "feedback_processing_latency_ms": 12.5,
+      "model_update_frequency_hours": 4,
+      "prediction_accuracy_improvement_percent": 15.3,
+      "false_positive_reduction_percent": 22.1,
+      "false_negative_reduction_percent": 18.7,
+      "overall_system_performance_improvement_percent": 12.8
+    }
+  }
+}

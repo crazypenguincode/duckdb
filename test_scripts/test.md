@@ -452,3 +452,44 @@ cd /Users/max/src/duckdb/part5_test/scripts && python3 bloom_filter_performance_
 ```
 
 cd /Users/max/src/duckdb/part5_test/scripts && python3 bloom_filter_performance_test.py /Users/max/src/duckdb/build/release/duckdb
+
+## 测试缓存更新策略
+```bash
+cd /Users/max/src/duckdb/part5_test/scripts && python3 practical_dynamic_strategy_test.py
+
+实用动态更新策略测试脚本
+==================================================
+开始执行实用动态更新策略测试...
+============================================================
+=== 测试缓存有效性 ===
+测试查询类型: simple
+测试查询类型: aggregation
+测试查询类型: join
+测试查询类型: complex
+=== 模拟LRU策略测试 ===
+测试访问模式: 随机访问
+测试访问模式: 顺序访问
+测试访问模式: 热点访问
+测试访问模式: 混合访问
+=== 模拟TTL策略测试 ===
+测试TTL: 300秒
+测试TTL: 600秒
+测试TTL: 1800秒
+测试TTL: 3600秒
+=== 模拟机器学习策略测试 ===
+=== 模拟混合策略测试 ===
+结果已保存到: /Users/max/src/duckdb/part5_test/results/practical_dynamic_strategy_20250915_233515.json
+测试报告已生成: /Users/max/src/duckdb/part5_test/results/practical_strategy_report_20250915_233515.md
+
+测试完成！总耗时: 24.83 秒
+结果已保存到: /Users/max/src/duckdb/part5_test/results
+
+测试完成！
+主要结果:
+- 最佳缓存改善: complex查询 (2.8%)
+- 最佳LRU模式: 热点访问 (84.0%命中率)
+- ML预测准确率: 89%
+- 详细结果请查看: /Users/max/src/duckdb/part5_test/results
+(.venv1) ➜  scripts git:(v1.3.2_cache_md) ✗ 
+
+```

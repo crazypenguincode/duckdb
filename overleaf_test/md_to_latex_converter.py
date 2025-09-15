@@ -80,22 +80,50 @@ class MarkdownToLatexConverter:
         # 提取参考文献条目
         bib_content = []
         
-        # 匹配参考文献格式 [数字] 作者. 标题[类型]. 出版信息, 年份.
-        pattern = r'\[(\d+)\]\s+([^[]+?)(?=\[\d+\]|$)'
-        matches = re.findall(pattern, content, re.DOTALL)
+        # 只处理"按顺序编号的完整参考文献"部分
+        # 找到这个部分的开始和结束
+        start_marker = "## 按顺序编号的完整参考文献"
+        end_marker = "## 按章节分组的参考文献映射"
         
-        for ref_num, ref_text in matches:
-            ref_text = ref_text.strip()
-            if ref_text:
-                # 清理引用文本
-                ref_text = re.sub(r'\n+', ' ', ref_text)
-                ref_text = re.sub(r'\s+', ' ', ref_text)
+        start_pos = content.find(start_marker)
+        end_pos = content.find(end_marker)
+        
+        if start_pos == -1:
+            print("未找到参考文献部分")
+            return
+        
+        if end_pos == -1:
+            end_pos = len(content)
+        
+        ref_section = content[start_pos:end_pos]
+        # 使用更简单的正则表达式匹配参考文献
+        lines = ref_section.split('\n')
+        for line in lines:
+            line = line.strip()
+            # 匹配 [数字] 开头的行
+            match = re.match(r'\[(\d+)\]\s+(.+)', line)
+            if match:
+                ref_num, ref_text = match.groups()
+                ref_text = ref_text.strip()
                 
-                bib_entry = f"\\bibitem{{c{ref_num}}} {{{ref_text}}}\n\n"
-                bib_content.append(bib_entry)
-                
-                # 建立映射关系
-                self.reference_mapping[f"[{ref_num}]"] = f"\\cite{{c{ref_num}}}"
+                # 过滤掉映射信息和其他非参考文献内容
+                if (ref_text and 
+                    not ref_text.startswith('→') and 
+                    not ref_text.startswith('**') and 
+                    not '→' in ref_text and
+                    len(ref_text) > 20 and
+                    ('.' in ref_text or '[' in ref_text)):
+                    
+                    # 清理引用文本
+                    ref_text = re.sub(r'\n+', ' ', ref_text)
+                    ref_text = re.sub(r'\s+', ' ', ref_text)
+                    
+                    # 解析参考文献信息
+                    bib_entry = self.parse_reference_to_bibitem(ref_num, ref_text)
+                    bib_content.append(bib_entry)
+                    
+                    # 建立映射关系
+                    self.reference_mapping[f"[{ref_num}]"] = f"\\cite{{c{ref_num}}}"
         
         # 写入bib文件
         bib_file = self.references_dir / "paper-manual.bib"
@@ -159,8 +187,9 @@ class MarkdownToLatexConverter:
                     title = matches_after[0].strip()
                     break
             
-            # 生成图片文件名
-            img_filename = f"chapter{chapter_num}_fig{fig_num}.png"
+            # 根据实际图片文件名格式生成文件名
+            # 格式：章节号.图号_标题.png
+            img_filename = f"{chapter_num}.{fig_num}_{title}.png"
             label = f"fig{chapter_num}_{fig_num}"
             
             # 生成LaTeX图片代码
@@ -296,6 +325,19 @@ class MarkdownToLatexConverter:
         content = re.sub(r'[&%$#]', escape_char, content)
         
         return content
+    
+    def parse_reference_to_bibitem(self, ref_num: str, ref_text: str) -> str:
+        """将参考文献解析为\bibitem格式"""
+        # 清理参考文献文本
+        ref_text = ref_text.strip()
+        
+        # 移除可能的编号前缀
+        ref_text = re.sub(r'^\[\d+\]\s*', '', ref_text)
+        
+        # 生成\bibitem格式
+        bibitem_entry = f"\\bibitem{{c{ref_num}}} {{{ref_text}}}\n\n"
+        
+        return bibitem_entry
     
     def convert_chapter(self, chapter_num: int) -> bool:
         """转换单个章节"""

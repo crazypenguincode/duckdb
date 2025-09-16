@@ -40,10 +40,10 @@ public:
 
 	//! Gets the (index) value of the (column index) column.
 	//! Note: this is very slow. Scanning over the underlying collection is much faster.
-	DUCKDB_API Value GetValue(idx_t column, idx_t index);
+	DUCKDB_API Value GetValue(idx_t column, idx_t index) const;
 
 	template <class T>
-	T GetValue(idx_t column, idx_t index) {
+	T GetValue(idx_t column, idx_t index) const {
 		auto value = GetValue(column, index);
 		return (T)value.GetValue<int64_t>();
 	}
@@ -59,7 +59,7 @@ public:
 private:
 	unique_ptr<ColumnDataCollection> collection;
 	//! Row collection, only created if GetValue is called
-	unique_ptr<ColumnDataRowCollection> row_collection;
+	mutable unique_ptr<ColumnDataRowCollection> row_collection;
 	//! Scan state for Fetch calls
 	ColumnDataScanState scan_state;
 	bool scan_initialized;

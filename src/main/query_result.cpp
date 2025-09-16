@@ -50,7 +50,7 @@ ErrorData &BaseQueryResult::GetErrorObject() {
 	return error;
 }
 
-idx_t BaseQueryResult::ColumnCount() {
+idx_t BaseQueryResult::ColumnCount() const {
 	return types.size();
 }
 

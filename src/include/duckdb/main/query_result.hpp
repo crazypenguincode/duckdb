@@ -46,7 +46,7 @@ public:
 	DUCKDB_API const ExceptionType &GetErrorType() const;
 	DUCKDB_API const std::string &GetError();
 	DUCKDB_API ErrorData &GetErrorObject();
-	DUCKDB_API idx_t ColumnCount();
+	DUCKDB_API idx_t ColumnCount() const;
 
 protected:
 	//! Whether or not execution was successful

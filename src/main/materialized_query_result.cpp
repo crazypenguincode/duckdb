@@ -51,7 +51,7 @@ string MaterializedQueryResult::ToBox(ClientContext &context, const BoxRendererC
 	return renderer.ToString(context, names, Collection());
 }
 
-Value MaterializedQueryResult::GetValue(idx_t column, idx_t index) {
+Value MaterializedQueryResult::GetValue(idx_t column, idx_t index) const {
 	if (!row_collection) {
 		row_collection = make_uniq<ColumnDataRowCollection>(collection->GetRows());
 	}

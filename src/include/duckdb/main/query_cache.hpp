@@ -23,6 +23,7 @@ namespace duckdb {
 // Forward declarations for persistence
 class CachePersistenceInterface;
 enum class CachePersistenceStrategy;
+struct QueryCacheConfig;
 //struct CachePersistenceConfig;
 //! 持久化策略类型
 enum class CachePersistenceStrategy {
@@ -74,6 +75,110 @@ struct MLCacheFeatures {
     bool has_subquery = false;              // Whether query has subqueries
 };
 
+//! System performance metrics for adaptive tuning
+struct SystemPerformanceMetrics {
+    double cpu_usage_percent = 0.0;         // Current CPU usage
+    double memory_usage_percent = 0.0;      // Current memory usage
+    double cache_hit_rate = 0.0;            // Current cache hit rate
+    double avg_query_time_ms = 0.0;         // Average query execution time
+    double cache_memory_usage_mb = 0.0;     // Cache memory usage in MB
+    idx_t concurrent_queries = 0;           // Number of concurrent queries
+    double disk_io_rate_mbps = 0.0;         // Disk I/O rate in MB/s
+    std::chrono::steady_clock::time_point timestamp; // When metrics were collected
+    
+    SystemPerformanceMetrics() : timestamp(std::chrono::steady_clock::now()) {}
+};
+
+//! Adaptive parameter tuning configuration
+struct AdaptiveTuningConfig {
+    bool enabled = true;                     // Enable adaptive tuning
+    idx_t tuning_interval_ms = 30000;       // Tuning interval (30 seconds)
+    idx_t metrics_history_size = 100;       // Number of historical metrics to keep
+    double learning_rate = 0.1;             // Learning rate for parameter updates
+    double performance_threshold = 0.05;    // Minimum performance improvement threshold
+    
+    // Parameter bounds
+    idx_t min_cache_size = 100;             // Minimum cache entries
+    idx_t max_cache_size = 10000;           // Maximum cache entries
+    idx_t min_memory_mb = 10;               // Minimum memory usage (MB)
+    idx_t max_memory_mb = 1000;             // Maximum memory usage (MB)
+    idx_t min_ttl_seconds = 300;            // Minimum TTL (5 minutes)
+    idx_t max_ttl_seconds = 7200;           // Maximum TTL (2 hours)
+    
+    // Adaptation strategies
+    bool adapt_cache_size = true;           // Adapt max_entries
+    bool adapt_memory_limit = true;         // Adapt max_memory_bytes
+    bool adapt_ttl = true;                  // Adapt TTL
+    bool adapt_eviction_strategy = true;    // Adapt eviction strategy
+};
+
+//! Adaptive parameter tuner using online learning
+class AdaptiveParameterTuner {
+public:
+    explicit AdaptiveParameterTuner(AdaptiveTuningConfig config = AdaptiveTuningConfig());
+    
+    //! Update system metrics and potentially adjust parameters
+    void UpdateMetrics(const SystemPerformanceMetrics &metrics, QueryCacheConfig &cache_config);
+    
+    //! Get current tuning statistics
+    struct TuningStats {
+        idx_t total_adjustments = 0;
+        idx_t cache_size_adjustments = 0;
+        idx_t memory_limit_adjustments = 0;
+        idx_t ttl_adjustments = 0;
+        idx_t strategy_changes = 0;
+        double avg_performance_improvement = 0.0;
+        std::chrono::steady_clock::time_point last_tuning_time;
+    };
+    TuningStats GetTuningStats() const { return tuning_stats; }
+    
+    //! Force a tuning cycle (for testing)
+    bool ForceTuning(QueryCacheConfig &cache_config);
+    
+    //! Get performance prediction for given configuration
+    double PredictPerformance(const QueryCacheConfig &config, const SystemPerformanceMetrics &metrics) const;
+    
+private:
+    AdaptiveTuningConfig config;
+    TuningStats tuning_stats;
+    
+    //! Historical performance metrics
+    std::deque<SystemPerformanceMetrics> metrics_history;
+    
+    //! Performance model weights (simple linear model)
+    struct PerformanceModel {
+        double cache_size_weight = 0.3;
+        double memory_weight = 0.25;
+        double ttl_weight = 0.2;
+        double hit_rate_weight = 0.25;
+        double bias = 0.0;
+    } performance_model;
+    
+    //! Check if it's time to tune parameters
+    bool ShouldTune() const;
+    
+    //! Calculate performance score from metrics
+    double CalculatePerformanceScore(const SystemPerformanceMetrics &metrics) const;
+    
+    //! Adapt cache size based on system load
+    bool AdaptCacheSize(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics);
+    
+    //! Adapt memory limit based on available memory
+    bool AdaptMemoryLimit(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics);
+    
+    //! Adapt TTL based on access patterns
+    bool AdaptTTL(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics);
+    
+    //! Adapt eviction strategy based on workload characteristics
+    bool AdaptEvictionStrategy(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics);
+    
+    //! Update performance model with new data
+    void UpdatePerformanceModel(const SystemPerformanceMetrics &metrics, double actual_performance);
+    
+    //! Get trend from metrics history
+    double GetTrend(std::function<double(const SystemPerformanceMetrics&)> extractor) const;
+};
+
 //! Cache entry for storing query results
 struct QueryCacheEntry {
     //! The cached result
@@ -122,6 +227,8 @@ struct QueryCacheConfig {
     CachePersistenceStrategy persistence_strategy;
     //! Persistence configuration
     CachePersistenceConfig persistence_config;
+    //! Adaptive tuning configuration
+    AdaptiveTuningConfig adaptive_tuning_config;
 };
 
 //! Simple linear regression model for ML-based caching
@@ -214,10 +321,36 @@ public:
     
     //! Load cache from persistent storage
     bool LoadFromPersistentStorage();
+    
+    //! Enable/disable adaptive parameter tuning
+    void EnableAdaptiveTuning(bool enabled = true, AdaptiveTuningConfig tuning_config = AdaptiveTuningConfig());
+    
+    //! Update system performance metrics for adaptive tuning
+    void UpdateSystemMetrics(const SystemPerformanceMetrics &metrics);
+    
+    //! Get adaptive tuning statistics
+    struct AdaptiveTuningStats {
+        bool enabled = false;
+        idx_t total_adjustments = 0;
+        double avg_performance_improvement = 0.0;
+        std::chrono::steady_clock::time_point last_tuning_time;
+        SystemPerformanceMetrics current_metrics;
+    };
+    AdaptiveTuningStats GetAdaptiveTuningStats() const;
+    
+    //! Force adaptive tuning cycle (for testing)
+    bool ForceAdaptiveTuning();
 
 private:
     //! Configuration
     QueryCacheConfig config;
+    
+    //! Adaptive parameter tuner
+    unique_ptr<AdaptiveParameterTuner> adaptive_tuner;
+    
+    //! System metrics collection
+    SystemPerformanceMetrics current_metrics;
+    std::chrono::steady_clock::time_point last_metrics_update;
     
     //! Bloom filter for fast negative lookups
     mutable BloomFilter bloom_filter;
@@ -291,6 +424,15 @@ private:
     
     //! Initialize persistence layer
     bool InitializePersistence();
+    
+    //! Collect current system performance metrics
+    SystemPerformanceMetrics CollectSystemMetrics() const;
+    
+    //! Update adaptive tuning if needed
+    void UpdateAdaptiveTuning();
+    
+    //! Calculate system load based on current state
+    double CalculateSystemLoad() const;
 };
 
 //! Utility class for generating cache keys from SQL statements

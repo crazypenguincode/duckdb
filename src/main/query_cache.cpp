@@ -67,12 +67,274 @@ vector<double> MLCachePredictor::FeaturesToVector(const MLCacheFeatures &feature
     };
 }
 
+// AdaptiveParameterTuner implementation
+AdaptiveParameterTuner::AdaptiveParameterTuner(AdaptiveTuningConfig config) 
+    : config(std::move(config)) {
+    tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+}
+
+void AdaptiveParameterTuner::UpdateMetrics(const SystemPerformanceMetrics &metrics, QueryCacheConfig &cache_config) {
+    // Add metrics to history
+    metrics_history.push_back(metrics);
+    
+    // Keep history size within bounds
+    while (metrics_history.size() > config.metrics_history_size) {
+        metrics_history.pop_front();
+    }
+    
+    // Check if we should tune parameters
+    if (ShouldTune()) {
+        bool adjusted = false;
+        
+        // Calculate current performance score
+        double current_performance = CalculatePerformanceScore(metrics);
+        
+        // Try different parameter adjustments
+        if (config.adapt_cache_size) {
+            adjusted |= AdaptCacheSize(cache_config, metrics);
+        }
+        
+        if (config.adapt_memory_limit) {
+            adjusted |= AdaptMemoryLimit(cache_config, metrics);
+        }
+        
+        if (config.adapt_ttl) {
+            adjusted |= AdaptTTL(cache_config, metrics);
+        }
+        
+        if (config.adapt_eviction_strategy) {
+            adjusted |= AdaptEvictionStrategy(cache_config, metrics);
+        }
+        
+        if (adjusted) {
+            tuning_stats.total_adjustments++;
+            tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+            
+            // Update performance model
+            UpdatePerformanceModel(metrics, current_performance);
+        }
+    }
+}
+
+bool AdaptiveParameterTuner::ForceTuning(QueryCacheConfig &cache_config) {
+    if (metrics_history.empty()) {
+        return false;
+    }
+    
+    const auto &latest_metrics = metrics_history.back();
+    bool adjusted = false;
+    
+    if (config.adapt_cache_size) {
+        adjusted |= AdaptCacheSize(cache_config, latest_metrics);
+    }
+    
+    if (config.adapt_memory_limit) {
+        adjusted |= AdaptMemoryLimit(cache_config, latest_metrics);
+    }
+    
+    if (config.adapt_ttl) {
+        adjusted |= AdaptTTL(cache_config, latest_metrics);
+    }
+    
+    if (config.adapt_eviction_strategy) {
+        adjusted |= AdaptEvictionStrategy(cache_config, latest_metrics);
+    }
+    
+    if (adjusted) {
+        tuning_stats.total_adjustments++;
+        tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+    }
+    
+    return adjusted;
+}
+
+double AdaptiveParameterTuner::PredictPerformance(const QueryCacheConfig &config, const SystemPerformanceMetrics &metrics) const {
+    // Simple linear model for performance prediction
+    double score = performance_model.bias;
+    score += performance_model.cache_size_weight * (static_cast<double>(config.max_entries) / 1000.0);
+    score += performance_model.memory_weight * (static_cast<double>(config.max_memory_bytes) / (1024.0 * 1024.0));
+    score += performance_model.ttl_weight * (static_cast<double>(config.ttl_seconds) / 3600.0);
+    score += performance_model.hit_rate_weight * metrics.cache_hit_rate;
+    
+    return std::max(0.0, std::min(1.0, score)); // Clamp to [0, 1]
+}
+
+bool AdaptiveParameterTuner::ShouldTune() const {
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_last = std::chrono::duration_cast<std::chrono::milliseconds>(now - tuning_stats.last_tuning_time).count();
+    
+    return time_since_last >= static_cast<long>(config.tuning_interval_ms) && metrics_history.size() >= 3;
+}
+
+double AdaptiveParameterTuner::CalculatePerformanceScore(const SystemPerformanceMetrics &metrics) const {
+    // Composite performance score (higher is better)
+    double score = 0.0;
+    score += metrics.cache_hit_rate * 0.4;                    // 40% weight on hit rate
+    score += (1.0 - metrics.cpu_usage_percent / 100.0) * 0.2; // 20% weight on CPU availability
+    score += (1.0 - metrics.memory_usage_percent / 100.0) * 0.2; // 20% weight on memory availability
+    score += (1.0 / (1.0 + metrics.avg_query_time_ms / 1000.0)) * 0.2; // 20% weight on query speed
+    
+    return std::max(0.0, std::min(1.0, score));
+}
+
+bool AdaptiveParameterTuner::AdaptCacheSize(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 2) {
+        return false;
+    }
+    
+    // Get trend in hit rate and memory usage
+    double hit_rate_trend = GetTrend([](const SystemPerformanceMetrics &m) { return m.cache_hit_rate; });
+    double memory_trend = GetTrend([](const SystemPerformanceMetrics &m) { return m.memory_usage_percent; });
+    
+    idx_t old_size = cache_config.max_entries;
+    
+    // Increase cache size if hit rate is declining and memory usage is low
+    if (hit_rate_trend < -0.05 && current_metrics.memory_usage_percent < 70.0) {
+        cache_config.max_entries = std::min(config.max_cache_size, 
+                                           static_cast<idx_t>(cache_config.max_entries * 1.2));
+        tuning_stats.cache_size_adjustments++;
+    }
+    // Decrease cache size if memory usage is high
+    else if (current_metrics.memory_usage_percent > 85.0 || memory_trend > 0.1) {
+        cache_config.max_entries = std::max(config.min_cache_size,
+                                           static_cast<idx_t>(cache_config.max_entries * 0.8));
+        tuning_stats.cache_size_adjustments++;
+    }
+    
+    return cache_config.max_entries != old_size;
+}
+
+bool AdaptiveParameterTuner::AdaptMemoryLimit(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 2) {
+        return false;
+    }
+    
+    idx_t old_limit = cache_config.max_memory_bytes;
+    idx_t old_limit_mb = old_limit / (1024 * 1024);
+    
+    // Adjust memory limit based on system memory usage
+    if (current_metrics.memory_usage_percent < 60.0) {
+        // Increase memory limit if system has plenty of memory
+        idx_t new_limit_mb = std::min(config.max_memory_mb, static_cast<idx_t>(old_limit_mb * 1.3));
+        cache_config.max_memory_bytes = new_limit_mb * 1024 * 1024;
+        tuning_stats.memory_limit_adjustments++;
+    } else if (current_metrics.memory_usage_percent > 80.0) {
+        // Decrease memory limit if system is under memory pressure
+        idx_t new_limit_mb = std::max(config.min_memory_mb, static_cast<idx_t>(old_limit_mb * 0.7));
+        cache_config.max_memory_bytes = new_limit_mb * 1024 * 1024;
+        tuning_stats.memory_limit_adjustments++;
+    }
+    
+    return cache_config.max_memory_bytes != old_limit;
+}
+
+bool AdaptiveParameterTuner::AdaptTTL(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 3) {
+        return false;
+    }
+    
+    // Get trend in access patterns
+    double hit_rate_trend = GetTrend([](const SystemPerformanceMetrics &m) { return m.cache_hit_rate; });
+    
+    idx_t old_ttl = cache_config.ttl_seconds;
+    
+    // Increase TTL if hit rate is good and stable
+    if (current_metrics.cache_hit_rate > 0.7 && hit_rate_trend > -0.02) {
+        cache_config.ttl_seconds = std::min(config.max_ttl_seconds,
+                                           static_cast<idx_t>(cache_config.ttl_seconds * 1.2));
+        tuning_stats.ttl_adjustments++;
+    }
+    // Decrease TTL if hit rate is poor or declining
+    else if (current_metrics.cache_hit_rate < 0.3 || hit_rate_trend < -0.1) {
+        cache_config.ttl_seconds = std::max(config.min_ttl_seconds,
+                                           static_cast<idx_t>(cache_config.ttl_seconds * 0.8));
+        tuning_stats.ttl_adjustments++;
+    }
+    
+    return cache_config.ttl_seconds != old_ttl;
+}
+
+bool AdaptiveParameterTuner::AdaptEvictionStrategy(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 5) {
+        return false;
+    }
+    
+    CacheEvictionStrategy old_strategy = cache_config.eviction_strategy;
+    
+    // Choose strategy based on workload characteristics
+    if (current_metrics.concurrent_queries > 10 && current_metrics.avg_query_time_ms > 100.0) {
+        // High concurrency, complex queries -> ML-based eviction
+        cache_config.eviction_strategy = CacheEvictionStrategy::ML_BASED;
+    } else if (current_metrics.cache_hit_rate > 0.8) {
+        // High hit rate -> LRU works well
+        cache_config.eviction_strategy = CacheEvictionStrategy::LRU_BASED;
+    } else {
+        // Default to TTL for simplicity
+        cache_config.eviction_strategy = CacheEvictionStrategy::TTL_BASED;
+    }
+    
+    if (cache_config.eviction_strategy != old_strategy) {
+        tuning_stats.strategy_changes++;
+        return true;
+    }
+    
+    return false;
+}
+
+void AdaptiveParameterTuner::UpdatePerformanceModel(const SystemPerformanceMetrics &metrics, double actual_performance) {
+    // Simple gradient descent update for the linear model
+    double predicted = PredictPerformance(QueryCacheConfig{}, metrics); // Use default config for prediction
+    double error = actual_performance - predicted;
+    
+    // Update weights
+    performance_model.cache_size_weight += config.learning_rate * error * 0.1; // Normalized cache size impact
+    performance_model.memory_weight += config.learning_rate * error * 0.1;
+    performance_model.ttl_weight += config.learning_rate * error * 0.1;
+    performance_model.hit_rate_weight += config.learning_rate * error * metrics.cache_hit_rate;
+    performance_model.bias += config.learning_rate * error;
+    
+    // Keep weights in reasonable bounds
+    performance_model.cache_size_weight = std::max(-1.0, std::min(1.0, performance_model.cache_size_weight));
+    performance_model.memory_weight = std::max(-1.0, std::min(1.0, performance_model.memory_weight));
+    performance_model.ttl_weight = std::max(-1.0, std::min(1.0, performance_model.ttl_weight));
+    performance_model.hit_rate_weight = std::max(-1.0, std::min(1.0, performance_model.hit_rate_weight));
+    performance_model.bias = std::max(-1.0, std::min(1.0, performance_model.bias));
+}
+
+double AdaptiveParameterTuner::GetTrend(std::function<double(const SystemPerformanceMetrics&)> extractor) const {
+    if (metrics_history.size() < 2) {
+        return 0.0;
+    }
+    
+    // Simple linear regression to get trend
+    double sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_x2 = 0.0;
+    size_t n = metrics_history.size();
+    
+    for (size_t i = 0; i < n; i++) {
+        double x = static_cast<double>(i);
+        double y = extractor(metrics_history[i]);
+        sum_x += x;
+        sum_y += y;
+        sum_xy += x * y;
+        sum_x2 += x * x;
+    }
+    
+    double slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
+    return slope;
+}
+
 QueryCache::QueryCache(QueryCacheConfig config) 
     : config(std::move(config)), 
       bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
-      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor) {
+      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor),
+      last_metrics_update(std::chrono::steady_clock::now()) {
     // 延迟初始化持久化策略，直到有ClientContext可用
     // persistence将在InitializeWithContext中初始化
+    
+    // Initialize adaptive tuner if enabled
+    if (this->config.adaptive_tuning_config.enabled) {
+        adaptive_tuner = make_uniq<AdaptiveParameterTuner>(this->config.adaptive_tuning_config);
+    }
 }
 
 QueryCache::~QueryCache() {
@@ -167,6 +429,9 @@ unique_ptr<MaterializedQueryResult> QueryCache::GetCachedResult(const string &qu
     // Record access for ML training
     RecordAccess(query_hash, entry->ml_features, true);
     
+    // Update adaptive tuning
+    UpdateAdaptiveTuning();
+
     // Clone the result for return
     // Create a copy of the collection
     auto& original_collection = entry->result->Collection();
@@ -233,6 +498,9 @@ void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQu
     // Record access for ML training
     RecordAccess(query_hash, features, false);
     
+    // Update adaptive tuning
+    UpdateAdaptiveTuning();
+
     // Evict if necessary
     EvictIfNeeded();
 }
@@ -785,6 +1053,106 @@ bool QueryCache::InitializePersistence() {
     }
     
     return false;
+}
+
+//===----------------------------------------------------------------------===//
+// QueryCache Adaptive Tuning Methods
+//===----------------------------------------------------------------------===//
+
+void QueryCache::EnableAdaptiveTuning(bool enabled, AdaptiveTuningConfig tuning_config) {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    config.adaptive_tuning_config = tuning_config;
+    config.adaptive_tuning_config.enabled = enabled;
+    
+    if (enabled) {
+        adaptive_tuner = make_uniq<AdaptiveParameterTuner>(tuning_config);
+        printf("Adaptive parameter tuning enabled with interval %llu ms\n", tuning_config.tuning_interval_ms);
+    } else {
+        adaptive_tuner.reset();
+        printf("Adaptive parameter tuning disabled\n");
+    }
+}
+
+void QueryCache::UpdateSystemMetrics(const SystemPerformanceMetrics &metrics) {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    current_metrics = metrics;
+    last_metrics_update = std::chrono::steady_clock::now();
+    
+    // Update adaptive tuning if enabled
+    if (adaptive_tuner) {
+        adaptive_tuner->UpdateMetrics(metrics, config);
+    }
+}
+
+QueryCache::AdaptiveTuningStats QueryCache::GetAdaptiveTuningStats() const {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    AdaptiveTuningStats stats;
+    stats.enabled = config.adaptive_tuning_config.enabled;
+    stats.current_metrics = current_metrics;
+    
+    if (adaptive_tuner) {
+        auto tuning_stats = adaptive_tuner->GetTuningStats();
+        stats.total_adjustments = tuning_stats.total_adjustments;
+        stats.avg_performance_improvement = tuning_stats.avg_performance_improvement;
+        stats.last_tuning_time = tuning_stats.last_tuning_time;
+    }
+    
+    return stats;
+}
+
+bool QueryCache::ForceAdaptiveTuning() {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    if (!adaptive_tuner) {
+        return false;
+    }
+    
+    return adaptive_tuner->ForceTuning(config);
+}
+
+SystemPerformanceMetrics QueryCache::CollectSystemMetrics() const {
+    SystemPerformanceMetrics metrics;
+    
+    // Collect cache-specific metrics
+    auto cache_stats = GetStats();
+    metrics.cache_hit_rate = cache_stats.hit_rate;
+    metrics.cache_memory_usage_mb = static_cast<double>(cache_stats.memory_usage_bytes) / (1024.0 * 1024.0);
+    metrics.avg_query_time_ms = 100.0; // This would need to be tracked separately
+    metrics.concurrent_queries = 1; // This would need to be tracked separately
+    
+    // System metrics would typically be collected from OS APIs
+    // For now, we'll use placeholder values
+    metrics.cpu_usage_percent = 50.0;
+    metrics.memory_usage_percent = 60.0;
+    metrics.disk_io_rate_mbps = 10.0;
+    
+    return metrics;
+}
+
+void QueryCache::UpdateAdaptiveTuning() {
+    if (!adaptive_tuner || !config.adaptive_tuning_config.enabled) {
+        return;
+    }
+    
+    // Collect current system metrics
+    auto metrics = CollectSystemMetrics();
+    
+    // Update the tuner
+    adaptive_tuner->UpdateMetrics(metrics, config);
+}
+
+double QueryCache::CalculateSystemLoad() const {
+    // Simple system load calculation based on current metrics
+    double load = 0.0;
+    load += current_metrics.cpu_usage_percent / 100.0 * 0.4;
+    load += current_metrics.memory_usage_percent / 100.0 * 0.3;
+    load += (1.0 - current_metrics.cache_hit_rate) * 0.2;
+    load += std::min(current_metrics.concurrent_queries / 10.0, 1.0) * 0.1;
+    
+    return std::max(0.0, std::min(1.0, load));
 }
 
 } // namespace duckdb

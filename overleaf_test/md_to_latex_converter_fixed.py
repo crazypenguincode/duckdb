@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Markdown到LaTeX转换脚本
+Markdown到LaTeX转换脚本 - 修复版本
 将md目录下的第一章到第六章的.md文件转换为overleaf/chapters/目录下对应的chapter-1到6.tex文件
 """
 
@@ -248,21 +248,24 @@ class MarkdownToLatexConverter:
         
         return content
     
-    def convert_figure_titles(self, content: str) -> str:
-        """转换独立的图片标题，只保留图片名称"""
-        # 匹配 **图X.X 图片名称** 格式
-        def replace_title(match):
-            fig_num = match.group(1)  # 如 "5.18"
-            title = match.group(2).strip()  # 如 "机器学习模型特征重要性分布"
-            return f"**{title}**"
+    def escape_latex_special_chars(self, text: str) -> str:
+        """转义LaTeX特殊字符"""
+        # 转义特殊字符，但保留已经转义的
+        if '\\&' not in text:
+            text = text.replace('&', '\\&')
+        text = text.replace('%', '\\%')
+        text = text.replace('$', '\\$')
+        text = text.replace('#', '\\#')
+        text = text.replace('_', '\\_')
         
-        pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
-        content = re.sub(pattern, replace_title, content)
+        # 转换HTML标签为LaTeX格式 - 在表格中使用\newline
+        text = text.replace('<br/>', '\\newline ')
+        text = text.replace('<br>', '\\newline ')
         
-        return content
+        return text
     
     def convert_tables(self, content: str, chapter_num: int) -> str:
-        """转换Markdown表格为LaTeX格式"""
+        """转换Markdown表格为LaTeX格式 - 修复版本"""
         if chapter_num not in self.table_counter:
             self.table_counter[chapter_num] = 0
         
@@ -294,35 +297,56 @@ class MarkdownToLatexConverter:
             if not header_cols:
                 return table_content
             
-            # 生成LaTeX表格
+            # 生成LaTeX表格 - 使用更好的列规格
             num_cols = len(header_cols)
-            col_spec = 'c' * num_cols
+            # 使用p{width}来确保列宽度合适
+            if num_cols <= 3:
+                col_spec = 'p{4cm}' * num_cols
+            elif num_cols == 4:
+                col_spec = 'p{3cm}' * num_cols
+            else:
+                col_spec = 'p{2.5cm}' * num_cols
             
             label = f"table{chapter_num}_{table_num}"
             
-            # 查找表格前面的标题
+            # 查找表格前面和后面的标题
             table_pos = match.start()
+            table_end = match.end()
             before_text = content[:table_pos]
+            after_text = content[table_end:table_end+500]  # 查看表格后面500字符
             
-            # 查找表格标题 - 匹配处理后的 **标题** 格式（已经去掉了表号）
-            title_pattern = r'\*\*([^*]+)\*\*'
-            title_matches = list(re.finditer(title_pattern, before_text))
+            # 查找表格标题 - 先查找原始的 **表X.X 标题** 格式
+            original_title_pattern = r'\*\*表\d+\.\d+\s+([^*]+)\*\*'
             
-            if title_matches:
-                # 使用最近的标题，过滤掉明显不是表格标题的内容
-                for match_obj in reversed(title_matches):
-                    potential_title = match_obj.group(1).strip()
-                    # 检查是否是表格标题（不包含图、章节等关键词）
-                    if (not potential_title.startswith('图') and 
-                        not potential_title.startswith('第') and
-                        not potential_title.startswith('章') and
-                        len(potential_title) > 3):
-                        caption = potential_title
-                        break
-                else:
-                    caption = f"表{chapter_num}.{table_num}"
+            # 在表格后面查找原始标题
+            after_match = re.search(original_title_pattern, after_text)
+            if after_match:
+                caption = after_match.group(1).strip()
             else:
-                caption = f"表{chapter_num}.{table_num}"
+                # 在表格前面查找原始标题
+                before_matches = list(re.finditer(original_title_pattern, before_text))
+                if before_matches:
+                    caption = before_matches[-1].group(1).strip()
+                else:
+                    # 查找处理后的 **标题** 格式（已经去掉了表号）
+                    title_pattern = r'\*\*([^*]+)\*\*'
+                    title_matches = list(re.finditer(title_pattern, before_text))
+                    
+                    if title_matches:
+                        # 使用最近的标题，过滤掉明显不是表格标题的内容
+                        for match_obj in reversed(title_matches):
+                            potential_title = match_obj.group(1).strip()
+                            # 检查是否是表格标题（不包含图、章节等关键词）
+                            if (not potential_title.startswith('图') and 
+                                not potential_title.startswith('第') and
+                                not potential_title.startswith('章') and
+                                len(potential_title) > 3):
+                                caption = potential_title
+                                break
+                        else:
+                            caption = f"表{chapter_num}.{table_num}"
+                    else:
+                        caption = f"表{chapter_num}.{table_num}"
             
             latex_table = f"""
 这是表\\ref{{{label}}}。
@@ -335,8 +359,12 @@ class MarkdownToLatexConverter:
         \\hline
 """
             
-            # 添加表头
-            header_row = " & ".join(header_cols) + " \\\\\n"
+            # 添加表头 - 转义特殊字符
+            escaped_headers = []
+            for header in header_cols:
+                escaped_headers.append(self.escape_latex_special_chars(header))
+            
+            header_row = " & ".join(escaped_headers) + " \\\\\n"
             latex_table += "        " + header_row
             latex_table += "        \\hline\n"
             
@@ -351,17 +379,10 @@ class MarkdownToLatexConverter:
                         cols = [col.strip() for col in line.split('|')]
                     
                     if cols and len(cols) == num_cols:
-                        # 转义LaTeX特殊字符 - 但不转义已经转义的内容
+                        # 转义LaTeX特殊字符
                         escaped_cols = []
                         for col in cols:
-                            # 只转义未转义的&符号
-                            if '\\&' not in col:
-                                col = col.replace('&', '\\&')
-                            # 转义其他特殊字符
-                            col = col.replace('%', '\\%')
-                            col = col.replace('$', '\\$')
-                            col = col.replace('#', '\\#')
-                            escaped_cols.append(col)
+                            escaped_cols.append(self.escape_latex_special_chars(col))
                         
                         data_row = " & ".join(escaped_cols) + " \\\\\n"
                         latex_table += "        " + data_row
@@ -403,25 +424,6 @@ class MarkdownToLatexConverter:
         content = re.sub(r'```(\w+)?\n(.*?)\n```', 
                         r'\\begin{verbatim}\n\2\n\\end{verbatim}', 
                         content, flags=re.DOTALL)
-        
-        # 简化的特殊字符处理 - 只处理最必要的字符
-        # 避免处理已经是LaTeX命令的部分
-        def escape_char(match):
-            char = match.group(0)
-            # 检查是否在LaTeX命令中
-            if '\\' in match.string[max(0, match.start()-10):match.start()]:
-                return char
-            
-            escape_map = {
-                '&': '\\&',
-                '%': '\\%',
-                '$': '\\$',
-                '#': '\\#'
-            }
-            return escape_map.get(char, char)
-        
-        # 只转义最关键的字符
-        content = re.sub(r'[&%$#]', escape_char, content)
         
         return content
     

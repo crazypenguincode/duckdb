@@ -170,63 +170,81 @@ class MarkdownToLatexConverter:
     
     def convert_mermaid_to_figures(self, content: str, chapter_num: int) -> str:
         """将Mermaid图表转换为LaTeX图片格式"""
-        if chapter_num not in self.figure_counter:
-            self.figure_counter[chapter_num] = 0
         
         def replace_mermaid(match):
-            self.figure_counter[chapter_num] += 1
-            fig_num = self.figure_counter[chapter_num]
-            
-            # 查找图片标题
             mermaid_content = match.group(1)
+            mermaid_pos = match.start()
             
-            # 尝试在前后文中找到图片标题
-            full_text = match.group(0)
-            before_text = content[:match.start()]
+            # 在前后文中找到图片标题
+            before_text = content[:mermaid_pos]
             after_text = content[match.end():]
             
-            # 查找标题模式
-            title_patterns = [
-                r'\*\*图\d+\.\d+\s+([^*]+)\*\*',
-                r'图\s*\d+\.\d+[：:]\s*([^\n]+)',
-                r'图\s*\d+\.\d+\s+([^\n]+)',
-            ]
+            # 查找标题模式，提取完整的图号和标题
+            title_pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
             
-            title = f"图表{fig_num}"
-            for pattern in title_patterns:
-                # 在前面的文本中查找
-                matches_before = re.findall(pattern, before_text[-200:])
-                if matches_before:
-                    title = matches_before[-1].strip()
-                    break
-                
-                # 在后面的文本中查找
-                matches_after = re.findall(pattern, after_text[:200])
-                if matches_after:
-                    title = matches_after[0].strip()
-                    break
+            fig_num = None
+            clean_title = "未命名图表"
             
-            # 根据实际图片文件名格式生成文件名
-            # 格式：章节号.图号_标题.png
-            img_filename = f"{chapter_num}.{fig_num}_{title}.png"
-            label = f"fig{chapter_num}_{fig_num}"
+            # 优先在前面查找标题
+            matches_before = list(re.finditer(title_pattern, before_text))
+            if matches_before:
+                last_match = matches_before[-1]
+                fig_num = last_match.group(1)  # 如 "5.18"
+                clean_title = last_match.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            else:
+                # 在后面查找标题
+                match_after = re.search(title_pattern, after_text[:200])
+                if match_after:
+                    fig_num = match_after.group(1)
+                    clean_title = match_after.group(2).strip()
             
-            # 生成LaTeX图片代码
-            latex_figure = f"""
-如图\\ref{{{label}}}所示是{title}。
-
-\\begin{{figure}}[!htb]
+            if not fig_num:
+                fig_num = f"{chapter_num}.0"
+            
+            # 使用真实的图号生成文件名
+            img_filename = f"{chapter_num}-图{fig_num} {clean_title}.png"
+            label = f"fig{chapter_num}_{fig_num.replace('.', '_')}"
+            
+            # 生成LaTeX图片代码，caption和textbf都只包含图片名字
+            latex_figure = f"""\\begin{{figure}}[!htb]
 \t\\centering
 \t\\includegraphics[width=0.8\\textwidth]{{images/{img_filename}}}
-\t\\caption{{{title}}}
+\t\\caption{{{clean_title}}}
 \t\\label{{{label}}}
 \\end{{figure}}
-"""
+
+\\textbf{{{clean_title}}}"""
             return latex_figure
         
         # 替换Mermaid代码块
         pattern = r'```mermaid\n(.*?)\n```'
         content = re.sub(pattern, replace_mermaid, content, flags=re.DOTALL)
+        
+        return content
+    
+    def convert_figure_titles(self, content: str) -> str:
+        """转换独立的图片标题，只保留图片名称"""
+        # 匹配 **图X.X 图片名称** 格式
+        def replace_title(match):
+            fig_num = match.group(1)  # 如 "5.18"
+            title = match.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            return f"**{title}**"
+        
+        pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
+        content = re.sub(pattern, replace_title, content)
+        
+        return content
+    
+    def convert_figure_titles(self, content: str) -> str:
+        """转换独立的图片标题，只保留图片名称"""
+        # 匹配 **图X.X 图片名称** 格式
+        def replace_title(match):
+            fig_num = match.group(1)  # 如 "5.18"
+            title = match.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            return f"**{title}**"
+        
+        pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
+        content = re.sub(pattern, replace_title, content)
         
         return content
     
@@ -379,6 +397,7 @@ class MarkdownToLatexConverter:
         # 执行转换步骤
         content = self.convert_headers(content)
         content = self.convert_mermaid_to_figures(content, chapter_num)
+        content = self.convert_figure_titles(content)  # 新增：处理独立的图片标题
         content = self.convert_tables(content, chapter_num)
         content = self.convert_references(content)
         content = self.clean_latex_content(content)

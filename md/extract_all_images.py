@@ -33,43 +33,57 @@ class ImageExtractor:
         """从文档内容中提取Mermaid图表"""
         diagrams = []
         
-        # 匹配Mermaid代码块和图片标题
+        # 匹配Mermaid代码块
         pattern = r'```mermaid\n(.*?)\n```'
-        matches = re.findall(pattern, content, re.DOTALL)
+        mermaid_matches = list(re.finditer(pattern, content, re.DOTALL))
         
-        # 查找图片标题（通常在图表前后）
+        # 查找所有图片标题
         title_pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
-        titles = re.findall(title_pattern, content)
+        title_matches = list(re.finditer(title_pattern, content))
         
-        # 创建标题映射
-        title_map = {}
-        for fig_num, title in titles:
-            title_map[fig_num] = title.strip()
-        
-        # 处理每个图表
-        for i, diagram in enumerate(matches, 1):
-            # 尝试找到对应的标题
-            fig_num = f"{chapter_num}.{i}"
-            title = title_map.get(fig_num, f"图表{i}")
+        # 为每个mermaid块找到最近的标题
+        for mermaid_match in mermaid_matches:
+            mermaid_pos = mermaid_match.start()
+            diagram_content = mermaid_match.group(1).strip()
             
-            # 清理标题，移除特殊字符
-            clean_title = re.sub(r'[^\w\u4e00-\u9fff\s-]', '', title)
-            clean_title = re.sub(r'\s+', '_', clean_title.strip())
+            # 找到最近的标题（优先查找前面的标题，然后查找后面的）
+            best_title = None
+            best_distance = float('inf')
+            
+            for title_match in title_matches:
+                title_pos = title_match.start()
+                distance = abs(mermaid_pos - title_pos)
+                
+                # 优先选择在mermaid块前面且距离最近的标题
+                if title_pos < mermaid_pos and distance < best_distance:
+                    best_title = title_match
+                    best_distance = distance
+                # 如果没有前面的标题，选择后面最近的
+                elif best_title is None and title_pos > mermaid_pos and distance < best_distance:
+                    best_title = title_match
+                    best_distance = distance
+            
+            if best_title:
+                fig_num = best_title.group(1)  # 如 "5.18"
+                title = best_title.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            else:
+                # 如果找不到标题，使用默认值
+                fig_num = f"{chapter_num}.0"
+                title = "未命名图表"
             
             diagrams.append({
                 'chapter': chapter_num,
-                'number': i,
                 'fig_num': fig_num,
                 'title': title,
-                'clean_title': clean_title,
-                'content': diagram.strip()
+                'content': diagram_content
             })
             
         return diagrams
     
     def save_mermaid_file(self, diagram):
         """保存Mermaid源文件"""
-        filename = f"{diagram['fig_num']}_{diagram['clean_title']}.mmd"
+        # 新的命名规则：章节号-图片本身名称
+        filename = f"{diagram['chapter']}-图{diagram['fig_num']} {diagram['title']}.mmd"
         filepath = self.images_dir / filename
         
         with open(filepath, 'w', encoding='utf-8') as f:
@@ -96,7 +110,7 @@ class ImageExtractor:
                 
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             print(f"Warning: mermaid-cli not available or timeout for {mmd_file.name}: {e}")
-            # 创建一个占位符PNG文件
+            # 创建一个占位符PNG文件，保持新的命名规则
             placeholder_content = f"# PNG placeholder for {mmd_file.name}\n# Install mermaid-cli to generate actual PNG files\n# npm install -g @mermaid-js/mermaid-cli"
             placeholder_file = png_file.with_suffix('.png.placeholder')
             with open(placeholder_file, 'w', encoding='utf-8') as f:

@@ -94,49 +94,79 @@ def get_chapter_images(chapter_num):
     
     images = []
     for img in IMAGES_DIR.glob("*.png"):
-        # 匹配格式：1.1_xxx.png, 1.2_xxx.png 等
-        if img.name.startswith(f"{chapter_num}.") and not img.name.startswith("mermaid_"):
-            images.append(img)
+        # 匹配新格式：5-图5.18 机器学习模型特征重要性分布.png
+        if img.name.startswith(f"{chapter_num}-图") and not img.name.startswith("mermaid_"):
+            # 验证是否确实属于该章节
+            pattern = rf"{chapter_num}-图(\d+\.\d+)"
+            match = re.match(pattern, img.name)
+            if match:
+                images.append(img)
     
-    # 使用数字排序而不是字符串排序，确保3.2在3.10之前
+    # 使用图号排序
     def extract_figure_number(filename):
-        # 从文件名中提取图号，如 "3.2_xxx.png" -> 3.2
-        match = re.match(rf"{chapter_num}\.(\d+)_", filename.name)
+        # 从文件名中提取完整图号，如 "5-图5.18 机器学习模型特征重要性分布.png" -> (5, 18)
+        match = re.match(rf"{chapter_num}-图(\d+)\.(\d+)", filename.name)
         if match:
-            return int(match.group(1))
-        return 0
+            return (int(match.group(1)), int(match.group(2)))
+        return (0, 0)
     
     return sorted(images, key=extract_figure_number)
 
 def replace_mermaid_with_images(md_text, chapter_num):
     """替换 mermaid 代码块为图片引用"""
-    # 获取该章节的图片
-    chapter_images = get_chapter_images(chapter_num)
-    
-    # 查找所有 mermaid 代码块
+    # 查找所有 mermaid 代码块和图片标题
     mermaid_pattern = r"```mermaid[^\n]*\n([\s\S]*?)```"
-    blocks = list(re.finditer(mermaid_pattern, md_text))
+    title_pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
     
-    if not blocks:
+    mermaid_blocks = list(re.finditer(mermaid_pattern, md_text))
+    title_matches = list(re.finditer(title_pattern, md_text))
+    
+    if not mermaid_blocks:
         return md_text, 0
     
-    logger.info(f"  找到 {len(blocks)} 个 mermaid 块，可用图片 {len(chapter_images)} 个")
+    logger.info(f"  找到 {len(mermaid_blocks)} 个 mermaid 块")
     
-    # 从后往前替换，避免位置偏移，但图片索引要正确对应
+    # 为每个mermaid块找到对应的图片文件
     replaced = 0
-    for i, block in enumerate(reversed(blocks)):
-        # 修正图片索引：第一个mermaid块对应第一张图片
-        mermaid_idx = len(blocks) - 1 - i  # 当前mermaid块在原文档中的索引
-        if mermaid_idx < len(chapter_images):
-            img_path = chapter_images[mermaid_idx]  # 使用正确的图片索引
-            # 使用绝对路径确保 pandoc 能找到
-            abs_img_path = str(img_path.absolute())
-            replacement = f"![图片]({abs_img_path})\n"
-            md_text = md_text[:block.start()] + replacement + md_text[block.end():]
-            replaced += 1
-            logger.info(f"    替换 mermaid 块 {mermaid_idx+1} -> {img_path.name}")
+    for i, block in enumerate(reversed(mermaid_blocks)):
+        mermaid_pos = block.start()
+        
+        # 找到最近的标题
+        best_title = None
+        best_distance = float('inf')
+        
+        for title_match in title_matches:
+            title_pos = title_match.start()
+            distance = abs(mermaid_pos - title_pos)
+            
+            # 优先选择在mermaid块前面且距离最近的标题
+            if title_pos < mermaid_pos and distance < best_distance:
+                best_title = title_match
+                best_distance = distance
+            # 如果没有前面的标题，选择后面最近的
+            elif best_title is None and title_pos > mermaid_pos and distance < best_distance:
+                best_title = title_match
+                best_distance = distance
+        
+        if best_title:
+            fig_num = best_title.group(1)  # 如 "5.18"
+            title = best_title.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            
+            # 构建图片文件名
+            img_filename = f"{chapter_num}-图{fig_num} {title}.png"
+            img_path = IMAGES_DIR / img_filename
+            
+            if img_path.exists():
+                # 使用绝对路径确保 pandoc 能找到
+                abs_img_path = str(img_path.absolute())
+                replacement = f"![图片]({abs_img_path})\n"
+                md_text = md_text[:block.start()] + replacement + md_text[block.end():]
+                replaced += 1
+                logger.info(f"    替换 mermaid 块 -> {img_filename}")
+            else:
+                logger.info(f"    跳过 mermaid 块（图片文件不存在: {img_filename}）")
         else:
-            logger.info(f"    跳过 mermaid 块（无对应图片）")
+            logger.info(f"    跳过 mermaid 块（找不到对应标题）")
     
     return md_text, replaced
 

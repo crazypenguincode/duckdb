@@ -1,0 +1,25 @@
+\newpage
+\vspace{-1cm}
+\chapter*{\zihao{-3}\heiti{ABSTRACT}}
+\addcontentsline{toc}{chapter}{Abstract}
+\vspace{-0.5cm}
+
+As a core component of computer systems, the reliability and performance of databases remain critical objectives in both research and practice. Analytical databases, which must handle multi-source heterogeneous data and support complex analytical queries, impose higher demands on query efficiency. To address performance bottlenecks, this study focuses on the database query processing pipeline (encompassing stages such as the parser, planner, optimizer, and executor) and proposes an innovative caching-based acceleration method to significantly enhance query speed. The main contributions of this work are as follows:
+
+First, systematic analysis and dynamic caching strategy design: This study conducts an in-depth examination of each stage of database query processing, identifying bottlenecks related to insufficient reuse of repeated or similar query results. To address this, we innovatively propose a dynamic caching strategy based on SQL query structures and Common Table Expressions (CTEs). This strategy, integrated with Bloom filter technology, enables rapid identification and precise matching of reusable cached results, thereby bypassing certain processing stages and directly returning cached outcomes, substantially reducing query latency. Theoretical modeling and experimental validation were performed for diverse query patterns. 
+
+Second, efficient cache management and persistence mechanisms: To improve cache hit rates and ensure data timeliness, this study designs and implements multi-dimensional cache update strategies, including classical LRU policies, time-window-based updates, hybrid strategies, and machine learning-driven intelligent updates, allowing dynamic selection of optimal strategies tailored to different application scenarios. Additionally, to ensure cache security and fault recovery capabilities, two persistence schemes are proposed: a cache snapshot mechanism based on sequential high-efficiency read/write operations and a persistence strategy integrated with materialized views, effectively preventing cache data loss. 
+
+The proposed caching acceleration framework was implemented within the open-source analytical database DuckDB and comprehensively evaluated. Experimental results demonstrate that compared to a baseline system without caching, the dynamic SQL-and-CTE-based caching strategy reduces query response time by 30–90\% in scenarios with high proportions of repeated queries. The designed diverse cache update strategies effectively adapt to varying scenario requirements, significantly improving cache utilization, while the persistence mechanisms reliably ensure cache data reliability. This research provides an effective caching acceleration solution for enhancing the performance of analytical databases. 
+
+
+\vspace{0.5cm}
+\hspace{-1cm}
+{\bf{\sihao{Keywords:}}} \textit{Database Systems, Query Cache, Caching Strategies, Common Table Expressions (CTE), Bloom Filter, Cache Persistence}
+
+
+
+
+
+
+

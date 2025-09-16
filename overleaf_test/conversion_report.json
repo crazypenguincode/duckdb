@@ -2,8 +2,8 @@
   "conversion_summary": {
     "total_chapters": 6,
     "chapters_converted": 6,
-    "total_figures": 39,
-    "total_tables": 28,
+    "total_figures": 0,
+    "total_tables": 27,
     "total_references": 51
   },
   "chapter_details": {
@@ -12,23 +12,23 @@
       "tables": 0
     },
     "chapter_2": {
-      "figures": 2,
+      "figures": 0,
       "tables": 0
     },
     "chapter_3": {
-      "figures": 1,
+      "figures": 0,
       "tables": 0
     },
     "chapter_4": {
-      "figures": 1,
+      "figures": 0,
       "tables": 0
     },
     "chapter_5": {
-      "figures": 33,
-      "tables": 28
+      "figures": 0,
+      "tables": 27
     },
     "chapter_6": {
-      "figures": 2,
+      "figures": 0,
       "tables": 0
     }
   },

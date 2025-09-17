@@ -212,8 +212,7 @@ class MarkdownToLatexConverter:
 \t\\caption{{{clean_title}}}
 \t\\label{{{label}}}
 \\end{{figure}}
-
-\\textbf{{{clean_title}}}"""
+"""
             return latex_figure
         
         # 替换Mermaid代码块
@@ -251,12 +250,11 @@ class MarkdownToLatexConverter:
     def escape_latex_special_chars(self, text: str) -> str:
         """转义LaTeX特殊字符"""
         # 转义特殊字符，但保留已经转义的
-        if '\\&' not in text:
-            text = text.replace('&', '\\&')
-        text = text.replace('%', '\\%')
-        text = text.replace('$', '\\$')
-        text = text.replace('#', '\\#')
-        text = text.replace('_', '\\_')
+        text = re.sub(r'(?<!\\)&', r'\\&', text)
+        text = re.sub(r'(?<!\\)%', r'\\%', text)
+        text = re.sub(r'(?<!\\)\$', r'\\$', text)
+        text = re.sub(r'(?<!\\)#', r'\\#', text)
+        text = re.sub(r'(?<!\\)_', r'\\_', text)
         
         # 转换HTML标签为LaTeX格式 - 在表格中使用\newline
         text = text.replace('<br/>', '\\newline ')
@@ -349,7 +347,6 @@ class MarkdownToLatexConverter:
                         caption = f"表{chapter_num}.{table_num}"
             
             latex_table = f"""
-这是表\\ref{{{label}}}。
 
 \\begin{{table}}[!htb]
     \\caption{{{caption}}}
@@ -410,6 +407,51 @@ class MarkdownToLatexConverter:
         """清理和优化LaTeX内容"""
         # 移除多余的空行
         content = re.sub(r'\n{3,}', '\n\n', content)
+        
+        # 转义LaTeX特殊字符，但要避免对表格内容重复转义
+        # 表格内容已经在convert_tables函数中正确处理了
+        
+        # 转义%符号，但保留已经转义的
+        content = re.sub(r'(?<!\\)%', r'\\%', content)
+        
+        # 对于&符号，只在非表格环境中转义
+        # 使用负向前瞻和后瞻来避免转义表格中的&
+        lines = content.split('\n')
+        processed_lines = []
+        in_table = False
+        
+        for line in lines:
+            # 检查是否在表格环境中
+            if '\\begin{table}' in line:
+                in_table = True
+            elif '\\end{table}' in line:
+                in_table = False
+                processed_lines.append(line)
+                continue
+            
+            # 如果不在表格中，则转义&符号
+            if not in_table:
+                line = re.sub(r'(?<!\\)&', r'\\&', line)
+            
+            processed_lines.append(line)
+        
+        content = '\n'.join(processed_lines)
+        
+        # 转义其他特殊字符
+        content = re.sub(r'(?<!\\)\$', r'\\$', content)
+        content = re.sub(r'(?<!\\)#', r'\\#', content)
+        
+        # 转义下划线，但避免转义LaTeX命令参数中的下划线
+        content = re.sub(r'(?<!\\)_', r'\\_', content)
+        
+        # 在LaTeX命令的大括号内恢复下划线（不转义）
+        def restore_underscore_in_latex(match):
+            cmd = match.group(0)
+            # 在LaTeX命令的大括号内，将 \_ 恢复为 _
+            return cmd.replace('\\_', '_')
+        
+        # 恢复LaTeX命令内的下划线
+        content = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', restore_underscore_in_latex, content)
         
         # 转换粗体格式
         content = re.sub(r'\*\*([^*]+)\*\*', r'\\textbf{\1}', content)

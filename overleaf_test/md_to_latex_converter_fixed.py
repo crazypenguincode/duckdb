@@ -222,28 +222,18 @@ class MarkdownToLatexConverter:
         return content
     
     def convert_figure_titles(self, content: str) -> str:
-        """转换独立的图片标题，只保留图片名称"""
-        # 匹配 **图X.X 图片名称** 格式
-        def replace_title(match):
-            fig_num = match.group(1)  # 如 "5.18"
-            title = match.group(2).strip()  # 如 "机器学习模型特征重要性分布"
-            return f"**{title}**"
-        
-        pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
-        content = re.sub(pattern, replace_title, content)
+        """移除独立的图片标题，因为标题会在LaTeX图片的caption中显示"""
+        # 匹配 **图X.X 图片名称** 格式并完全移除
+        pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
+        content = re.sub(pattern, '', content)
         
         return content
     
     def convert_table_titles(self, content: str) -> str:
-        """转换独立的表格标题，只保留表格名称"""
-        # 匹配 **表X.X 表格名称** 格式
-        def replace_title(match):
-            table_num = match.group(1)  # 如 "5.8"
-            title = match.group(2).strip()  # 如 "测试稳定性分析"
-            return f"**{title}**"
-        
-        pattern = r'\*\*表(\d+\.\d+)\s+([^*]+)\*\*'
-        content = re.sub(pattern, replace_title, content)
+        """移除独立的表格标题，因为标题会在LaTeX表格的caption中显示"""
+        # 匹配 **表X.X 表格名称** 格式并完全移除
+        pattern = r'\*\*表(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
+        content = re.sub(pattern, '', content)
         
         return content
     
@@ -313,38 +303,9 @@ class MarkdownToLatexConverter:
             before_text = content[:table_pos]
             after_text = content[table_end:table_end+500]  # 查看表格后面500字符
             
-            # 查找表格标题 - 先查找原始的 **表X.X 标题** 格式
-            original_title_pattern = r'\*\*表\d+\.\d+\s+([^*]+)\*\*'
-            
-            # 在表格后面查找原始标题
-            after_match = re.search(original_title_pattern, after_text)
-            if after_match:
-                caption = after_match.group(1).strip()
-            else:
-                # 在表格前面查找原始标题
-                before_matches = list(re.finditer(original_title_pattern, before_text))
-                if before_matches:
-                    caption = before_matches[-1].group(1).strip()
-                else:
-                    # 查找处理后的 **标题** 格式（已经去掉了表号）
-                    title_pattern = r'\*\*([^*]+)\*\*'
-                    title_matches = list(re.finditer(title_pattern, before_text))
-                    
-                    if title_matches:
-                        # 使用最近的标题，过滤掉明显不是表格标题的内容
-                        for match_obj in reversed(title_matches):
-                            potential_title = match_obj.group(1).strip()
-                            # 检查是否是表格标题（不包含图、章节等关键词）
-                            if (not potential_title.startswith('图') and 
-                                not potential_title.startswith('第') and
-                                not potential_title.startswith('章') and
-                                len(potential_title) > 3):
-                                caption = potential_title
-                                break
-                        else:
-                            caption = f"表{chapter_num}.{table_num}"
-                    else:
-                        caption = f"表{chapter_num}.{table_num}"
+            # 由于表格标题已经被convert_table_titles函数移除，
+            # 这里直接使用默认的表格编号作为caption
+            caption = f"表{chapter_num}.{table_num}"
             
             latex_table = f"""
 

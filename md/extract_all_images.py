@@ -44,24 +44,26 @@ class ImageExtractor:
         # 为每个mermaid块找到最近的标题
         for mermaid_match in mermaid_matches:
             mermaid_pos = mermaid_match.start()
+            mermaid_end = mermaid_match.end()
             diagram_content = mermaid_match.group(1).strip()
             
-            # 找到最近的标题（优先查找前面的标题，然后查找后面的）
+            # 找到最近的标题（优先查找后面的标题，然后查找前面的）
             best_title = None
             best_distance = float('inf')
             
             for title_match in title_matches:
                 title_pos = title_match.start()
-                distance = abs(mermaid_pos - title_pos)
+                distance = abs(mermaid_end - title_pos)
                 
-                # 优先选择在mermaid块前面且距离最近的标题
-                if title_pos < mermaid_pos and distance < best_distance:
+                # 优先选择在mermaid块后面且距离最近的标题（在200字符内）
+                if title_pos > mermaid_end and distance < 200 and distance < best_distance:
                     best_title = title_match
                     best_distance = distance
-                # 如果没有前面的标题，选择后面最近的
-                elif best_title is None and title_pos > mermaid_pos and distance < best_distance:
-                    best_title = title_match
-                    best_distance = distance
+                # 如果没有后面的标题，选择前面最近的（在500字符内）
+                elif best_title is None and title_pos < mermaid_pos and (mermaid_pos - title_pos) < 500:
+                    if (mermaid_pos - title_pos) < best_distance:
+                        best_title = title_match
+                        best_distance = mermaid_pos - title_pos
             
             if best_title:
                 fig_num = best_title.group(1)  # 如 "5.18"

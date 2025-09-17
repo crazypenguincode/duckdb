@@ -14,14 +14,14 @@
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/3-图3.1 动态缓存管理系统架构流程.png}
-	\caption{动态缓存管理系统架构流程}
+	\includegraphics[width=0.8\textwidth]{images/3-图3.1 动态缓存管理系统整体流程.png}
+	\caption{动态缓存管理系统整体流程}
 	\label{fig3_3_1}
 \end{figure}
 
-\textbf{动态缓存管理系统架构流程}
+\textbf{动态缓存管理系统整体流程}
 
-\textbf{动态缓存管理系统架构流程}
+\textbf{动态缓存管理系统整体流程}
 
 \subsection{核心设计理念}
 
@@ -104,6 +104,17 @@ CTE缓存策略采用分层管理的方式，根据CTE的特征和使用模式�
 生命周期管理控制CTE缓存的创建、更新、失效和删除等操作，确保缓存的正确性和有效性。创建操作在CTE首次执行时触发，系统评估CTE的缓存价值并决定是否进行缓存。更新操作在依赖数据发生变化时触发，系统根据变化的范围和影响决定是否需要重新计算CTE结果。失效操作在CTE不再有效时触发，包括TTL过期、依赖失效、手动失效等情况。删除操作在CTE缓存不再需要时触发，释放占用的存储空间和系统资源。生命周期管理还包括引用计数机制，跟踪CTE缓存的使用情况，当引用计数为零时自动清理缓存。
 
 \section{详细设计及相关技术}
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{images/3-图3.1 动态缓存管理系统整体流程.png}
+	\caption{动态缓存管理系统整体流程}
+	\label{fig3_3_1}
+\end{figure}
+
+\textbf{动态缓存管理系统整体流程}
+
+\textbf{动态缓存管理系统局部流程详情}
 
 \subsection{基于布隆过滤器的前置过滤技术}
 

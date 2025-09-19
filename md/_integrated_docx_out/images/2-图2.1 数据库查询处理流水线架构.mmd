@@ -1,19 +1,16 @@
-graph TD
-    A[CPU寄存器] --> B[L1缓存]
-    B --> C[L2缓存]
-    C --> D[L3缓存]
-    D --> E[主内存]
-    E --> F[SSD缓存]
-    F --> G[机械硬盘]
+graph LR
+    A[SQL查询] --> B[查询解析<br/>Query Parsing]
+    B --> C[查询规划<br/>Query Planning]
+    C --> D[查询优化<br/>Query Optimization]
+    D --> E[查询执行<br/>Query Execution]
+    E --> F[结果返回<br/>Result Return]
     
-    A --> A1[访问时间: 约1ns<br/>容量: KB级]
-    B --> B1[访问时间: 约1ns<br/>容量: 32-64KB]
-    C --> C1[访问时间: 约3ns<br/>容量: 256KB-1MB]
-    D --> D1[访问时间: 约10ns<br/>容量: 8-32MB]
-    E --> E1[访问时间: 约100ns<br/>容量: GB-TB级]
-    F --> F1[访问时间: 约100μs<br/>容量: TB级]
-    G --> G1[访问时间: 约10ms<br/>容量: TB-PB级]
+    B --> B1[词法分析<br/>语法分析<br/>语义分析]
+    C --> C1[逻辑计划生成<br/>物理计划生成<br/>代价估算]
+    D --> D1[基于规则优化<br/>基于代价优化<br/>统计信息利用]
+    E --> E1[算子执行<br/>数据访问<br/>结果物化]
     
-    style A fill:#ffebee
+    style B fill:#e3f2fd
+    style C fill:#fff3e0
+    style D fill:#f3e5f5
     style E fill:#e8f5e8
-    style G fill:#e3f2fd

@@ -1,6 +1,17 @@
-xychart-beta
-    title "自适应调优vs传统方法对比"
-    x-axis ["参数调整频率", "性能响应速度", "系统适应性", "维护成本"]
-    y-axis "评分(1-10)" 0 --> 10
-    bar [2, 4, 3, 8]
-    bar "自适应调优" [8, 7, 9, 6]
+flowchart TD
+    A[系统性能监控] --> B[性能指标收集]
+    B --> C[AdaptiveParameterTuner]
+    C --> D[参数调整决策]
+    D --> E[缓存配置更新]
+    E --> F[性能反馈]
+    F --> A
+    
+    B --> B1[CPU使用率<br/>内存使用率<br/>缓存命中率<br/>查询响应时间]
+    
+    C --> C1[学习率控制<br/>性能阈值判断<br/>参数边界约束<br/>调优间隔管理]
+    
+    D --> D1[缓存大小调整<br/>内存限制优化<br/>TTL动态计算<br/>淘汰策略切换]
+    
+    style A fill:#e1f5fe
+    style C fill:#f3e5f5
+    style D fill:#e8f5e8

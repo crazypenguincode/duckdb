@@ -1,6 +1,11 @@
-xychart-beta
-    title "查询响应时间实测对比分析"
-    x-axis ["简单聚合查询", "多表连接查询", "复杂分析查询", "窗口函数查询"]
-    y-axis "响应时间(ms)" 0 --> 5
-    bar [0.33, 2.00, 4.00, 1.00]
-    bar [0.22, 0.67, 3.00, 0.56]
+graph LR
+    A[TPC-H数据生成器<br/>dbgen] --> B[Scale Factor配置]
+    B --> C[SF=1 - 1GB]
+    B --> D[SF=10 - 10GB]
+    B --> E[SF=100 - 100GB]
+
+    C --> F[数据加载与索引构建]
+    D --> F
+    E --> F
+
+    style F fill:#e8f5e8

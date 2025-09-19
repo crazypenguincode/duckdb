@@ -88,24 +88,30 @@ def copy_images_to_output():
     logger.info(f"📁 输出图片目录: {output_images_dir}")
 
 def get_chapter_images(chapter_num):
-    """获取指定章节的图片列表"""
+    """获取指定章节的图片列表 - 与LaTeX脚本保持一致的命名规则"""
     if not IMAGES_DIR.exists():
         return []
     
     images = []
     for img in IMAGES_DIR.glob("*.png"):
-        # 匹配新格式：5-图5.18 机器学习模型特征重要性分布.png
-        if img.name.startswith(f"{chapter_num}-图") and not img.name.startswith("mermaid_"):
-            # 验证是否确实属于该章节
-            pattern = rf"{chapter_num}-图(\d+\.\d+)"
-            match = re.match(pattern, img.name)
-            if match:
+        # 匹配格式：{chapter_num}-图{fig_num} {title}.png
+        # 例如：5-图5.18 机器学习模型特征重要性分布.png
+        pattern = rf"^{chapter_num}-图(\d+\.\d+)\s+(.+)\.png$"
+        match = re.match(pattern, img.name)
+        if match:
+            fig_num = match.group(1)  # 如 "5.18"
+            title = match.group(2)    # 如 "机器学习模型特征重要性分布"
+            
+            # 验证图号确实属于该章节
+            chapter_part = fig_num.split('.')[0]
+            if chapter_part == str(chapter_num):
                 images.append(img)
     
     # 使用图号排序
     def extract_figure_number(filename):
         # 从文件名中提取完整图号，如 "5-图5.18 机器学习模型特征重要性分布.png" -> (5, 18)
-        match = re.match(rf"{chapter_num}-图(\d+)\.(\d+)", filename.name)
+        pattern = rf"^{chapter_num}-图(\d+)\.(\d+)\s+(.+)\.png$"
+        match = re.match(pattern, filename.name)
         if match:
             return (int(match.group(1)), int(match.group(2)))
         return (0, 0)
@@ -113,12 +119,13 @@ def get_chapter_images(chapter_num):
     return sorted(images, key=extract_figure_number)
 
 def replace_mermaid_with_images(md_text, chapter_num):
-    """替换 mermaid 代码块为图片引用"""
-    # 查找所有 mermaid 代码块和图片标题
-    mermaid_pattern = r"```mermaid[^\n]*\n([\s\S]*?)```"
+    """替换 mermaid 代码块为图片引用 - 参考LaTeX转换脚本的逻辑，确保精确匹配"""
+    
+    # 先找到所有的mermaid块和图片标题的位置
+    mermaid_pattern = r'```mermaid\n(.*?)\n```'
     title_pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*'
     
-    mermaid_blocks = list(re.finditer(mermaid_pattern, md_text))
+    mermaid_blocks = list(re.finditer(mermaid_pattern, md_text, re.DOTALL))
     title_matches = list(re.finditer(title_pattern, md_text))
     
     if not mermaid_blocks:
@@ -126,16 +133,20 @@ def replace_mermaid_with_images(md_text, chapter_num):
     
     logger.info(f"  找到 {len(mermaid_blocks)} 个 mermaid 块")
     
-    # 为每个mermaid块找到对应的图片文件
-    replaced = 0
-    for i, block in enumerate(reversed(mermaid_blocks)):
+    # 为每个mermaid块找到最近的图片标题
+    replacements = []
+    used_titles = set()  # 记录已使用的标题，避免重复使用
+    
+    for block in mermaid_blocks:
         mermaid_pos = block.start()
-        
-        # 找到最近的标题
         best_title = None
         best_distance = float('inf')
         
+        # 查找最近的未使用的标题
         for title_match in title_matches:
+            if title_match in used_titles:
+                continue  # 跳过已使用的标题
+                
             title_pos = title_match.start()
             distance = abs(mermaid_pos - title_pos)
             
@@ -143,32 +154,42 @@ def replace_mermaid_with_images(md_text, chapter_num):
             if title_pos < mermaid_pos and distance < best_distance:
                 best_title = title_match
                 best_distance = distance
-            # 如果没有前面的标题，选择后面最近的
+            # 如果没有前面的标题，选择后面最近的未使用标题
             elif best_title is None and title_pos > mermaid_pos and distance < best_distance:
                 best_title = title_match
                 best_distance = distance
         
         if best_title:
-            fig_num = best_title.group(1)  # 如 "5.18"
-            title = best_title.group(2).strip()  # 如 "机器学习模型特征重要性分布"
+            fig_num = best_title.group(1)  # 如 "2.1"
+            clean_title = best_title.group(2).strip()  # 如 "数据库查询处理流水线架构"
             
-            # 构建图片文件名
-            img_filename = f"{chapter_num}-图{fig_num} {title}.png"
+            # 使用真实的图号生成文件名 - 与LaTeX脚本保持一致
+            img_filename = f"{chapter_num}-图{fig_num} {clean_title}.png"
             img_path = IMAGES_DIR / img_filename
             
             if img_path.exists():
-                # 使用绝对路径确保 pandoc 能找到
                 abs_img_path = str(img_path.absolute())
-                replacement = f"![图片]({abs_img_path})\n"
-                md_text = md_text[:block.start()] + replacement + md_text[block.end():]
-                replaced += 1
+                replacement_text = f"![图片]({abs_img_path})\n"
+                replacements.append((block, replacement_text, img_filename))
+                used_titles.add(best_title)  # 标记为已使用
                 logger.info(f"    替换 mermaid 块 -> {img_filename}")
             else:
                 logger.info(f"    跳过 mermaid 块（图片文件不存在: {img_filename}）")
         else:
             logger.info(f"    跳过 mermaid 块（找不到对应标题）")
     
-    return md_text, replaced
+    # 按位置倒序执行替换，避免位置偏移
+    new_text = md_text
+    for block, replacement_text, img_filename in reversed(replacements):
+        new_text = new_text[:block.start()] + replacement_text + new_text[block.end():]
+    
+    return new_text, len(replacements)
+
+def convert_figure_titles(md_text):
+    """移除独立的图片标题，因为标题会在图片的caption中显示 - 参考LaTeX脚本"""
+    pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
+    md_text = re.sub(pattern, '', md_text)
+    return md_text
 
 def fix_math_formulas(md_text):
     """修复数学公式格式"""
@@ -203,6 +224,9 @@ def preprocess_markdown(md_path):
     
     # 替换 mermaid
     content, mermaid_count = replace_mermaid_with_images(content, chapter_num)
+    
+    # 移除独立的图片标题（与LaTeX脚本保持一致）
+    content = convert_figure_titles(content)
     
     # 修复公式
     content = fix_math_formulas(content)

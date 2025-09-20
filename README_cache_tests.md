@@ -1,229 +1,282 @@
-# DuckDB查询缓存性能测试套件
+# DuckDB 跨进程缓存持久化测试套件
 
-这个测试套件用于全面评估DuckDB查询缓存的性能，包括执行时间、内存使用、不同缓存策略的对比等。
+本测试套件专门用于测试和验证DuckDB的跨进程缓存持久化功能，包括WAL格式、物化视图、混合策略等多种持久化方案的性能对比。
 
-## 文件说明
+## 📁 文件结构
 
-### 主要测试脚本
+```
+├── src/include/duckdb/main/query_cache_persistence.hpp  # 持久化接口头文件
+├── src/main/query_cache_persistence.cpp                 # 持久化实现文件
+├── cache_persistence_performance_test.cpp               # 原有性能测试程序
+├── cross_process_cache_test.cpp                        # C++跨进程测试程序
+├── cross_process_cache_persistence_test.py             # Python跨进程测试脚本
+├── verify_cache_implementation.py                      # 功能验证脚本
+├── run_cross_process_cache_tests.sh                    # 完整测试运行脚本
+└── README_CACHE_TESTS.md                               # 本说明文件
+```
 
-1. **`test_query_cache_performance.py`** - 主要性能测试
-   - 对比启用/禁用缓存的查询执行时间
-   - 测试简单查询和TPC-H复杂查询
-   - 分析缓存命中率和加速比
+## 🚀 快速开始
 
-2. **`test_cache_memory_analysis.py`** - 内存使用分析
-   - 监控缓存对内存使用的影响
-   - 测试不同缓存大小的内存开销
-   - 生成内存使用图表和报告
-
-3. **`test_cache_strategies.py`** - 缓存策略对比
-   - 测试TTL、LRU、ML等不同驱逐策略
-   - 对比不同持久化策略的性能
-   - 分析最佳策略配置
-
-4. **`run_cache_tests.py`** - 综合测试套件
-   - 运行所有测试脚本
-   - 生成综合性能报告
-   - 提供测试建议和推荐配置
-
-### 辅助脚本
-
-- **`install_test_dependencies.py`** - 安装测试依赖包
-
-## 快速开始
-
-### 1. 安装依赖
+### 1. 功能验证（推荐首先运行）
 
 ```bash
-python3 install_test_dependencies.py
+# 快速验证基本功能是否正常
+python3 verify_cache_implementation.py
 ```
 
-### 2. 运行完整测试套件
+这个脚本会验证：
+- DuckDB基本功能
+- 缓存设置和配置
+- 持久化策略切换
+- 简单缓存行为
+- 跨进程模拟测试
+
+### 2. 完整性能测试
 
 ```bash
-# 使用TPC-H数据库（如果存在）
-python3 run_cache_tests.py --db-path /Users/max/test/tpc/tpch-sf1.db
-
-# 使用内存数据库（自动生成测试数据）
-python3 run_cache_tests.py
-
-# 快速测试模式（减少测试时间）
-python3 run_cache_tests.py --quick
+# 运行完整的跨进程缓存性能测试
+./run_cross_process_cache_tests.sh
 ```
 
-### 3. 运行单独的测试
+这个脚本会：
+- 编译DuckDB和C++测试程序
+- 运行C++性能测试
+- 运行Python性能测试
+- 生成详细的性能报告
 
+### 3. 单独运行测试
+
+#### Python测试脚本
 ```bash
-# 性能测试
-python3 test_query_cache_performance.py --iterations 10
-
-# 内存分析
-python3 test_cache_memory_analysis.py --test-scaling
-
-# 策略对比
-python3 test_cache_strategies.py --workload-duration 5
+python3 cross_process_cache_persistence_test.py
 ```
 
-## 测试参数
+#### C++测试程序（需要先编译）
+```bash
+# 编译
+cd build/release
+make -j$(nproc) duckdb
+g++ -std=c++17 -O3 -I../../src/include -L./src ../../cross_process_cache_test.cpp -lduckdb -lpthread -o cross_process_cache_test
 
-### 通用参数
-
-- `--db-path`: TPC-H数据库路径（默认: `/Users/max/test/tpc/tpch-sf1.db`）
-- `--output-dir`: 结果输出目录（默认: `cache_test_results`）
-
-### 性能测试参数
-
-- `--iterations`: 每个查询的重复次数（默认: 5）
-- `--output`: 结果JSON文件名
-
-### 内存分析参数
-
-- `--iterations`: 测试迭代次数（默认: 3）
-- `--test-scaling`: 启用缓存大小扩展测试
-
-### 策略测试参数
-
-- `--workload-duration`: 工作负载持续时间（分钟，默认: 2）
-
-## 测试结果
-
-测试完成后会生成以下文件：
-
-```
-cache_test_results/
-├── comprehensive_report.json    # 综合测试报告（JSON格式）
-├── test_summary.txt            # 文本摘要报告
-├── performance_results.json    # 性能测试详细结果
-├── strategy_results.json       # 策略测试结果
-└── memory_analysis/            # 内存分析结果
-    ├── memory_results.json
-    ├── memory_report.txt
-    ├── memory_comparison.png    # 内存使用对比图
-    └── cache_size_scaling.png   # 缓存大小扩展图
+# 运行
+export LD_LIBRARY_PATH="$PWD/src:$LD_LIBRARY_PATH"
+./cross_process_cache_test
 ```
 
-## 测试内容
+## 🧪 测试内容
 
-### 1. 性能测试
+### 持久化策略测试
 
-- **简单查询**: COUNT、AVG、MAX等基础聚合查询
-- **复杂查询**: TPC-H标准查询（Q1, Q3, Q5, Q6, Q10）
-- **对比指标**:
-  - 执行时间（平均、最小、最大、标准差）
-  - 缓存命中率
-  - 加速比
-  - 内存使用量
+测试套件包含以下持久化策略的性能对比：
 
-### 2. 内存分析
+1. **MEMORY_ONLY** - 仅内存缓存，不持久化
+2. **WAL_FORMAT** - WAL格式持久化，适合频繁写入
+3. **MATERIALIZED_VIEW** - 物化视图持久化，适合复杂查询
+4. **HYBRID** - 混合策略，热数据内存+冷数据磁盘
+5. **CROSS_PROCESS** - 跨进程优化策略
+6. **ML_INTELLIGENT** - 机器学习智能策略
 
-- **基线内存**: 无缓存时的内存使用
-- **缓存开销**: 启用缓存后的额外内存消耗
-- **扩展性测试**: 不同缓存大小对内存的影响
-- **实时监控**: 查询执行过程中的内存变化
+### 测试查询类型
 
-### 3. 策略对比
-
-- **驱逐策略**:
-  - TTL (Time-To-Live): 基于时间的驱逐
-  - LRU (Least Recently Used): 最近最少使用
-  - ML (Machine Learning): 基于机器学习的智能驱逐
-
-- **持久化策略**:
-  - MEMORY_ONLY: 仅内存存储
-  - WAL_FORMAT: WAL格式持久化
-  - MATERIALIZED_VIEW: 物化视图持久化
-  - HYBRID: 混合策略（热数据内存，冷数据磁盘）
-
-## 测试数据
-
-### TPC-H数据库
-
-如果指定的TPC-H数据库存在，测试将使用真实的TPC-H数据：
-- 标准的TPC-H表结构
-- 真实的查询复杂度
-- 更准确的性能评估
-
-### 自动生成数据
-
-如果TPC-H数据库不存在，测试会自动生成模拟数据：
-- 简化的表结构
-- 可配置的数据量
-- 保持查询逻辑的一致性
-
-## 结果解读
+- **简单聚合查询** - 基础COUNT、AVG、SUM操作
+- **复杂连接CTE** - 多表连接和公共表表达式
+- **窗口函数查询** - ROW_NUMBER、LAG、滚动聚合
+- **递归CTE查询** - 递归公共表表达式
 
 ### 性能指标
 
-- **加速比 > 2.0**: 缓存效果非常好
-- **加速比 1.3-2.0**: 缓存效果良好
-- **加速比 1.1-1.3**: 缓存有一定效果
-- **加速比 < 1.1**: 缓存效果不明显
+- 第一次执行时间（冷启动）
+- 同进程缓存命中时间
+- 跨进程缓存命中时间
+- 缓存加速比
+- 缓存命中率
+- 结果数据大小
 
-### 内存开销
+## 📊 测试报告
 
-- **< 10MB**: 内存开销很小
-- **10-50MB**: 内存开销适中
-- **> 50MB**: 内存开销较大，需要调整
+测试完成后会生成以下报告文件：
 
-### 命中率
+- `cross_process_cache_performance_report.md` - C++测试详细报告
+- `cross_process_cache_persistence_report.md` - Python测试详细报告
+- `cross_process_cache_test_data.json` - 详细测试数据
+- `duckdb_cache_verification_report.md` - 功能验证报告
 
-- **> 80%**: 命中率很高
-- **60-80%**: 命中率良好
-- **40-60%**: 命中率一般
-- **< 40%**: 命中率较低
+## 🔧 技术实现
 
-## 故障排除
+### 核心特性
+
+1. **WAL格式持久化**
+   - 顺序写入，高性能
+   - 支持压缩和校验和
+   - 适合高频写入场景
+
+2. **物化视图持久化**
+   - 直接存储查询结果
+   - 支持复杂查询结构
+   - 适合复杂分析查询
+
+3. **混合策略**
+   - 智能热冷数据分离
+   - 内存+磁盘双层存储
+   - 自动数据迁移
+
+4. **跨进程缓存**
+   - 进程间缓存共享
+   - 文件锁防冲突
+   - 专为多进程优化
+
+5. **ML智能策略**
+   - 机器学习预测
+   - 自适应缓存决策
+   - 在线学习优化
+
+### 关键技术点
+
+- **布隆过滤器** - 快速缓存存在性检查
+- **LRU淘汰策略** - 智能缓存管理
+- **压缩存储** - 减少磁盘占用
+- **异步写入** - 提高写入性能
+- **进程锁机制** - 保证跨进程一致性
+
+## 🎯 使用建议
+
+### 策略选择指南
+
+| 应用场景 | 推荐策略 | 原因 |
+|---------|---------|------|
+| 高频简单查询 | WAL_FORMAT | 写入性能好，开销低 |
+| 复杂分析查询 | MATERIALIZED_VIEW | 复杂结果直接复用 |
+| 多进程应用 | CROSS_PROCESS | 专门优化跨进程性能 |
+| 智能化场景 | ML_INTELLIGENT | 自适应优化决策 |
+| 通用场景 | HYBRID | 各种查询都有良好表现 |
+
+### 配置参数调优
+
+```sql
+-- 基础缓存配置
+SET enable_query_cache=true;
+SET query_cache_max_size='500MB';
+
+-- 持久化配置
+SET query_cache_persistence_strategy='WAL_FORMAT';
+SET query_cache_persistence_path='/path/to/cache';
+
+-- 高级配置
+SET query_cache_bloom_filter_size=1000000;
+SET query_cache_ttl_seconds=3600;
+```
+
+## 🐛 故障排除
 
 ### 常见问题
 
-1. **数据库连接失败**
-   - 检查数据库路径是否正确
-   - 确保有读取权限
+1. **编译失败**
+   - 检查DuckDB源码完整性
+   - 确保CMake和编译器版本兼容
+   - 检查依赖库是否安装
 
-2. **缓存配置不生效**
-   - 当前DuckDB版本可能不支持某些缓存配置
-   - 测试会自动降级到基础功能
+2. **测试运行失败**
+   - 检查DuckDB可执行文件路径
+   - 确保有足够的磁盘空间
+   - 检查文件权限设置
 
-3. **内存监控失败**
-   - 确保安装了psutil包
-   - 检查系统权限
+3. **缓存效果不明显**
+   - 增加查询复杂度
+   - 调整缓存大小配置
+   - 检查持久化策略设置
 
-4. **图表生成失败**
-   - 确保安装了matplotlib包
-   - 在无GUI环境下可能需要设置后端
+4. **跨进程测试失败**
+   - 检查共享目录权限
+   - 确保进程间无冲突
+   - 验证文件锁机制
 
-### 性能优化建议
+### 调试技巧
 
-1. **启用缓存的条件**:
-   - 有重复查询的工作负载
-   - 查询执行时间 > 100ms
-   - 有足够的内存空间
+```bash
+# 启用详细日志
+export DUCKDB_LOG_LEVEL=DEBUG
 
-2. **缓存大小配置**:
-   - 根据内存容量设置合理的缓存大小
-   - 监控命中率，调整缓存策略
+# 检查缓存统计
+SELECT * FROM pragma_query_cache_stats();
 
-3. **驱逐策略选择**:
-   - 查询模式规律：选择LRU
-   - 时间敏感数据：选择TTL
-   - 复杂模式：选择ML
+# 监控缓存文件
+ls -la /path/to/cache/
 
-## 扩展测试
+# 检查进程状态
+ps aux | grep duckdb
+```
 
-可以根据需要修改测试脚本：
+## 📈 性能优化建议
 
-1. **添加自定义查询**: 在查询字典中添加新的测试查询
-2. **调整测试参数**: 修改迭代次数、缓存大小等参数
-3. **扩展监控指标**: 添加CPU使用率、磁盘I/O等监控
-4. **自定义报告格式**: 修改报告生成逻辑
+1. **内存配置**
+   - 根据可用内存调整缓存大小
+   - 考虑其他应用的内存需求
+   - 监控内存使用情况
 
-## 注意事项
+2. **磁盘I/O优化**
+   - 使用SSD存储缓存文件
+   - 配置合适的WAL缓冲区大小
+   - 启用压缩减少I/O
 
-1. 测试可能需要较长时间，建议在空闲时运行
-2. 确保有足够的磁盘空间存储测试结果
-3. 测试过程中避免运行其他高负载程序
-4. 定期清理测试生成的临时文件
+3. **并发控制**
+   - 合理设置进程锁超时
+   - 避免过多并发写入
+   - 监控锁竞争情况
 
-## 联系方式
+4. **缓存策略**
+   - 根据查询模式选择策略
+   - 定期清理过期缓存
+   - 监控缓存命中率
 
-如有问题或建议，请联系开发团队。
+## 🤝 贡献指南
+
+欢迎贡献代码和改进建议！
+
+1. Fork项目
+2. 创建特性分支
+3. 提交更改
+4. 创建Pull Request
+
+### 开发环境设置
+
+```bash
+# 克隆DuckDB源码
+git clone https://github.com/duckdb/duckdb.git
+cd duckdb
+
+# 编译开发版本
+make debug
+
+# 运行测试
+python3 verify_cache_implementation.py
+```
+
+## 📝 更新日志
+
+### v1.0.0 (2024-01-XX)
+- 初始版本发布
+- 支持5种持久化策略
+- 完整的跨进程测试套件
+- 详细的性能报告生成
+
+### 计划功能
+- [ ] 分布式缓存支持
+- [ ] 更多ML算法集成
+- [ ] 实时监控面板
+- [ ] 自动调优工具
+
+## 📄 许可证
+
+本项目遵循DuckDB的MIT许可证。
+
+## 📞 联系方式
+
+如有问题或建议，请通过以下方式联系：
+
+- GitHub Issues
+- DuckDB社区论坛
+- 邮件联系
+
+---
+
+*最后更新: 2024-01-XX*

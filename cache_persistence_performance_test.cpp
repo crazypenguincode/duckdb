@@ -342,6 +342,7 @@ public:
         TestCacheStrategy(CachePersistenceStrategy::MATERIALIZED_VIEW, "Materialized View");
         TestCacheStrategy(CachePersistenceStrategy::WAL_FORMAT, "WAL Format");
         TestCacheStrategy(CachePersistenceStrategy::HYBRID, "Hybrid");
+        TestCacheStrategy(CachePersistenceStrategy::CROSS_PROCESS, "Cross Process");
         TestCacheStrategy(CachePersistenceStrategy::ML_INTELLIGENT, "ML Intelligent");
     }
     

@@ -13,10 +13,18 @@
 namespace duckdb {
 
 BloomFilter::BloomFilter(idx_t size, idx_t num_hash_functions) 
-    : bit_array(size, false), num_hash_functions(num_hash_functions), num_elements(0) {
+    : bit_array(size > 0 ? size : 1, false), num_hash_functions(num_hash_functions), num_elements(0), disabled(size == 0) {
+    // If size is 0, disable the bloom filter
+    if (size == 0) {
+        printf("DEBUG: BloomFilter disabled (size=0)\n");
+    }
 }
 
 void BloomFilter::Add(const string &element) {
+    if (disabled) {
+        printf("DEBUG: BloomFilter::Add - filter disabled, skipping\n");
+        return;
+    }
     auto hash_values = GetHashValues(element);
     for (auto hash_val : hash_values) {
         bit_array[hash_val % bit_array.size()] = true;
@@ -25,6 +33,10 @@ void BloomFilter::Add(const string &element) {
 }
 
 bool BloomFilter::MightContain(const string &element) const {
+    if (disabled) {
+        printf("DEBUG: BloomFilter::MightContain - filter disabled, returning true\n");
+        return true; // Always return true when disabled, forcing cache lookup
+    }
     auto hash_values = GetHashValues(element);
     for (auto hash_val : hash_values) {
         if (!bit_array[hash_val % bit_array.size()]) {
@@ -35,6 +47,10 @@ bool BloomFilter::MightContain(const string &element) const {
 }
 
 void BloomFilter::Clear() {
+    if (disabled) {
+        printf("DEBUG: BloomFilter::Clear - filter disabled, skipping\n");
+        return;
+    }
     std::fill(bit_array.begin(), bit_array.end(), false);
     num_elements = 0;
 }
@@ -51,7 +67,13 @@ double BloomFilter::GetFalsePositiveRate() const {
 }
 
 void BloomFilter::Resize(idx_t new_size) {
-    bit_array.resize(new_size, false);
+    disabled = (new_size == 0);
+    if (disabled) {
+        printf("DEBUG: BloomFilter::Resize - disabling filter (new_size=0)\n");
+        bit_array.resize(1, false); // Keep minimal size
+    } else {
+        bit_array.resize(new_size, false);
+    }
     // Note: This clears the filter, which is acceptable for our use case
     Clear();
 }

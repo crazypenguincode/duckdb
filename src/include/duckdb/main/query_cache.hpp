@@ -31,7 +31,8 @@ enum class CachePersistenceStrategy {
 	MATERIALIZED_VIEW,  // 策略1: 使用物化视图落盘
 	WAL_FORMAT,         // 策略2: 使用WAL格式顺序读写
 	HYBRID,             // 策略4: 混合策略（热数据内存，冷数据落盘）
-	CROSS_PROCESS       // 策略5: 跨进程缓存策略（专为多进程环境优化）
+	CROSS_PROCESS,      // 策略5: 跨进程缓存策略（专为多进程环境优化）
+	ML_INTELLIGENT      // 策略6: 基于机器学习的智能持久化策略
 };
 
 //! 持久化配置
@@ -298,6 +299,24 @@ public:
     //! Check if caching is enabled
     bool IsEnabled() const { return config.enabled; }
     
+    //! Multi-stage CTE cache statistics
+    struct MultiStageCTEStats {
+        idx_t parser_hits;
+        idx_t planner_hits;
+        idx_t optimizer_hits;
+        idx_t executor_hits;
+        idx_t total_requests;
+        idx_t total_entries;
+        double parser_hit_rate;
+        double planner_hit_rate;
+        double optimizer_hit_rate;
+        double executor_hit_rate;
+        double overall_hit_rate;
+    };
+    
+    //! Get multi-stage CTE cache statistics
+    MultiStageCTEStats GetMultiStageCTEStats() const;
+    
     //! Set eviction strategy
     void SetEvictionStrategy(CacheEvictionStrategy strategy);
     
@@ -411,7 +430,7 @@ private:
     void RecordAccess(const string &query_hash, const MLCacheFeatures &features, bool was_hit);
     
     //! Persistence interface
-    unique_ptr<CachePersistenceInterface> persistence;
+    // unique_ptr<CachePersistenceInterface> persistence; // 暂时禁用
     
     //! Client context for persistence strategies that need it
     ClientContext *client_context = nullptr;

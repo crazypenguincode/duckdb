@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "duckdb/main/query_cache_persistence.hpp"
+#include "duckdb/main/query_cache.hpp"
 #include "duckdb/common/vector.hpp"
 #include <unordered_map>
 #include <queue>

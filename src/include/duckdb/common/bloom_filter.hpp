@@ -46,6 +46,8 @@ private:
     idx_t num_hash_functions;
     //! Number of elements added
     idx_t num_elements;
+    //! Whether the bloom filter is disabled
+    bool disabled;
     
     //! Generate hash values for an element
     std::vector<idx_t> GetHashValues(const string &element) const;

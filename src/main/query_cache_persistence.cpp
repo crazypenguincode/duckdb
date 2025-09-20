@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "duckdb/main/query_cache_persistence.hpp"
+#include "duckdb/main/query_cache.hpp"
 #include "duckdb/common/serializer/binary_serializer.hpp"
 #include "duckdb/common/serializer/binary_deserializer.hpp"
 #include "duckdb/common/string_util.hpp"
@@ -53,6 +53,12 @@ unique_ptr<CachePersistenceInterface> CachePersistenceFactory::CreatePersistence
                 throw InvalidInputException("CrossProcessPersistence requires a ClientContext");
             }
             return make_uniq<CrossProcessPersistence>(*context);
+        // ML_INTELLIGENT策略暂时不实现，使用HYBRID策略代替
+        // case CachePersistenceStrategy::ML_INTELLIGENT:
+        //     if (!context) {
+        //         throw InvalidInputException("MLIntelligentPersistence requires a ClientContext");
+        //     }
+        //     return make_uniq<MLIntelligentPersistence>(*context);
         default:
             throw InvalidInputException("Unknown persistence strategy");
     }
@@ -1752,6 +1758,322 @@ bool CrossProcessPersistence::UpdateAccessStats(const string &key) {
     } catch (std::exception &ex) {
         printf("Failed to update access stats: %s\n", ex.what());
         return false;
+    }
+}
+
+//===----------------------------------------------------------------------===//
+// MLIntelligentPersistence (策略6: 机器学习智能持久化)
+//===----------------------------------------------------------------------===//
+
+MLIntelligentPersistence::MLIntelligentPersistence(ClientContext &context) 
+    : context(context) {
+}
+
+bool MLIntelligentPersistence::Initialize(const CachePersistenceConfig &config) {
+    lock_guard<mutex> lock(stats_mutex);
+    this->config = config;
+    
+    try {
+        // 初始化内存存储
+        memory_storage = make_uniq<MemoryOnlyPersistence>();
+        if (!memory_storage->Initialize(config)) {
+            printf("Failed to initialize memory storage for ML persistence\n");
+            return false;
+        }
+        
+        // 初始化磁盘存储
+        disk_storage = make_uniq<WALFormatPersistence>(context);
+        if (!disk_storage->Initialize(config)) {
+            printf("Failed to initialize disk storage for ML persistence\n");
+            return false;
+        }
+        
+        printf("MLIntelligentPersistence initialized successfully\n");
+        return true;
+    } catch (std::exception &ex) {
+        printf("MLIntelligentPersistence initialization failed: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool MLIntelligentPersistence::PersistEntry(const string &key, const QueryCacheEntry &entry) {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    try {
+        // 更新访问统计和ML模型
+        UpdateAccessStats(key, entry);
+        
+        // 根据ML预测决定存储位置
+        if (ShouldStoreInMemory(key, entry)) {
+            // 存储在内存中
+            access_stats[key].is_hot = true;
+            return memory_storage->PersistEntry(key, entry);
+        } else {
+            // 存储在磁盘中
+            access_stats[key].is_hot = false;
+            return disk_storage->PersistEntry(key, entry);
+        }
+    } catch (std::exception &ex) {
+        printf("Failed to persist entry with ML strategy: %s\n", ex.what());
+        return false;
+    }
+}
+
+unique_ptr<QueryCacheEntry> MLIntelligentPersistence::LoadEntry(const string &key) {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    try {
+        // 首先检查访问统计
+        auto stats_it = access_stats.find(key);
+        if (stats_it != access_stats.end()) {
+            // 更新访问时间
+            stats_it->second.last_access = std::chrono::steady_clock::now();
+            stats_it->second.access_count++;
+            
+            // 根据存储位置加载
+            if (stats_it->second.is_hot) {
+                auto entry = memory_storage->LoadEntry(key);
+                if (entry) {
+                    return entry;
+                }
+            }
+        }
+        
+        // 尝试从磁盘加载
+        auto entry = disk_storage->LoadEntry(key);
+        if (entry) {
+            // 如果从磁盘加载成功，考虑是否应该迁移到内存
+            if (ShouldStoreInMemory(key, *entry)) {
+                memory_storage->PersistEntry(key, *entry);
+                disk_storage->DeleteEntry(key);
+                if (stats_it != access_stats.end()) {
+                    stats_it->second.is_hot = true;
+                }
+            }
+        }
+        
+        return entry;
+    } catch (std::exception &ex) {
+        printf("Failed to load entry with ML strategy: %s\n", ex.what());
+        return nullptr;
+    }
+}
+
+bool MLIntelligentPersistence::DeleteEntry(const string &key) {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    try {
+        bool memory_deleted = memory_storage->DeleteEntry(key);
+        bool disk_deleted = disk_storage->DeleteEntry(key);
+        
+        // 删除访问统计
+        access_stats.erase(key);
+        
+        return memory_deleted || disk_deleted;
+    } catch (std::exception &ex) {
+        printf("Failed to delete entry with ML strategy: %s\n", ex.what());
+        return false;
+    }
+}
+
+bool MLIntelligentPersistence::EntryExists(const string &key) {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    return memory_storage->EntryExists(key) || disk_storage->EntryExists(key);
+}
+
+vector<string> MLIntelligentPersistence::GetAllKeys() {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    auto memory_keys = memory_storage->GetAllKeys();
+    auto disk_keys = disk_storage->GetAllKeys();
+    
+    // 合并两个键列表
+    vector<string> all_keys;
+    all_keys.reserve(memory_keys.size() + disk_keys.size());
+    all_keys.insert(all_keys.end(), memory_keys.begin(), memory_keys.end());
+    all_keys.insert(all_keys.end(), disk_keys.begin(), disk_keys.end());
+    
+    // 去重
+    sort(all_keys.begin(), all_keys.end());
+    all_keys.erase(unique(all_keys.begin(), all_keys.end()), all_keys.end());
+    
+    return all_keys;
+}
+
+bool MLIntelligentPersistence::Clear() {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    bool memory_cleared = memory_storage->Clear();
+    bool disk_cleared = disk_storage->Clear();
+    access_stats.clear();
+    
+    return memory_cleared && disk_cleared;
+}
+
+bool MLIntelligentPersistence::Sync() {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    // 执行重新平衡
+    RebalanceStorage();
+    
+    bool memory_synced = memory_storage->Sync();
+    bool disk_synced = disk_storage->Sync();
+    
+    return memory_synced && disk_synced;
+}
+
+idx_t MLIntelligentPersistence::GetStorageSize() const {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    return memory_storage->GetStorageSize() + disk_storage->GetStorageSize();
+}
+
+void MLIntelligentPersistence::Close() {
+    lock_guard<mutex> lock(stats_mutex);
+    
+    if (memory_storage) {
+        memory_storage->Close();
+    }
+    if (disk_storage) {
+        disk_storage->Close();
+    }
+}
+
+bool MLIntelligentPersistence::ShouldStoreInMemory(const string &key, const QueryCacheEntry &entry) {
+    // 使用ML预测器预测效用分数
+    double predicted_utility = ml_predictor.PredictUtility(entry);
+    
+    // 检查访问统计
+    auto stats_it = access_stats.find(key);
+    if (stats_it != access_stats.end()) {
+        // 考虑访问频率和最近访问时间
+        auto time_since_access = std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::steady_clock::now() - stats_it->second.last_access).count();
+        
+        // 如果最近访问过且访问频率高，更倾向于存储在内存中
+        if (time_since_access < 300 && stats_it->second.access_count > 2) { // 5分钟内且访问超过2次
+            predicted_utility += 0.3;
+        }
+    }
+    
+    // 阈值决策：预测效用分数大于0.6则存储在内存中
+    return predicted_utility > 0.6;
+}
+
+void MLIntelligentPersistence::UpdateAccessStats(const string &key, const QueryCacheEntry &entry) {
+    auto now = std::chrono::steady_clock::now();
+    
+    auto &stats = access_stats[key];
+    stats.access_count++;
+    stats.last_access = now;
+    
+    // 计算实际效用（基于访问频率和时间间隔）
+    double actual_utility = 0.5; // 基础分数
+    if (stats.access_count > 1) {
+        // 访问频率越高，效用越高
+        actual_utility += std::min(0.4, stats.access_count * 0.1);
+    }
+    
+    stats.utility_score = actual_utility;
+    
+    // 更新ML模型
+    ml_predictor.UpdateWeights(entry, actual_utility);
+}
+
+void MLIntelligentPersistence::RebalanceStorage() {
+    // 定期重新平衡存储，将冷数据移到磁盘，热数据移到内存
+    auto now = std::chrono::steady_clock::now();
+    
+    for (auto &pair : access_stats) {
+        const string &key = pair.first;
+        auto &stats = pair.second;
+        
+        auto time_since_access = std::chrono::duration_cast<std::chrono::seconds>(
+            now - stats.last_access).count();
+        
+        // 如果数据超过10分钟未访问，考虑移到磁盘
+        if (time_since_access > 600 && stats.is_hot) {
+            auto entry = memory_storage->LoadEntry(key);
+            if (entry) {
+                disk_storage->PersistEntry(key, *entry);
+                memory_storage->DeleteEntry(key);
+                stats.is_hot = false;
+            }
+        }
+        // 如果数据最近被频繁访问，考虑移到内存
+        else if (time_since_access < 60 && stats.access_count > 3 && !stats.is_hot) {
+            auto entry = disk_storage->LoadEntry(key);
+            if (entry) {
+                memory_storage->PersistEntry(key, *entry);
+                disk_storage->DeleteEntry(key);
+                stats.is_hot = true;
+            }
+        }
+    }
+}
+
+double MLIntelligentPersistence::MLPredictor::PredictUtility(const QueryCacheEntry &entry) const {
+    // 简单的线性预测模型
+    double score = 0.0;
+    
+    // 特征1: 查询复杂度分数
+    score += weights[0] * entry.ml_features.query_complexity_score;
+    
+    // 特征2: 执行时间（越长的查询缓存价值越高）
+    score += weights[1] * std::min(1.0, entry.ml_features.execution_time_ms / 1000.0);
+    
+    // 特征3: 结果大小（适中大小的结果缓存价值较高）
+    double size_score = 1.0 - std::abs(entry.ml_features.result_size_bytes / 1024.0 - 100.0) / 100.0;
+    score += weights[2] * std::max(0.0, size_score);
+    
+    // 特征4: 访问频率
+    score += weights[3] * std::min(1.0, entry.ml_features.access_frequency);
+    
+    // 特征5: 时间局部性
+    score += weights[4] * entry.ml_features.temporal_locality;
+    
+    // 特征6: 表数量（多表查询通常缓存价值更高）
+    score += weights[5] * std::min(1.0, entry.ml_features.table_count / 5.0);
+    
+    // 特征7: 连接数量
+    score += weights[6] * std::min(1.0, entry.ml_features.join_count / 3.0);
+    
+    // 特征8: 是否有聚合或子查询
+    if (entry.ml_features.has_aggregation || entry.ml_features.has_subquery) {
+        score += weights[7];
+    }
+    
+    // 使用sigmoid函数将分数映射到[0,1]区间
+    return 1.0 / (1.0 + std::exp(-score));
+}
+
+void MLIntelligentPersistence::MLPredictor::UpdateWeights(const QueryCacheEntry &entry, double actual_utility) {
+    prediction_count++;
+    
+    // 获取当前预测
+    double predicted = PredictUtility(entry);
+    double error = actual_utility - predicted;
+    
+    // 梯度下降更新权重
+    weights[0] += learning_rate * error * entry.ml_features.query_complexity_score;
+    weights[1] += learning_rate * error * std::min(1.0, entry.ml_features.execution_time_ms / 1000.0);
+    
+    double size_score = 1.0 - std::abs(entry.ml_features.result_size_bytes / 1024.0 - 100.0) / 100.0;
+    weights[2] += learning_rate * error * std::max(0.0, size_score);
+    
+    weights[3] += learning_rate * error * std::min(1.0, entry.ml_features.access_frequency);
+    weights[4] += learning_rate * error * entry.ml_features.temporal_locality;
+    weights[5] += learning_rate * error * std::min(1.0, entry.ml_features.table_count / 5.0);
+    weights[6] += learning_rate * error * std::min(1.0, entry.ml_features.join_count / 3.0);
+    
+    if (entry.ml_features.has_aggregation || entry.ml_features.has_subquery) {
+        weights[7] += learning_rate * error;
+    }
+    
+    // 权重衰减，防止过拟合
+    for (int i = 0; i < 8; i++) {
+        weights[i] *= 0.9999; // 轻微衰减
     }
 }
 

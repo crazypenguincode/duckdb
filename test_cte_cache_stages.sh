@@ -37,14 +37,14 @@ run_cte_test() {
     
     echo "🔍 测试: $test_name"
     
-    for i in $(seq 1 $iterations); do
+for i in $(seq 1 $iterations); do
         echo -n "  执行 $i/$iterations: "
-        start_time=$(date +%s%3N)
+        start_time=$(python3 -c "import time; print(int(time.time() * 1000))")
         
         result=$($DUCKDB_PATH "$TEST_DB" -c "$query" 2>&1)
         exit_code=$?
         
-        end_time=$(date +%s%3N)
+        end_time=$(python3 -c "import time; print(int(time.time() * 1000))")
         duration=$((end_time - start_time))
         
         if [ $exit_code -eq 0 ]; then

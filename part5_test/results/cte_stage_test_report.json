@@ -1,0 +1,49 @@
+{
+  "test_summary": {
+    "total_tests": 5,
+    "successful_cache_hits": 1,
+    "average_improvement": 39.04556127021458
+  },
+  "detailed_results": {
+    "simple_cte": {
+      "first_execution": 0.6420612335205078,
+      "repeat_execution": 0.19097328186035156,
+      "performance_improvement": 70.25621982918679,
+      "cache_hit_detected": false,
+      "query_type": "simple_cte"
+    },
+    "recursive_cte": {
+      "first_execution": 1.0380744934082031,
+      "repeat_execution": 0.8560021718343099,
+      "performance_improvement": 17.5394273465013,
+      "cache_hit_detected": true,
+      "query_type": "recursive_cte"
+    },
+    "nested_cte": {
+      "first_execution": 0.9636878967285156,
+      "repeat_execution": 0.4653135935465495,
+      "performance_improvement": 51.715322447633184,
+      "cache_hit_detected": false,
+      "query_type": "nested_cte"
+    },
+    "cte_with_join": {
+      "first_execution": 0.7979869842529297,
+      "repeat_execution": 0.4731019337972005,
+      "performance_improvement": 40.71307638681406,
+      "cache_hit_detected": false,
+      "query_type": "cte_with_join"
+    },
+    "complex_analytics_cte": {
+      "first_execution": 1.9021034240722656,
+      "repeat_execution": 1.6167163848876953,
+      "performance_improvement": 15.003760340937578,
+      "cache_hit_detected": false,
+      "query_type": "complex_analytics_cte"
+    }
+  },
+  "recommendations": {
+    "current_stage": "执行器阶段",
+    "full_stage_necessity": "不必要",
+    "optimization_focus": "执行器阶段缓存优化"
+  }
+}

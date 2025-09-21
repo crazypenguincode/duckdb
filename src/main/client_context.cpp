@@ -978,7 +978,7 @@ if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheab
 				printf("DEBUG: Found cached result! Returning cached result.\n");
 				// Set cache hit information in profiler
 				auto &profiler = QueryProfiler::Get(*this);
-				profiler.SetCacheInfo(true, cache_key);
+				profiler.SetCacheInfo(true, cache_key, false, false);
 				return std::move(cached_result);
 			} else {
 				printf("DEBUG: Bloom filter false positive - no cached result found\n");
@@ -995,7 +995,7 @@ if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheab
 		
 		// Set cache miss information in profiler
 		auto &profiler = QueryProfiler::Get(*this);
-		profiler.SetCacheInfo(false, cache_key);
+		profiler.SetCacheInfo(false, cache_key, false, false);
 		
 		auto result = pending_query->Execute();
 		
@@ -1086,25 +1086,44 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 		       query_cache ? query_cache->IsEnabled() : false, 
 		       is_cacheable);
 		
+		// Special handling for EXPLAIN statements
+		string underlying_cache_key;
+		bool is_explain_stmt = (statement_type == StatementType::EXPLAIN_STATEMENT);
+		printf("DEBUG: Processing statement type %d, is_explain_stmt=%d\n", (int)statement_type, is_explain_stmt);
+		
 		// Check if this statement is cacheable and caching is enabled
 		if (is_cacheable) {
 			// Generate cache key
 			cache_key = QueryCacheKeyGenerator::GenerateKey(*statement);
+			underlying_cache_key = cache_key;
 			printf("DEBUG: String query is cacheable, cache key: %s\n", cache_key.c_str());
 			printf("DEBUG: QueryCache enabled: %d, statement type: %d\n", 
 			       query_cache->IsEnabled(), (int)statement_type);
 			
+			if (is_explain_stmt) {
+				// For EXPLAIN statements, check if the underlying query is cached
+				auto &explain_stmt = statement->Cast<ExplainStatement>();
+				if (explain_stmt.stmt && QueryCacheKeyGenerator::IsCacheable(*explain_stmt.stmt)) {
+					underlying_cache_key = QueryCacheKeyGenerator::GenerateKey(*explain_stmt.stmt);
+					printf("DEBUG: EXPLAIN statement - checking underlying query cache key: %s\n", underlying_cache_key.c_str());
+				}
+			}
+			
 			// Check bloom filter first for fast negative lookup
-			if (query_cache->MightBeCached(cache_key)) {
+			if (query_cache->MightBeCached(underlying_cache_key)) {
 				printf("DEBUG: String query bloom filter says query might be cached\n");
 				// Try to get cached result
-				auto cached_result = query_cache->GetCachedResult(cache_key);
+				auto cached_result = query_cache->GetCachedResult(underlying_cache_key);
 				if (cached_result) {
-					printf("DEBUG: String query found cached result! Returning cached result.\n");
+					printf("DEBUG: String query found cached result! %s\n", is_explain_stmt ? "Underlying query cached" : "Returning cached result");
 					// Set cache hit information in profiler
 					auto &profiler = QueryProfiler::Get(*this);
-					profiler.SetCacheInfo(true, cache_key);
-					current_result = std::move(cached_result);
+					profiler.SetCacheInfo(true, underlying_cache_key, is_explain_stmt, IsExplainAnalyze(statement.get()));
+					
+					if (!is_explain_stmt) {
+						current_result = std::move(cached_result);
+					}
+					// For EXPLAIN statements, continue execution but mark cache hit
 				} else {
 					printf("DEBUG: String query bloom filter false positive - no cached result found\n");
 				}
@@ -1124,7 +1143,10 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 			// Set cache miss information in profiler if query was cacheable
 			if (is_cacheable) {
 				auto &profiler = QueryProfiler::Get(*this);
-				profiler.SetCacheInfo(false, cache_key);
+				bool is_explain_analyze = is_explain_stmt && IsExplainAnalyze(statement.get());
+				profiler.SetCacheInfo(false, underlying_cache_key, is_explain_stmt, is_explain_analyze);
+				printf("DEBUG: SetCacheInfo called with cache_hit=false, is_explain_stmt=%d, is_explain_analyze=%d\n", 
+				       is_explain_stmt, is_explain_analyze);
 			}
 			
 			PendingQueryParameters parameters;

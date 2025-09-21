@@ -1,0 +1,21 @@
+--- a/src/include/duckdb/main/query_profiler.hpp
++++ b/src/include/duckdb/main/query_profiler.hpp
+@@ -120,6 +120,8 @@ struct QueryInfo {
+ 	bool cache_hit;
+ 	//! Cache key used for this query (if cacheable)
+ 	string cache_key;
++	//! Whether this is an EXPLAIN query that should inherit cache status
++	bool is_explain_query;
+ 	//! Cache statistics at query time
+ 	struct CacheStats {
+ 		idx_t total_entries = 0;
+@@ -175,6 +177,9 @@ public:
+ 	//! Set cache information for this query
+ 	DUCKDB_API void SetCacheInfo(bool cache_hit, const string &cache_key = "");
+ 
++	//! Set cache information for EXPLAIN queries
++	DUCKDB_API void SetExplainCacheInfo(bool cache_hit, const string &cache_key = "");
++
+ 	//! Adds the timings gathered by an OperatorProfiler to this query profiler
+ 	DUCKDB_API void Flush(OperatorProfiler &profiler);
+ 	//! Adds the top level query information to the global profiler.

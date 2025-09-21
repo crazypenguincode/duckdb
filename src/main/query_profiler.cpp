@@ -174,10 +174,20 @@ void QueryProfiler::StartExplainAnalyze() {
 	is_explain_analyze = true;
 }
 
-void QueryProfiler::SetCacheInfo(bool cache_hit, const string &cache_key) {
+void QueryProfiler::SetCacheInfo(bool cache_hit, const string &cache_key, bool is_explain_query, bool is_explain_analyze) {
 	lock_guard<std::mutex> guard(lock);
 	query_info.cache_hit = cache_hit;
 	query_info.cache_key = cache_key;
+	query_info.is_explain_query = is_explain_query;
+	query_info.is_explain_analyze = is_explain_analyze;
+	
+	// For EXPLAIN queries, we need to properly report the underlying query's cache status
+	if (is_explain_query || is_explain_analyze) {
+		// EXPLAIN queries should show the cache status of the underlying query
+		// The cache_hit parameter already reflects the underlying query's cache status
+		printf("DEBUG: EXPLAIN%s query - underlying query cache status: %s\n", 
+		       is_explain_analyze ? " ANALYZE" : "", cache_hit ? "HIT" : "MISS");
+	}
 	
 	// Get current cache statistics from the context
 	if (context.query_cache) {
@@ -694,7 +704,14 @@ void QueryProfiler::QueryTreeToStream(std::ostream &ss) const {
 	if (context.query_cache && context.query_cache->IsEnabled()) {
 		string cache_status;
 		if (query_info.cache_hit) {
-			cache_status = "Cache: HIT";
+			// For EXPLAIN queries, clarify that this is the underlying query's cache status
+			if (query_info.is_explain_analyze) {
+				cache_status = "Query Executed for Analysis (Cache Available)";
+			} else if (query_info.is_explain_query) {
+				cache_status = "Underlying Query Cache: HIT";
+			} else {
+				cache_status = "Cache: HIT";
+			}
 			if (!query_info.cache_key.empty()) {
 				// Show first 20 characters of cache key
 				string short_key = query_info.cache_key.length() > 20 ? 
@@ -702,7 +719,14 @@ void QueryProfiler::QueryTreeToStream(std::ostream &ss) const {
 				cache_status += " (" + short_key + ")";
 			}
 		} else {
-			cache_status = "Cache: MISS";
+			// For EXPLAIN queries, clarify that this is the underlying query's cache status
+			if (query_info.is_explain_analyze) {
+				cache_status = "Query Executed for Analysis (Cache Not Available)";
+			} else if (query_info.is_explain_query) {
+				cache_status = "Underlying Query Cache: MISS";
+			} else {
+				cache_status = "Cache: MISS";
+			}
 		}
 		ss << "││" + DrawPadded(cache_status, TOTAL_BOX_WIDTH - 4) + "││\n";
 		
@@ -825,6 +849,18 @@ string QueryProfiler::ToJSON() const {
 	if (context.query_cache && context.query_cache->IsEnabled()) {
 		auto cache_obj = yyjson_mut_obj(doc);
 		yyjson_mut_obj_add_bool(doc, cache_obj, "cache_hit", query_info.cache_hit);
+		
+		// For EXPLAIN queries, add additional context
+		if (query_info.is_explain_analyze) {
+			yyjson_mut_obj_add_bool(doc, cache_obj, "is_explain_analyze", true);
+			yyjson_mut_obj_add_str(doc, cache_obj, "cache_hit_description", 
+				query_info.cache_hit ? "Query executed for analysis (cache was available)" : "Query executed for analysis (cache not available)");
+		} else if (query_info.is_explain_query) {
+			yyjson_mut_obj_add_bool(doc, cache_obj, "is_explain_query", true);
+			yyjson_mut_obj_add_str(doc, cache_obj, "cache_hit_description", 
+				query_info.cache_hit ? "Underlying query served from cache" : "Underlying query not cached");
+		}
+		
 		if (!query_info.cache_key.empty()) {
 			yyjson_mut_obj_add_str(doc, cache_obj, "cache_key", query_info.cache_key.c_str());
 		}

@@ -1,10 +1,14 @@
 PRAGMA enable_query_cache = true;
+.timer on
 
--- First execution - should cache the result
+-- 第一次执行查询
 SELECT COUNT(*) FROM (SELECT 1 as x UNION ALL SELECT 2 as x UNION ALL SELECT 3 as x);
 
--- Second execution - should hit cache
+-- 第二次执行相同查询（应该命中缓存）
 SELECT COUNT(*) FROM (SELECT 1 as x UNION ALL SELECT 2 as x UNION ALL SELECT 3 as x);
 
--- EXPLAIN ANALYZE should show that underlying query was cached but executed for analysis
+-- 使用 EXPLAIN 查看缓存状态
+EXPLAIN SELECT COUNT(*) FROM (SELECT 1 as x UNION ALL SELECT 2 as x UNION ALL SELECT 3 as x);
+
+-- 使用 EXPLAIN ANALYZE 查看缓存状态
 EXPLAIN ANALYZE SELECT COUNT(*) FROM (SELECT 1 as x UNION ALL SELECT 2 as x UNION ALL SELECT 3 as x);

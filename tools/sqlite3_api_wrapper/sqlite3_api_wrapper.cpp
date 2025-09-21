@@ -11,6 +11,7 @@
 #include "duckdb/main/error_manager.hpp"
 #include "duckdb/main/query_cache.hpp"
 #include "duckdb/parser/parser.hpp"
+#include "duckdb/parser/statement/explain_statement.hpp"
 #include "sqlite3.h"
 #include "sqlite3_udf_wrapper.hpp"
 #include "udf_struct_sqlite3.h"
@@ -33,6 +34,15 @@
 
 using namespace duckdb;
 using namespace std;
+
+// Helper function to check if this is an EXPLAIN ANALYZE statement
+static bool IsExplainAnalyze(const SQLStatement *statement) {
+	if (statement->type != StatementType::EXPLAIN_STATEMENT) {
+		return false;
+	}
+	auto &explain = static_cast<const ExplainStatement &>(*statement);
+	return explain.explain_type == ExplainType::EXPLAIN_ANALYZE;
+}
 
 extern "C" {
 void sqlite3_print_duckbox(sqlite3_stmt *pStmt, size_t max_rows, size_t max_width, const char *null_value, int columnar,
@@ -461,6 +471,35 @@ int sqlite3_step(sqlite3_stmt *pStmt) {
 	if (!pStmt->result) {
 		// no result yet! call Execute()
 		printf("DEBUG: sqlite3_step executing query\n");
+		
+		// Check for EXPLAIN ANALYZE directly in the query string
+		string query_str = pStmt->query_string;
+		printf("DEBUG: sqlite3_step query_string: '%s'\n", query_str.c_str());
+		
+		// Check for EXPLAIN ANALYZE directly in the query string
+		if (!query_str.empty() && query_str.find("EXPLAIN ANALYZE") != string::npos) {
+			printf("DEBUG: sqlite3_step detected EXPLAIN ANALYZE in query string\n");
+			
+			// Extract the underlying query (remove "EXPLAIN ANALYZE " prefix)
+			size_t pos = query_str.find("EXPLAIN ANALYZE ");
+			if (pos != string::npos) {
+				string underlying_query = query_str.substr(pos + 16); // 16 = length of "EXPLAIN ANALYZE "
+				StringUtil::LTrim(underlying_query);
+				printf("DEBUG: sqlite3_step checking cache for underlying query: '%s'\n", underlying_query.c_str());
+				
+				auto context = pStmt->db->con->context;
+				if (context && context->query_cache && context->query_cache->IsEnabled()) {
+					auto cache_key = QueryCacheKeyGenerator::GenerateKey(underlying_query);
+					auto cached_result = context->query_cache->GetCachedResult(cache_key);
+					bool is_cached = cached_result != nullptr;
+					printf("DEBUG: sqlite3_step underlying query cached: %d\n", is_cached);
+					
+					auto &profiler = QueryProfiler::Get(*context);
+					printf("DEBUG: sqlite3_step calling SetCacheInfo with is_cached=%d\n", is_cached);
+					profiler.SetCacheInfo(is_cached, "", false, true); // cache_hit, cache_key, is_explain_query, is_explain_analyze
+				}
+			}
+		}
 
 		if (pStmt->prepared) {
 			pStmt->result = pStmt->prepared->Execute(pStmt->bound_values, true);

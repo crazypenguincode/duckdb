@@ -111,7 +111,7 @@ private:
 };
 
 struct QueryInfo {
-	QueryInfo() : cache_hit(false) {
+	QueryInfo() : cache_hit(false), is_explain_query(false), is_explain_analyze(false) {
 	}
 	string query_name;
 	ProfilingInfo query_global_info;
@@ -119,6 +119,10 @@ struct QueryInfo {
 	bool cache_hit;
 	//! Cache key used for this query (if cacheable)
 	string cache_key;
+	//! Whether this is an EXPLAIN query
+	bool is_explain_query;
+	//! Whether this is an EXPLAIN ANALYZE query
+	bool is_explain_analyze;
 	//! Cache statistics at query time
 	struct CacheStats {
 		idx_t total_entries = 0;
@@ -160,7 +164,7 @@ public:
 	DUCKDB_API void StartExplainAnalyze();
 
 	//! Set cache information for this query
-	DUCKDB_API void SetCacheInfo(bool cache_hit, const string &cache_key = "");
+	DUCKDB_API void SetCacheInfo(bool cache_hit, const string &cache_key = "", bool is_explain_query = false, bool is_explain_analyze = false);
 
 	//! Adds the timings gathered by an OperatorProfiler to this query profiler
 	DUCKDB_API void Flush(OperatorProfiler &profiler);

@@ -111,10 +111,21 @@ private:
 };
 
 struct QueryInfo {
-	QueryInfo() {
+	QueryInfo() : cache_hit(false) {
 	}
 	string query_name;
 	ProfilingInfo query_global_info;
+	//! Whether this query was served from cache
+	bool cache_hit;
+	//! Cache key used for this query (if cacheable)
+	string cache_key;
+	//! Cache statistics at query time
+	struct CacheStats {
+		idx_t total_entries = 0;
+		idx_t total_hits = 0;
+		idx_t total_misses = 0;
+		double hit_rate = 0.0;
+	} cache_stats;
 };
 
 //! The QueryProfiler can be used to measure timings of queries
@@ -147,6 +158,9 @@ public:
 	DUCKDB_API void EndQuery();
 
 	DUCKDB_API void StartExplainAnalyze();
+
+	//! Set cache information for this query
+	DUCKDB_API void SetCacheInfo(bool cache_hit, const string &cache_key = "");
 
 	//! Adds the timings gathered by an OperatorProfiler to this query profiler
 	DUCKDB_API void Flush(OperatorProfiler &profiler);

@@ -104,6 +104,7 @@ enum class PhysicalOperatorType : uint8_t {
 	// -----------------------------
 	EXPLAIN,
 	EXPLAIN_ANALYZE,
+	EXPLAIN_CACHE,
 	EMPTY_RESULT,
 	EXECUTE,
 	PREPARE,

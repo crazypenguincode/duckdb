@@ -97,6 +97,8 @@ string PhysicalOperatorToString(PhysicalOperatorType type) {
 		return "EXPLAIN";
 	case PhysicalOperatorType::EXPLAIN_ANALYZE:
 		return "EXPLAIN_ANALYZE";
+	case PhysicalOperatorType::EXPLAIN_CACHE:
+		return "EXPLAIN_CACHE";
 	case PhysicalOperatorType::EXECUTE:
 		return "EXECUTE";
 	case PhysicalOperatorType::VACUUM:

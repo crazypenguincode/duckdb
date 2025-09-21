@@ -37,6 +37,8 @@ unique_ptr<ExplainStatement> Transformer::TransformExplain(duckdb_libpgquery::PG
 			auto elem = StringUtil::Lower(def_name);
 			if (elem == "analyze") {
 				explain_type = ExplainType::EXPLAIN_ANALYZE;
+			} else if (elem == "cache") {
+				explain_type = ExplainType::EXPLAIN_CACHE;
 			} else if (elem == "format") {
 				if (def_elem->arg) {
 					if (format_is_set) {
@@ -50,6 +52,10 @@ unique_ptr<ExplainStatement> Transformer::TransformExplain(duckdb_libpgquery::PG
 				throw NotImplementedException("Unimplemented explain type: %s", elem);
 			}
 		}
+	}
+	if (explain_type == ExplainType::EXPLAIN_CACHE) {
+		// EXPLAIN CACHE doesn't need a query
+		return make_uniq<ExplainStatement>(nullptr, explain_type, explain_format);
 	}
 	return make_uniq<ExplainStatement>(TransformStatement(*stmt.query), explain_type, explain_format);
 }

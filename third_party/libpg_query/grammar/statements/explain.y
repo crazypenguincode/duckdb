@@ -30,6 +30,13 @@ ExplainStmt:
 					n->options = list_make1(makeDefElem("verbose", NULL, @2));
 					$$ = (PGNode *) n;
 				}
+		| EXPLAIN CACHE
+				{
+					PGExplainStmt *n = makeNode(PGExplainStmt);
+					n->query = NULL;
+					n->options = list_make1(makeDefElem("cache", NULL, @2));
+					$$ = (PGNode *) n;
+				}
 		| EXPLAIN '(' explain_option_list ')' ExplainableStmt
 				{
 					PGExplainStmt *n = makeNode(PGExplainStmt);
@@ -140,6 +147,7 @@ explain_option_elem:
 
 
 explain_option_name:
-			NonReservedWord			{ $$ = $1; }
-			| analyze_keyword		{ $$ = (char*) "analyze"; }
+		NonReservedWord			{ $$ = $1; }
+		| analyze_keyword		{ $$ = (char*) "analyze"; }
+		| CACHE					{ $$ = (char*) "cache"; }
 		;

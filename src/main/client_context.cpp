@@ -976,6 +976,9 @@ if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheab
 			auto cached_result = query_cache->GetCachedResult(cache_key);
 			if (cached_result) {
 				printf("DEBUG: Found cached result! Returning cached result.\n");
+				// Set cache hit information in profiler
+				auto &profiler = QueryProfiler::Get(*this);
+				profiler.SetCacheInfo(true, cache_key);
 				return std::move(cached_result);
 			} else {
 				printf("DEBUG: Bloom filter false positive - no cached result found\n");
@@ -989,6 +992,10 @@ if (query_cache && query_cache->IsEnabled() && QueryCacheKeyGenerator::IsCacheab
 		if (pending_query->HasError()) {
 			return ErrorResult<MaterializedQueryResult>(pending_query->GetErrorObject());
 		}
+		
+		// Set cache miss information in profiler
+		auto &profiler = QueryProfiler::Get(*this);
+		profiler.SetCacheInfo(false, cache_key);
 		
 		auto result = pending_query->Execute();
 		
@@ -1094,6 +1101,9 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 				auto cached_result = query_cache->GetCachedResult(cache_key);
 				if (cached_result) {
 					printf("DEBUG: String query found cached result! Returning cached result.\n");
+					// Set cache hit information in profiler
+					auto &profiler = QueryProfiler::Get(*this);
+					profiler.SetCacheInfo(true, cache_key);
 					current_result = std::move(cached_result);
 				} else {
 					printf("DEBUG: String query bloom filter false positive - no cached result found\n");
@@ -1111,6 +1121,12 @@ unique_ptr<QueryResult> ClientContext::Query(const string &query, bool allow_str
 			
 		// If not found in cache, execute the query
 		if (!current_result) {
+			// Set cache miss information in profiler if query was cacheable
+			if (is_cacheable) {
+				auto &profiler = QueryProfiler::Get(*this);
+				profiler.SetCacheInfo(false, cache_key);
+			}
+			
 			PendingQueryParameters parameters;
 			parameters.allow_stream_result = allow_stream_result && is_last_statement;
 			auto pending_query = PendingQueryInternal(*lock, std::move(statement), parameters);

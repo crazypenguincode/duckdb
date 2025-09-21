@@ -23,6 +23,9 @@ string ExplainStatement::OptionsToString() const {
 	if (explain_type == ExplainType::EXPLAIN_ANALYZE) {
 		options += "(";
 		options += "ANALYZE";
+	} else if (explain_type == ExplainType::EXPLAIN_CACHE) {
+		options += "(";
+		options += "CACHE";
 	}
 	if (explain_format != ExplainFormat::DEFAULT) {
 		if (options.empty()) {

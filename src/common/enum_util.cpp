@@ -1406,21 +1406,22 @@ ExplainOutputType EnumUtil::FromString<ExplainOutputType>(const char *value) {
 }
 
 const StringUtil::EnumStringLiteral *GetExplainTypeValues() {
-	static constexpr StringUtil::EnumStringLiteral values[] {
+	static constexpr StringUtil::EnumStringLiteral values[] = {
 		{ static_cast<uint32_t>(ExplainType::EXPLAIN_STANDARD), "EXPLAIN_STANDARD" },
-		{ static_cast<uint32_t>(ExplainType::EXPLAIN_ANALYZE), "EXPLAIN_ANALYZE" }
+		{ static_cast<uint32_t>(ExplainType::EXPLAIN_ANALYZE), "EXPLAIN_ANALYZE" },
+		{ static_cast<uint32_t>(ExplainType::EXPLAIN_CACHE), "EXPLAIN_CACHE" }
 	};
 	return values;
 }
 
 template<>
 const char* EnumUtil::ToChars<ExplainType>(ExplainType value) {
-	return StringUtil::EnumToString(GetExplainTypeValues(), 2, "ExplainType", static_cast<uint32_t>(value));
+	return StringUtil::EnumToString(GetExplainTypeValues(), 3, "ExplainType", static_cast<uint32_t>(value));
 }
 
 template<>
 ExplainType EnumUtil::FromString<ExplainType>(const char *value) {
-	return static_cast<ExplainType>(StringUtil::StringToEnum(GetExplainTypeValues(), 2, "ExplainType", value));
+	return static_cast<ExplainType>(StringUtil::StringToEnum(GetExplainTypeValues(), 3, "ExplainType", value));
 }
 
 const StringUtil::EnumStringLiteral *GetExponentTypeValues() {
@@ -3186,6 +3187,7 @@ const StringUtil::EnumStringLiteral *GetPhysicalOperatorTypeValues() {
 		{ static_cast<uint32_t>(PhysicalOperatorType::DETACH), "DETACH" },
 		{ static_cast<uint32_t>(PhysicalOperatorType::EXPLAIN), "EXPLAIN" },
 		{ static_cast<uint32_t>(PhysicalOperatorType::EXPLAIN_ANALYZE), "EXPLAIN_ANALYZE" },
+		{ static_cast<uint32_t>(PhysicalOperatorType::EXPLAIN_CACHE), "EXPLAIN_CACHE" },
 		{ static_cast<uint32_t>(PhysicalOperatorType::EMPTY_RESULT), "EMPTY_RESULT" },
 		{ static_cast<uint32_t>(PhysicalOperatorType::EXECUTE), "EXECUTE" },
 		{ static_cast<uint32_t>(PhysicalOperatorType::PREPARE), "PREPARE" },

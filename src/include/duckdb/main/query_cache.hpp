@@ -293,6 +293,8 @@ public:
     };
     CacheStats GetStats() const;
     
+
+    
     //! Update configuration
     void UpdateConfig(const QueryCacheConfig &new_config);
     
@@ -359,6 +361,72 @@ public:
     
     //! Force adaptive tuning cycle (for testing)
     bool ForceAdaptiveTuning();
+
+    //! EXPLAIN CACHE - 新增缓存解释功能
+    struct CacheExplainInfo {
+        // 基本配置信息
+        bool enabled;
+        idx_t max_entries;
+        idx_t max_memory_bytes;
+        idx_t ttl_seconds;
+        CacheEvictionStrategy eviction_strategy;
+        CachePersistenceStrategy persistence_strategy;
+        
+        // 统计信息
+        CacheStats stats;
+        MultiStageCTEStats cte_stats;
+        PersistenceStats persistence_stats;
+        AdaptiveTuningStats adaptive_stats;
+        
+        // 缓存条目详情
+        struct CacheEntryInfo {
+            string query_hash;
+            string query_preview;  // 查询的前100个字符
+            std::chrono::steady_clock::time_point created_at;
+            std::chrono::steady_clock::time_point last_accessed;
+            idx_t access_count;
+            idx_t memory_usage_bytes;
+            double ml_score;
+            double eviction_priority;
+            MLCacheFeatures ml_features;
+            bool is_expired;
+            double age_seconds;
+            double time_since_last_access_seconds;
+        };
+        vector<CacheEntryInfo> cache_entries;
+        
+        // Bloom Filter信息
+        struct BloomFilterInfo {
+            idx_t size;
+            idx_t hash_functions;
+            double false_positive_rate;
+            idx_t estimated_elements;
+        } bloom_filter_info;
+        
+        // ML预测器信息
+        struct MLPredictorInfo {
+            vector<double> weights;
+            double learning_rate;
+            double decay_factor;
+            idx_t update_count;
+        } ml_predictor_info;
+    };
+    
+    //! 生成缓存的EXPLAIN信息
+    CacheExplainInfo GetExplainInfo() const;
+    
+    //! 将EXPLAIN信息格式化为字符串
+    string FormatExplainInfo(const CacheExplainInfo &info, ExplainFormat format = ExplainFormat::TEXT) const;
+
+private:
+    //! 格式化为文本格式
+    string FormatExplainInfoText(const CacheExplainInfo &info) const;
+    
+    //! 格式化为JSON格式
+    string FormatExplainInfoJSON(const CacheExplainInfo &info) const;
+    
+    //! 格式化为HTML格式
+    string FormatExplainInfoHTML(const CacheExplainInfo &info) const;
 
 private:
     //! Configuration

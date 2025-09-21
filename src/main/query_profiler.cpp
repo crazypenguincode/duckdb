@@ -174,6 +174,21 @@ void QueryProfiler::StartExplainAnalyze() {
 	is_explain_analyze = true;
 }
 
+void QueryProfiler::SetCacheInfo(bool cache_hit, const string &cache_key) {
+	lock_guard<std::mutex> guard(lock);
+	query_info.cache_hit = cache_hit;
+	query_info.cache_key = cache_key;
+	
+	// Get current cache statistics from the context
+	if (context.query_cache) {
+		auto stats = context.query_cache->GetStats();
+		query_info.cache_stats.total_entries = stats.total_entries;
+		query_info.cache_stats.total_hits = stats.total_hits;
+		query_info.cache_stats.total_misses = stats.total_misses;
+		query_info.cache_stats.hit_rate = stats.hit_rate;
+	}
+}
+
 template <class METRIC_TYPE>
 static void AggregateMetric(ProfilingNode &node, MetricsType aggregated_metric, MetricsType child_metric,
                             const std::function<METRIC_TYPE(const METRIC_TYPE &, const METRIC_TYPE &)> &update_fun) {
@@ -674,6 +689,31 @@ void QueryProfiler::QueryTreeToStream(std::ostream &ss) const {
 	ss << "│┌──────────────────────────────────────────────┐│\n";
 	string total_time = "Total Time: " + RenderTiming(main_query.Elapsed());
 	ss << "││" + DrawPadded(total_time, TOTAL_BOX_WIDTH - 4) + "││\n";
+	
+	// Add cache information if available
+	if (context.query_cache && context.query_cache->IsEnabled()) {
+		string cache_status;
+		if (query_info.cache_hit) {
+			cache_status = "Cache: HIT";
+			if (!query_info.cache_key.empty()) {
+				// Show first 20 characters of cache key
+				string short_key = query_info.cache_key.length() > 20 ? 
+					query_info.cache_key.substr(0, 17) + "..." : query_info.cache_key;
+				cache_status += " (" + short_key + ")";
+			}
+		} else {
+			cache_status = "Cache: MISS";
+		}
+		ss << "││" + DrawPadded(cache_status, TOTAL_BOX_WIDTH - 4) + "││\n";
+		
+		// Show cache statistics
+		if (query_info.cache_stats.total_entries > 0) {
+			string cache_stats = StringUtil::Format("Cache Stats: %llu entries, %.1f%% hit rate", 
+				query_info.cache_stats.total_entries, query_info.cache_stats.hit_rate * 100.0);
+			ss << "││" + DrawPadded(cache_stats, TOTAL_BOX_WIDTH - 4) + "││\n";
+		}
+	}
+	
 	ss << "│└──────────────────────────────────────────────┘│\n";
 	ss << "└────────────────────────────────────────────────┘\n";
 	// render the main operator tree
@@ -780,6 +820,24 @@ string QueryProfiler::ToJSON() const {
 	auto &settings = root->GetProfilingInfo();
 
 	settings.WriteMetricsToJSON(doc, result_obj);
+
+	// Add cache information to JSON output
+	if (context.query_cache && context.query_cache->IsEnabled()) {
+		auto cache_obj = yyjson_mut_obj(doc);
+		yyjson_mut_obj_add_bool(doc, cache_obj, "cache_hit", query_info.cache_hit);
+		if (!query_info.cache_key.empty()) {
+			yyjson_mut_obj_add_str(doc, cache_obj, "cache_key", query_info.cache_key.c_str());
+		}
+		if (query_info.cache_stats.total_entries > 0) {
+			auto stats_obj = yyjson_mut_obj(doc);
+			yyjson_mut_obj_add_uint(doc, stats_obj, "total_entries", query_info.cache_stats.total_entries);
+			yyjson_mut_obj_add_uint(doc, stats_obj, "total_hits", query_info.cache_stats.total_hits);
+			yyjson_mut_obj_add_uint(doc, stats_obj, "total_misses", query_info.cache_stats.total_misses);
+			yyjson_mut_obj_add_real(doc, stats_obj, "hit_rate", query_info.cache_stats.hit_rate);
+			yyjson_mut_obj_add_val(doc, cache_obj, "statistics", stats_obj);
+		}
+		yyjson_mut_obj_add_val(doc, result_obj, "cache_info", cache_obj);
+	}
 
 	// recursively print the physical operator tree
 	auto children_list = yyjson_mut_arr(doc);

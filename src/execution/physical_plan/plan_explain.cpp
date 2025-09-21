@@ -1,6 +1,7 @@
 #include "duckdb/common/tree_renderer.hpp"
 #include "duckdb/common/types/column/column_data_collection.hpp"
 #include "duckdb/execution/operator/helper/physical_explain_analyze.hpp"
+#include "duckdb/execution/operator/helper/physical_explain_cache.hpp"
 #include "duckdb/execution/operator/scan/physical_column_data_scan.hpp"
 #include "duckdb/execution/physical_plan_generator.hpp"
 #include "duckdb/main/client_context.hpp"
@@ -16,6 +17,12 @@ PhysicalOperator &PhysicalPlanGenerator::CreatePlan(LogicalExplain &op) {
 		auto &explain = Make<PhysicalExplainAnalyze>(op.types, op.explain_format);
 		explain.children.push_back(plan);
 		return explain;
+	}
+	
+	if (op.explain_type == ExplainType::EXPLAIN_CACHE) {
+		// Handle EXPLAIN CACHE - create a special operator for cache explanation
+		auto &explain_cache = Make<PhysicalExplainCache>(op.types, op.explain_format);
+		return explain_cache;
 	}
 
 	// Format the plan and set the output of the EXPLAIN.

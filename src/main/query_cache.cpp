@@ -21,6 +21,8 @@
 #include "duckdb/optimizer/optimizer.hpp"
 #include <regex>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
 
 namespace duckdb {
 
@@ -422,6 +424,7 @@ string QueryCacheKeyGenerator::GenerateKey(const SQLStatement &statement,
                                          const case_insensitive_map_t<BoundParameterData> *parameters) {
     // Create a string representation of the statement
     string statement_str = statement.ToString();
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - original statement: '%s'\n", statement_str.c_str());
     
     // Enhanced CTE handling
     if (statement.type == StatementType::SELECT_STATEMENT) {
@@ -430,21 +433,27 @@ string QueryCacheKeyGenerator::GenerateKey(const SQLStatement &statement,
             // For CTE queries, include CTE signature in the key
             string cte_signature = g_multi_stage_cte_cache.GenerateCTESignature(select.node->cte_map);
             statement_str += "|" + cte_signature;
+            printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - added CTE signature: '%s'\n", cte_signature.c_str());
         }
     }
     
     // Normalize the query
     string normalized = NormalizeQuery(statement_str);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - normalized: '%s'\n", normalized.c_str());
     
     // Add parameter values if present
     if (parameters) {
         for (const auto &param : *parameters) {
             normalized += "|" + param.first + "=" + param.second.GetValue().ToString();
         }
+        printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - with parameters: '%s'\n", normalized.c_str());
     }
     
     // Generate hash
-    return to_string(Hash(normalized.c_str(), normalized.length()));
+    auto hash_result = Hash(normalized.c_str(), normalized.length());
+    string key = to_string(hash_result);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - final key: '%s' (from normalized: '%s')\n", key.c_str(), normalized.c_str());
+    return key;
 }
 
 //===----------------------------------------------------------------------===//
@@ -915,8 +924,13 @@ double QueryCache::CalculateQueryComplexity(const MLCacheFeatures &features) con
 }
 
 string QueryCacheKeyGenerator::GenerateKey(const string &query) {
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - original query: '%s'\n", query.c_str());
     string normalized = NormalizeQuery(query);
-    return to_string(Hash(normalized.c_str(), normalized.length()));
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - normalized: '%s'\n", normalized.c_str());
+    auto hash_result = Hash(normalized.c_str(), normalized.length());
+    string key = to_string(hash_result);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - final key: '%s' (from normalized: '%s')\n", key.c_str(), normalized.c_str());
+    return key;
 }
 
 MLCacheFeatures QueryCacheKeyGenerator::ExtractMLFeatures(const SQLStatement &statement, 
@@ -998,6 +1012,268 @@ void QueryCache::UpdateAdaptiveTuning() {
 }
 
 //===----------------------------------------------------------------------===//
+// QueryCache EXPLAIN Implementation
+//===----------------------------------------------------------------------===//
+
+QueryCache::CacheExplainInfo QueryCache::GetExplainInfo() const {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    CacheExplainInfo info;
+    
+    // 基本配置信息
+    info.enabled = config.enabled;
+    info.max_entries = config.max_entries;
+    info.max_memory_bytes = config.max_memory_bytes;
+    info.ttl_seconds = config.ttl_seconds;
+    info.eviction_strategy = config.eviction_strategy;
+    info.persistence_strategy = config.persistence_strategy;
+    
+    // 统计信息
+    info.stats = GetStats();
+    info.cte_stats = GetMultiStageCTEStats();
+    info.persistence_stats = GetPersistenceStats();
+    info.adaptive_stats = GetAdaptiveTuningStats();
+    
+    // Bloom Filter信息
+    info.bloom_filter_info.size = config.bloom_filter_size;
+    info.bloom_filter_info.hash_functions = config.bloom_filter_hash_functions;
+    info.bloom_filter_info.false_positive_rate = bloom_filter.GetFalsePositiveRate();
+    info.bloom_filter_info.estimated_elements = cache.size();
+    
+    // ML预测器信息
+    info.ml_predictor_info.weights = ml_predictor.GetWeights();
+    info.ml_predictor_info.learning_rate = config.ml_learning_rate;
+    info.ml_predictor_info.decay_factor = config.ml_decay_factor;
+    info.ml_predictor_info.update_count = 0; // TODO: 从ml_predictor获取
+    
+    // 缓存条目详情
+    auto now = std::chrono::steady_clock::now();
+    for (const auto &entry : cache) {
+        CacheExplainInfo::CacheEntryInfo entry_info;
+        entry_info.query_hash = entry.first;
+        
+        // 生成查询预览（从hash无法还原原始查询，这里显示hash）
+        entry_info.query_preview = "Hash: " + entry.first.substr(0, 16) + "...";
+        
+        entry_info.created_at = entry.second->created_at;
+        entry_info.last_accessed = entry.second->last_accessed;
+        entry_info.access_count = entry.second->access_count;
+        entry_info.memory_usage_bytes = CalculateMemoryUsage(*entry.second->result);
+        entry_info.ml_score = entry.second->ml_score;
+        entry_info.eviction_priority = entry.second->eviction_priority;
+        entry_info.ml_features = entry.second->ml_features;
+        entry_info.is_expired = IsExpired(*entry.second);
+        
+        // 计算时间相关信息
+        auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->created_at);
+        entry_info.age_seconds = static_cast<double>(age.count());
+        
+        auto time_since_access = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->last_accessed);
+        entry_info.time_since_last_access_seconds = static_cast<double>(time_since_access.count());
+        
+        info.cache_entries.push_back(entry_info);
+    }
+    
+    // 按访问次数排序
+    std::sort(info.cache_entries.begin(), info.cache_entries.end(),
+              [](const CacheExplainInfo::CacheEntryInfo &a, const CacheExplainInfo::CacheEntryInfo &b) {
+                  return a.access_count > b.access_count;
+              });
+    
+    return info;
+}
+
+string QueryCache::FormatExplainInfo(const CacheExplainInfo &info, ExplainFormat format) const {
+    switch (format) {
+        case ExplainFormat::JSON:
+            return FormatExplainInfoJSON(info);
+        case ExplainFormat::HTML:
+            return FormatExplainInfoHTML(info);
+        default:
+            return FormatExplainInfoText(info);
+    }
+}
+
+string QueryCache::FormatExplainInfoText(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "┌─────────────────────────────────────────────────────────────────────────────────┐\n";
+    ss << "│                              QUERY CACHE EXPLAIN                               │\n";
+    ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+    
+    // 基本配置
+    ss << "│ Configuration:                                                                  │\n";
+    ss << "│   Enabled: " << std::setw(63) << std::left << (info.enabled ? "Yes" : "No") << " │\n";
+    ss << "│   Max Entries: " << std::setw(59) << std::left << info.max_entries << " │\n";
+    ss << "│   Max Memory: " << std::setw(58) << std::left << (info.max_memory_bytes / (1024*1024)) << " MB │\n";
+    ss << "│   TTL: " << std::setw(65) << std::left << info.ttl_seconds << " seconds │\n";
+    
+    string eviction_str;
+    switch (info.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED: eviction_str = "TTL-based"; break;
+        case CacheEvictionStrategy::LRU_BASED: eviction_str = "LRU-based"; break;
+        case CacheEvictionStrategy::ML_BASED: eviction_str = "ML-based"; break;
+    }
+    ss << "│   Eviction Strategy: " << std::setw(52) << std::left << eviction_str << " │\n";
+    
+    ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+    
+    // 统计信息
+    ss << "│ Statistics:                                                                     │\n";
+    ss << "│   Total Entries: " << std::setw(56) << std::left << info.stats.total_entries << " │\n";
+    ss << "│   Total Hits: " << std::setw(59) << std::left << info.stats.total_hits << " │\n";
+    ss << "│   Total Misses: " << std::setw(57) << std::left << info.stats.total_misses << " │\n";
+    ss << "│   Hit Rate: " << std::setw(58) << std::left << std::fixed << std::setprecision(2) << info.stats.hit_rate << "% │\n";
+    ss << "│   Memory Usage: " << std::setw(52) << std::left << (info.stats.memory_usage_bytes / (1024*1024)) << " MB │\n";
+    
+    // 缓存条目详情（显示前5个）
+    if (!info.cache_entries.empty()) {
+        ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+        ss << "│ Cache Entries (Top 5 by Access Count):                                         │\n";
+        ss << "│ Hash            │ Access │ Age(s) │ Memory │ ML Score │ Expired │            │\n";
+        ss << "├─────────────────┼────────┼────────┼────────┼──────────┼─────────┼────────────┤\n";
+        
+        size_t count = std::min(info.cache_entries.size(), static_cast<size_t>(5));
+        for (size_t i = 0; i < count; i++) {
+            const auto &entry = info.cache_entries[i];
+            string hash_short = entry.query_hash.substr(0, 15);
+            string memory_str = std::to_string(entry.memory_usage_bytes / 1024) + "KB";
+            
+            ss << "│ " << std::setw(15) << std::left << hash_short
+               << " │ " << std::setw(6) << std::right << entry.access_count
+               << " │ " << std::setw(6) << std::right << static_cast<int>(entry.age_seconds)
+               << " │ " << std::setw(6) << std::right << memory_str
+               << " │ " << std::setw(8) << std::right << std::fixed << std::setprecision(3) << entry.ml_score
+               << " │ " << std::setw(7) << std::left << (entry.is_expired ? "Yes" : "No")
+               << " │            │\n";
+        }
+    }
+    
+    ss << "└─────────────────────────────────────────────────────────────────────────────────┘\n";
+    
+    return ss.str();
+}
+
+string QueryCache::FormatExplainInfoJSON(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "{\n";
+    ss << "  \"query_cache\": {\n";
+    
+    // 配置信息
+    ss << "    \"configuration\": {\n";
+    ss << "      \"enabled\": " << (info.enabled ? "true" : "false") << ",\n";
+    ss << "      \"max_entries\": " << info.max_entries << ",\n";
+    ss << "      \"max_memory_bytes\": " << info.max_memory_bytes << ",\n";
+    ss << "      \"ttl_seconds\": " << info.ttl_seconds << ",\n";
+    ss << "      \"eviction_strategy\": \"";
+    switch (info.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED: ss << "TTL_BASED"; break;
+        case CacheEvictionStrategy::LRU_BASED: ss << "LRU_BASED"; break;
+        case CacheEvictionStrategy::ML_BASED: ss << "ML_BASED"; break;
+    }
+    ss << "\"\n";
+    ss << "    },\n";
+    
+    // 统计信息
+    ss << "    \"statistics\": {\n";
+    ss << "      \"total_entries\": " << info.stats.total_entries << ",\n";
+    ss << "      \"total_hits\": " << info.stats.total_hits << ",\n";
+    ss << "      \"total_misses\": " << info.stats.total_misses << ",\n";
+    ss << "      \"hit_rate\": " << std::fixed << std::setprecision(2) << info.stats.hit_rate << ",\n";
+    ss << "      \"memory_usage_bytes\": " << info.stats.memory_usage_bytes << "\n";
+    ss << "    },\n";
+    
+    // 缓存条目
+    ss << "    \"cache_entries\": [\n";
+    for (size_t i = 0; i < info.cache_entries.size(); i++) {
+        if (i > 0) ss << ",\n";
+        const auto &entry = info.cache_entries[i];
+        ss << "      {\n";
+        ss << "        \"query_hash\": \"" << entry.query_hash << "\",\n";
+        ss << "        \"access_count\": " << entry.access_count << ",\n";
+        ss << "        \"age_seconds\": " << std::fixed << std::setprecision(1) << entry.age_seconds << ",\n";
+        ss << "        \"memory_usage_bytes\": " << entry.memory_usage_bytes << ",\n";
+        ss << "        \"ml_score\": " << std::fixed << std::setprecision(3) << entry.ml_score << ",\n";
+        ss << "        \"is_expired\": " << (entry.is_expired ? "true" : "false") << "\n";
+        ss << "      }";
+    }
+    ss << "\n    ]\n";
+    
+    ss << "  }\n";
+    ss << "}\n";
+    
+    return ss.str();
+}
+
+string QueryCache::FormatExplainInfoHTML(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "<!DOCTYPE html>\n";
+    ss << "<html>\n<head>\n";
+    ss << "<title>Query Cache Explain</title>\n";
+    ss << "<style>\n";
+    ss << "body { font-family: Arial, sans-serif; margin: 20px; }\n";
+    ss << "table { border-collapse: collapse; width: 100%; margin: 10px 0; }\n";
+    ss << "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n";
+    ss << "th { background-color: #f2f2f2; }\n";
+    ss << ".section { margin: 20px 0; }\n";
+    ss << ".metric { display: inline-block; margin: 5px 15px 5px 0; }\n";
+    ss << ".expired { color: red; }\n";
+    ss << ".active { color: green; }\n";
+    ss << "</style>\n";
+    ss << "</head>\n<body>\n";
+    
+    ss << "<h1>Query Cache Explain</h1>\n";
+    
+    // 配置信息
+    ss << "<div class=\"section\">\n";
+    ss << "<h2>Configuration</h2>\n";
+    ss << "<div class=\"metric\"><strong>Enabled:</strong> " << (info.enabled ? "Yes" : "No") << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Max Entries:</strong> " << info.max_entries << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Max Memory:</strong> " << (info.max_memory_bytes / (1024*1024)) << " MB</div>\n";
+    ss << "<div class=\"metric\"><strong>TTL:</strong> " << info.ttl_seconds << " seconds</div>\n";
+    ss << "</div>\n";
+    
+    // 统计信息
+    ss << "<div class=\"section\">\n";
+    ss << "<h2>Statistics</h2>\n";
+    ss << "<div class=\"metric\"><strong>Total Entries:</strong> " << info.stats.total_entries << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Total Hits:</strong> " << info.stats.total_hits << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Total Misses:</strong> " << info.stats.total_misses << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Hit Rate:</strong> " << std::fixed << std::setprecision(2) << info.stats.hit_rate << "%</div>\n";
+    ss << "<div class=\"metric\"><strong>Memory Usage:</strong> " << (info.stats.memory_usage_bytes / (1024*1024)) << " MB</div>\n";
+    ss << "</div>\n";
+    
+    // 缓存条目表格
+    if (!info.cache_entries.empty()) {
+        ss << "<div class=\"section\">\n";
+        ss << "<h2>Cache Entries</h2>\n";
+        ss << "<table>\n";
+        ss << "<tr><th>Query Hash</th><th>Access Count</th><th>Age (seconds)</th><th>Memory (KB)</th><th>ML Score</th><th>Status</th></tr>\n";
+        
+        for (const auto &entry : info.cache_entries) {
+            ss << "<tr>\n";
+            ss << "<td>" << entry.query_hash.substr(0, 20) << "...</td>\n";
+            ss << "<td>" << entry.access_count << "</td>\n";
+            ss << "<td>" << static_cast<int>(entry.age_seconds) << "</td>\n";
+            ss << "<td>" << (entry.memory_usage_bytes / 1024) << "</td>\n";
+            ss << "<td>" << std::fixed << std::setprecision(3) << entry.ml_score << "</td>\n";
+            ss << "<td class=\"" << (entry.is_expired ? "expired" : "active") << "\">" 
+               << (entry.is_expired ? "Expired" : "Active") << "</td>\n";
+            ss << "</tr>\n";
+        }
+        
+        ss << "</table>\n";
+        ss << "</div>\n";
+    }
+    
+    ss << "</body>\n</html>\n";
+    
+    return ss.str();
+}
+
+//===----------------------------------------------------------------------===//
 // AdaptiveParameterTuner Implementation
 //===----------------------------------------------------------------------===//
 
@@ -1027,6 +1303,33 @@ double AdaptiveParameterTuner::PredictPerformance(const QueryCacheConfig &config
 bool QueryCache::SetPersistenceStrategy(CachePersistenceStrategy strategy, ClientContext *context) {
     // Placeholder implementation for persistence strategy
     return true;
+}
+
+QueryCache::PersistenceStats QueryCache::GetPersistenceStats() const {
+    PersistenceStats stats;
+    stats.storage_size_bytes = 0;
+    stats.persisted_entries = 0;
+    stats.memory_entries = cache.size();
+    stats.disk_entries = 0;
+    
+    // TODO: 实现持久化统计信息的收集
+    // 这里需要根据实际的持久化实现来填充统计信息
+    
+    return stats;
+}
+
+QueryCache::AdaptiveTuningStats QueryCache::GetAdaptiveTuningStats() const {
+    AdaptiveTuningStats stats;
+    stats.enabled = adaptive_tuner != nullptr;
+    stats.total_adjustments = 0;
+    stats.avg_performance_improvement = 0.0;
+    stats.last_tuning_time = std::chrono::steady_clock::now();
+    stats.current_metrics = current_metrics;
+    
+    // TODO: 实现自适应调优统计信息的收集
+    // 这里需要根据实际的自适应调优实现来填充统计信息
+    
+    return stats;
 }
 
 } // namespace duckdb

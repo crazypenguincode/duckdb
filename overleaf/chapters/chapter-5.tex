@@ -86,7 +86,7 @@ TPC-DS基准测试相比TPC-H具有更高的复杂度和更广泛的查询模式
 
 测试数据集的选择和准备是确保实验结果科学性和可信度的关键环节。本研究采用多层次的数据集策略，结合国际标准基准测试数据集和专门设计的自定义数据集，构建了全面覆盖不同查询模式和复杂度的测试环境。这种多样化的数据集配置不仅确保了测试结果的代表性，还能够从多个维度验证查询缓存系统的性能表现，为技术方案的有效性提供充分的实证支持。
 
-TPC-H基准数据集作为业界公认的决策支持系统标准测试工具，为本研究提供了权威的性能基准参考。该数据集由事务处理性能委员会制定，模拟了完整的批发商业务环境，其数据模型涵盖了现代商业系统中的核心业务实体和关系。数据集包含8个基础表，构成了一个完整的业务数据模型，从客户管理到订单处理，从商品供应到供应商关系，全面反映了真实商业环境中的数据特征和查询需求。22个标准分析查询覆盖了从简单聚合到复杂多表连接的各种查询类型，为查询缓存系统提供了全面的测试覆盖。
+TPC-H基准数据集作为业界公认的决策支持系统标准测试工具，为本研究提供了权威的性能基准参考\cite{c50}。该数据集由事务处理性能委员会制定，模拟了完整的批发商业务环境，其数据模型涵盖了现代商业系统中的核心业务实体和关系。数据集包含8个基础表，构成了一个完整的业务数据模型，从客户管理到订单处理，从商品供应到供应商关系，全面反映了真实商业环境中的数据特征和查询需求。22个标准分析查询覆盖了从简单聚合到复杂多表连接的各种查询类型，为查询缓存系统提供了全面的测试覆盖。
 
 \begin{figure}[!htb]
 	\centering
@@ -119,7 +119,7 @@ TPC-H数据集的生成过程采用标准化的dbgen工具，支持多种规模�
 
 TPC-H查询集的设计体现了现代分析型数据库系统面临的典型查询挑战。查询Q1到Q6主要测试系统的基础聚合性能，这些查询虽然相对简单，但在实际应用中出现频率很高，是缓存系统优化的重点目标。查询Q7到Q12重点测试多表连接算法的效率，这类查询通常涉及大量数据的关联操作，计算复杂度高，缓存优化的效果最为显著。查询Q13到Q18包含复杂的子查询结构，测试数据库系统的查询优化能力，这类查询的缓存策略需要考虑子查询的独立性和重用性。查询Q19到Q22代表了高级分析查询，包含复杂的计算逻辑和多层嵌套结构，是测试缓存系统智能化程度的重要指标。
 
-TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模式覆盖，更适合评估现代数据仓库和分析系统的综合性能。该数据集模拟零售业务场景，包含24个基础表，构成了完整的零售数据仓库模型。数据模型的设计充分考虑了现代零售业务的复杂性，包括多渠道销售、复杂的促销策略、详细的客户行为分析等业务特征。99个标准查询覆盖了报表查询、即席查询、迭代式OLAP、数据挖掘等多种典型应用场景，为查询缓存系统提供了更加全面和深入的测试覆盖。
+TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模式覆盖，更适合评估现代数据仓库和分析系统的综合性能\cite{c51}。该数据集模拟零售业务场景，包含24个基础表，构成了完整的零售数据仓库模型。数据模型的设计充分考虑了现代零售业务的复杂性，包括多渠道销售、复杂的促销策略、详细的客户行为分析等业务特征。99个标准查询覆盖了报表查询、即席查询、迭代式OLAP、数据挖掘等多种典型应用场景，为查询缓存系统提供了更加全面和深入的测试覆盖。
 
 \begin{table}[!htb]
     \caption{TPC-DS基准数据集核心表结构}
@@ -176,9 +176,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.1 TPC-H数据集生成流程.png}
-	\caption{TPC-H数据集生成流程}
-	\label{fig5_5_1}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.2 四类查询响应时间实测对比.png}
+	\caption{四类查询响应时间实测对比}
+	\label{fig5_5_2}
 \end{figure}
 
 该柱状图展示了实际测试中四类查询的响应时间对比。蓝色柱子表示无缓存时的平均响应时间，红色柱子表示启用缓存后的平均响应时间。从实测数据可以看出，缓存系统对所有类型的查询都有显著的性能提升。
@@ -209,9 +209,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.2 四类查询响应时间实测对比.png}
-	\caption{四类查询响应时间实测对比}
-	\label{fig5_5_2}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.3 不同查询类型的缓存性能提升效果.png}
+	\caption{不同查询类型的缓存性能提升效果}
+	\label{fig5_5_3}
 \end{figure}
 
 该柱状图直观展示了四类查询在启用缓存后的性能提升百分比。多表连接查询的提升最为显著，这与其计算复杂度高、缓存价值大的特点相符。
@@ -260,9 +260,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.3 不同查询类型的缓存性能提升效果.png}
-	\caption{不同查询类型的缓存性能提升效果}
-	\label{fig5_5_3}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.4 不同查询类型的执行时间对比-含误差棒.png}
+	\caption{不同查询类型的执行时间对比-含误差棒}
+	\label{fig5_5_4}
 \end{figure}
 
 该图表展示了不同测试次数下各查询类型的执行时间分布，包含标准差误差棒：
@@ -275,9 +275,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.4 不同查询类型的执行时间对比-含误差棒.png}
-	\caption{不同查询类型的执行时间对比-含误差棒}
-	\label{fig5_5_4}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.5 不同测试次数下执行时间标准差变化趋势.png}
+	\caption{不同测试次数下执行时间标准差变化趋势}
+	\label{fig5_5_5}
 \end{figure}
 
 \begin{table}[!htb]
@@ -308,9 +308,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.5 不同测试次数下执行时间标准差变化趋势.png}
-	\caption{不同测试次数下执行时间标准差变化趋势}
-	\label{fig5_5_5}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.6 查询缓存测试数据集架构.png}
+	\caption{查询缓存测试数据集架构}
+	\label{fig5_5_6}
 \end{figure}
 
 \begin{table}[!htb]
@@ -331,16 +331,16 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.6 查询缓存测试数据集架构.png}
-	\caption{查询缓存测试数据集架构}
-	\label{fig5_5_6}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.8 四种数据集类型的缓存性能提升对比.png}
+	\caption{四种数据集类型的缓存性能提升对比}
+	\label{fig5_5_8}
 \end{figure}
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.8 四种数据集类型的缓存性能提升对比.png}
-	\caption{四种数据集类型的缓存性能提升对比}
-	\label{fig5_5_8}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.9 查询执行时间对比.png}
+	\caption{查询执行时间对比}
+	\label{fig5_5_9}
 \end{figure}
 
 测试结果显示，CTE查询集展现出卓越性能表现，实现了88.2\%的显著性能提升，验证了复杂CTE结构在缓存优化方面的巨大潜力，其高缓存效果源于递归和嵌套结构产生的中间计算结果；参数化查询集同样表现优异，获得85.6\%的性能提升，证明了SQL标准化机制的有效性。在技术突破方面，单会话测试方法解决了多进程环境缓存失效问题，微秒级时间测量技术确保了测试精度，而通过ThreadPoolExecutor实现的并发测试则成功模拟了真实应用场景。性能统计分析表明，系统在不同数据集上呈现明显分层特征：3类数据集性能提升超过70\%，1类处于25-70\%区间，整体表现优秀，充分验证了技术方案的有效性。
@@ -351,12 +351,12 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.9 查询执行时间对比.png}
-	\caption{查询执行时间对比}
-	\label{fig5_5_9}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.10 并发查询性能限制因素分析.png}
+	\caption{并发查询性能限制因素分析}
+	\label{fig5_5_10}
 \end{figure}
 
-查询缓存系统在数据仓库查询场景中，CTE查询实现了88.2\%的卓越性能提升，这一成果使得复杂的分析查询能够获得近乎实时的响应速度，极大地提升了数据分析师和业务用户的工作效率。报表系统场景下，参数化查询获得了85.6\%的性能提升，这种显著的性能改善直接转化为用户体验的大幅提升，使得报表生成和数据展示变得更加流畅和高效。交互式分析平台通过重复查询实现了73.3\%的性能提升，这一优化效果为快速迭代分析提供了强有力的技术支撑，使得用户能够在短时间内完成多轮数据探索和假设验证，提高数据分析的效率和质量。
+查询缓存系统在数据仓库查询场景中，CTE查询实现了88.2\%的卓越性能表现，这一成果使得复杂的分析查询能够获得近乎实时的响应速度，极大地提升了数据分析师和业务用户的工作效率。报表系统场景下，参数化查询获得了85.6\%的性能提升，这种显著的性能改善直接转化为用户体验的大幅提升，使得报表生成和数据展示变得更加流畅和高效。交互式分析平台通过重复查询实现了73.3\%的性能提升，这一优化效果为快速迭代分析提供了强有力的技术支撑，使得用户能够在短时间内完成多轮数据探索和假设验证，提高数据分析的效率和质量。
 
 \subsection{TPC标准查询缓存性能基准测试}
 
@@ -374,9 +374,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.10 并发查询性能限制因素分析.png}
-	\caption{并发查询性能限制因素分析}
-	\label{fig5_5_10}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.11 TPC-H查询缓存性能对比.png}
+	\caption{TPC-H查询缓存性能对比}
+	\label{fig5_5_11}
 \end{figure}
 
 \begin{table}[!htb]
@@ -389,7 +389,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
         \hline
         10次 & 0.203 & 0.086 & \textbf{57.7\%} & 20.33 → 8.59 \\
         50次 & 0.795 & 0.389 & \textbf{51.1\%} & 15.90 → 7.78 \\
-        100次 & 1.646 & 0.524 & \textbf{68.1\%} & 16.46 → 5.24 \\
+        100次 & 1.646 & 0.524 & \textbf{681\%} & 16.46 → 5.24 \\
         200次 & 2.998 & 1.186 & \textbf{60.4\%} & 14.99 → 5.93 \\
         \hline
     \end{tabular}
@@ -399,9 +399,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.11 TPC-H查询缓存性能对比.png}
-	\caption{TPC-H查询缓存性能对比}
-	\label{fig5_5_11}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.12 TPC-DS查询缓存性能对比.png}
+	\caption{TPC-DS查询缓存性能对比}
+	\label{fig5_5_12}
 \end{figure}
 
 \begin{table}[!htb]
@@ -424,9 +424,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.12 TPC-DS查询缓存性能对比.png}
-	\caption{TPC-DS查询缓存性能对比}
-	\label{fig5_5_12}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.13 TPC标准查询缓存性能提升趋势.png}
+	\caption{TPC标准查询缓存性能提升趋势}
+	\label{fig5_5_13}
 \end{figure}
 
 测试结果显示整体性能表现优秀，平均性能提升达到54.2\%（±22.2\%），所有8项测试均成功完成，覆盖率100\%，其中TPC-DS在100次查询测试中实现了70.5\%的最佳性能提升，充分验证了缓存技术的有效性。
@@ -437,12 +437,134 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.13 TPC标准查询缓存性能提升趋势.png}
-	\caption{TPC标准查询缓存性能提升趋势}
-	\label{fig5_5_13}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.14 TPC标准查询缓存特征分析.png}
+	\caption{TPC标准查询缓存特征分析}
+	\label{fig5_5_14}
 \end{figure}
 
 测试结果表明，TPC标准查询缓存平均性能提升54.2\%，充分验证了缓存技术的有效性，其性能提升机制主要包括：通过重复查询避免SQL解析和优化开销、复用缓存的执行计划、直接复用部分中间计算结果，以及将热数据保持在内存中减少I/O操作。同时，在10-200次重复查询场景下，缓存效果随规模增长而显著增强，证明了其规模化应用的可行性。此外，该系统与TPC-H和TPC-DS标准完全兼容，适用于标准化测试环境。
+
+\subsection{CTE缓存阶段验证测试}
+
+基于用户提出的"CTE的缓存在什么阶段？是否全部阶段查询处理流程"的问题，本节通过实际测试验证CTE缓存的实现阶段和效果。
+
+\subsection{测试设计与方法}
+
+为了准确验证CTE缓存的实现阶段，设计了专门的测试框架：
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.8\textwidth]{images/5-图5.25 CTE缓存阶段测试架构.png}
+	\caption{CTE缓存阶段测试架构}
+	\label{fig5_5_25}
+\end{figure}
+
+\subsection{实际测试结果验证}
+
+通过运行专门的CTE缓存测试脚本，获得了以下关键发现：
+
+\begin{table}[!htb]
+    \caption{参数化查询集布隆过滤器性能测试（10000次测试）}
+    \label{table5_13}
+    \centering
+    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
+        \hline
+        测试场景 & 首次执行(ms) & 重复执行(ms) & 性能提升(\%) & 实现阶段 \\
+        \hline
+        简单CTE查询 & 0.64 & 0.19 & \textbf{70.3\%} & 执行器阶段 \\
+        递归CTE查询 & 1.04 & 0.86 & \textbf{17.5\%} & 执行器阶段 \\
+        嵌套CTE查询 & 0.96 & 0.47 & \textbf{51.7\%} & 执行器阶段 \\
+        CTE与JOIN查询 & 0.80 & 0.47 & \textbf{40.7\%} & 执行器阶段 \\
+        复杂分析CTE & 1.90 & 1.62 & \textbf{15.0\%} & 执行器阶段 \\
+        \textbf{平均值} & \textbf{1.07} & \textbf{0.72} & \textbf{39.0\%} & \textbf{执行器阶段} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{关键发现与分析}
+
+\textbf{1. 当前实现阶段确认}
+通过调试日志分析和性能测试验证：
+- ✅ \textbf{执行器阶段缓存已完全实现}：所有CTE查询结果都能被有效缓存
+- ❌ \textbf{解析器阶段缓存未实现}：CTE语法树和解析结果未被缓存
+- ❌ \textbf{规划器阶段缓存未实现}：CTE逻辑计划和引用关系未被缓存
+- ❌ \textbf{优化器阶段缓存未实现}：CTE优化策略和计划未被缓存
+
+\textbf{2. 缓存效果分析}
+测试结果显示显著的性能提升：
+- \textbf{简单CTE}：70.3\%性能提升，主要来源于结果复用
+- \textbf{递归CTE}：17.5\%性能提升，递归计算结果被有效缓存
+- \textbf{嵌套CTE}：51.7\%性能提升，多层嵌套结构缓存效果显著
+- \textbf{CTE与JOIN}：40.7\%性能提升，复杂连接操作被优化
+- \textbf{复杂分析CTE}：15.0\%性能提升，复杂计算仍有缓存价值
+
+\textbf{3. 缓存失效机制验证}
+测试验证了CTE缓存的失效机制：
+- 底层数据修改后，缓存自动失效
+- 缓存键基于查询文本和数据版本
+- 失效检测机制运行正常
+
+\subsection{全阶段缓存必要性分析}
+
+基于测试结果，对全阶段缓存的必要性进行了深度分析：
+
+\begin{table}[!htb]
+    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
+    \label{table5_14}
+    \centering
+    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
+        \hline
+        缓存阶段 & 实现复杂度 & 内存开销 & 性能收益 & 必要性评估 \\
+        \hline
+        \textbf{解析器阶段} & 高 & 中 & 低 & 不必要 \\
+        \textbf{规划器阶段} & 高 & 高 & 中 & 不必要 \\
+        \textbf{优化器阶段} & 极高 & 高 & 中 & 不必要 \\
+        \textbf{执行器阶段} & 低 & 中 & 高 & 已实现 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{结论：}
+1. \textbf{执行器阶段缓存已足够}：当前实现平均提升39.0\%，覆盖了所有CTE类型
+2. \textbf{全阶段缓存成本过高}：实现复杂度和维护成本远超收益
+3. \textbf{建议继续优化现有实现}：专注于执行器阶段的缓存优化
+
+\subsection{技术建议}
+
+基于测试验证结果，提出以下技术建议：
+
+\textbf{1. 继续优化执行器阶段缓存}
+- 改进CTE缓存键生成算法
+- 优化缓存失效检测机制
+- 增强跨进程缓存支持
+
+\textbf{2. 无需实现全阶段缓存}
+- 解析器阶段开销相对较小，缓存收益有限
+- 规划器和优化器阶段实现复杂，维护成本高
+- 执行器阶段已覆盖所有CTE查询场景，平均提升39.0\%
+
+\textbf{3. 实际部署建议}
+- 保持当前执行器阶段缓存实现
+- 重点优化缓存命中率和内存使用效率
+- 建立完善的缓存监控和调优机制
+
+\subsection{测试验证总结}
+
+通过全面的测试验证，得出以下结论：
+
+\textbf{✅ 已实现功能：}
+- CTE查询缓存正常工作
+- 各种CTE类型（简单、递归、嵌套、复杂）都能被缓存
+- 缓存失效机制运行正常
+- 平均性能提升39.0\%，最高达70.3\%
+
+\textbf{❌ 未实现功能：}
+- 解析器阶段缓存（不必要）
+- 规划器阶段缓存（不必要）
+- 优化器阶段缓存（不必要）
+
+\textbf{🎯 最终建议：}
+继续优化当前的执行器阶段缓存，无需实现全阶段缓存。当前实现已能有效支持各种CTE查询场景，性能提升显著，投入产出比最优。
 
 \section{布隆过滤器对查询性能影响评估}
 
@@ -453,8 +575,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 布隆过滤器作为查询缓存系统的核心组件，其配置参数直接影响系统的整体性能。计算了不同预期元素数量和目标假阳性率下的最优配置参数，设计了五种不同的布隆过滤器配置策略：
 
 \begin{table}[!htb]
-    \caption{参数化查询集布隆过滤器性能测试（10000次测试）}
-    \label{table5_13}
+    \caption{缓存有效性测试结果}
+    \label{table5_15}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -479,8 +601,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{TPC-H查询性能实测结果}
 
 \begin{table}[!htb]
-    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
-    \label{table5_14}
+    \caption{LRU策略在不同访问模式下的性能}
+    \label{table5_16}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -497,9 +619,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.14 TPC标准查询缓存特征分析.png}
-	\caption{TPC标准查询缓存特征分析}
-	\label{fig5_5_14}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.15 TPC-H查询不同布隆过滤器配置性能对比.png}
+	\caption{TPC-H查询不同布隆过滤器配置性能对比}
+	\label{fig5_5_15}
 \end{figure}
 
 \subsubsection{TPC-H测试关键发现}
@@ -515,8 +637,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{重复查询集测试结果}
 
 \begin{table}[!htb]
-    \caption{缓存有效性测试结果}
-    \label{table5_15}
+    \caption{TTL策略性能对比}
+    \label{table5_17}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -534,8 +656,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{参数化查询集测试结果}
 
 \begin{table}[!htb]
-    \caption{LRU策略在不同访问模式下的性能}
-    \label{table5_16}
+    \caption{机器学习策略性能指标}
+    \label{table5_18}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -552,14 +674,14 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.15 TPC-H查询不同布隆过滤器配置性能对比.png}
-	\caption{TPC-H查询不同布隆过滤器配置性能对比}
-	\label{fig5_5_15}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.16 自定义数据集最佳布隆过滤器配置性能.png}
+	\caption{自定义数据集最佳布隆过滤器配置性能}
+	\label{fig5_5_16}
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{TTL策略性能对比}
-    \label{table5_17}
+    \caption{融合算法性能对比}
+    \label{table5_19}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -588,8 +710,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过对不同类型查询的实际测试，验证了缓存机制的有效性：
 
 \begin{table}[!htb]
-    \caption{机器学习策略性能指标}
-    \label{table5_18}
+    \caption{不同时段的策略切换效果}
+    \label{table5_20}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -608,8 +730,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过模拟不同访问模式，验证LRU策略在各种场景下的表现：
 
 \begin{table}[!htb]
-    \caption{融合算法性能对比}
-    \label{table5_19}
+    \caption{持久化策略综合对比}
+    \label{table5_21}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -625,8 +747,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.16 自定义数据集最佳布隆过滤器配置性能.png}
-	\caption{自定义数据集最佳布隆过滤器配置性能}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.16 LRU策略在不同访问模式下的命中率.png}
+	\caption{LRU策略在不同访问模式下的命中率}
 	\label{fig5_5_16}
 \end{figure}
 
@@ -637,8 +759,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 测试不同TTL设置对缓存性能的影响：
 
 \begin{table}[!htb]
-    \caption{不同时段的策略切换效果}
-    \label{table5_20}
+    \caption{多进程环境下缓存持久化效果对比}
+    \label{table5_22}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -654,9 +776,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.16 LRU策略在不同访问模式下的命中率.png}
-	\caption{LRU策略在不同访问模式下的命中率}
-	\label{fig5_5_16}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.17 TTL设置对缓存命中率的影响.png}
+	\caption{TTL设置对缓存命中率的影响}
+	\label{fig5_5_17}
 \end{figure}
 
 测试结果表明，TTL设置与缓存命中率呈显著正相关关系，3600秒的TTL设置能够实现80.0\%的最高命中率，但实际应用中需要根据数据更新频率动态调整TTL值以平衡数据新鲜度需求，建议结合业务场景特点灵活配置。
@@ -666,8 +788,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证基于机器学习的动态缓存管理策略：
 
 \begin{table}[!htb]
-    \caption{持久化策略综合对比}
-    \label{table5_21}
+    \caption{文件系统跨进程缓存性能测试结果}
+    \label{table5_23}
     \centering
     \begin{tabular}{p{4cm}p{4cm}p{4cm}}
         \hline
@@ -684,9 +806,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.17 TTL设置对缓存命中率的影响.png}
-	\caption{TTL设置对缓存命中率的影响}
-	\label{fig5_5_17}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.18 机器学习模型特征重要性分布.png}
+	\caption{机器学习模型特征重要性分布}
+	\label{fig5_5_18}
 \end{figure}
 
 学习曲线分析显示，机器学习模型的初始准确率为45\%，经过持续优化后最终达到89\%的准确率，在线学习过程呈现出稳定的性能提升趋势，且最终表现显著优于离线学习模式。这一结果验证了在线学习算法在动态调整缓存策略方面的有效性。
@@ -696,8 +818,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证多策略融合的效果
 
 \begin{table}[!htb]
-    \caption{缓存有效性测试结果}
-    \label{table5_22}
+    \caption{自适应参数调优性能对比结果}
+    \label{table5_24}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -713,8 +835,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \end{table}
 
 \begin{table}[!htb]
-    \caption{LRU策略在不同访问模式下的性能}
-    \label{table5_23}
+    \caption{全阶段缓存成本效益分析}
+    \label{table5_25}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -736,16 +858,16 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.18 机器学习模型特征重要性分布.png}
-	\caption{机器学习模型特征重要性分布}
-	\label{fig5_5_18}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.20 自适应参数调优架构流程图.png}
+	\caption{自适应参数调优架构流程图}
+	\label{fig5_5_20}
 \end{figure}
 
 自适应调优框架的核心技术特征包括，采用梯度下降法的在线学习算法，能够实时更新性能模型权重；支持多维参数优化，可同时调整缓存大小、内存限制、TTL和淘汰策略；基于历史数据的性能预测模型，能够准确预测不同配置下的性能表现；以及根据系统负载动态调整调优触发条件的自适应阈值机制。这些技术共同构成了一个智能化的动态调优系统。
 
 \begin{table}[!htb]
-    \caption{TTL策略性能对比}
-    \label{table5_24}
+    \caption{自定义表详细测试结果：}
+    \label{table5_26}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -761,9 +883,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.20 自适应参数调优架构流程图.png}
-	\caption{自适应参数调优架构流程图}
-	\label{fig5_5_20}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.22 自适应调优vs传统方法对比.png}
+	\caption{自适应调优vs传统方法对比}
+	\label{fig5_5_22}
 \end{figure}
 
 际测试验证了缓存机制的有效性，简单查询性能改善最为显著；在热点访问模式下，LRU策略展现出最佳表现，命中率达到81\%，而TTL策略需要在命中率和数据新鲜度之间寻求平衡。机器学习策略通过在线学习算法展现出强大的自适应能力，最终在多策略融合框架中，自适应融合策略凭借其智能化决策机制实现了最优的综合性能。测试结果表明，基于在线学习算法的自适应参数调优技术表现比较好。
@@ -778,9 +900,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.22 自适应调优vs传统方法对比.png}
-	\caption{自适应调优vs传统方法对比}
-	\label{fig5_5_22}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.21 持久化策略应用场景分布.png}
+	\caption{持久化策略应用场景分布}
+	\label{fig5_5_21}
 \end{figure}
 
 通过对所有测试查询的综合分析，整体性能有提升。系统实现了1.20倍的平均加速比，相当于20\%的整体性能提升，这一成果表明缓存机制能够为数据库查询处理带来实质性的性能改善。更为详细的分析显示，平均性能提升达到16.4\%，这种显著的查询响应时间改善直接转化为用户体验的提升，使得数据分析和报表生成变得更加高效。测试覆盖了12个不同复杂度和类型的查询，这种全面的测试覆盖确保了性能评估结果的代表性和可信度，为缓存系统在实际应用中的性能表现提供了可靠的预测基础。
@@ -796,8 +918,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 基于实际测试和理论分析，各持久化策略的性能特征对比：
 
 \begin{table}[!htb]
-    \caption{机器学习策略性能指标}
-    \label{table5_25}
+    \caption{TPC-H详细测试结果：}
+    \label{table5_27}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -830,9 +952,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.21 持久化策略应用场景分布.png}
-	\caption{持久化策略应用场景分布}
-	\label{fig5_5_21}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.22 多进程缓存测试场景流程图.png}
+	\caption{多进程缓存测试场景流程图}
+	\label{fig5_5_22}
 \end{figure}
 
 测试使用了四种不同复杂度的查询：
@@ -843,8 +965,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 4. \textbf{递归CTE查询}: 计算斐波那契数列的递归查询
 
 \begin{table}[!htb]
-    \caption{融合算法性能对比}
-    \label{table5_26}
+    \caption{TPC-DS详细测试结果：}
+    \label{table5_28}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -861,9 +983,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.22 多进程缓存测试场景流程图.png}
-	\caption{多进程缓存测试场景流程图}
-	\label{fig5_5_22}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.23 多进程环境下缓存持久化效果对比.png}
+	\caption{多进程环境下缓存持久化效果对比}
+	\label{fig5_5_23}
 \end{figure}
 
 测试结果显示，缓存持久化在多进程环境下的效果具有明显的查询类型依赖性：窗口函数查询获得了14.5\%的显著性能提升，这是因为窗口函数涉及复杂的数据排序和计算，共享数据库文件可以更好地利用数据库内部的优化机制；复杂连接查询在首次执行后的后续进程中表现出19.4\%的缓存效果，证明了持久化缓存对复杂查询的价值；而简单查询由于执行时间较短，持久化的开销可能超过了缓存带来的收益。
@@ -877,8 +999,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \textbf{测试结果}：
 
 \begin{table}[!htb]
-    \caption{不同时段的策略切换效果}
-    \label{table5_27}
+    \caption{表5.29}
+    \label{table5_29}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -895,9 +1017,9 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{figure}[!htb]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.23 多进程环境下缓存持久化效果对比.png}
-	\caption{多进程环境下缓存持久化效果对比}
-	\label{fig5_5_23}
+	\includegraphics[width=0.8\textwidth]{images/5-图5.24 文件系统跨进程缓存性能对比.png}
+	\caption{文件系统跨进程缓存性能对比}
+	\label{fig5_5_24}
 \end{figure}
 
 实现了真正的跨进程共享，解决了传统内存缓存无法跨进程共享的问题；性能提升显著，平均达到99.61\%，加速比高达264倍；在多进程环境下实现了100\%的缓存命中率；同时具备通用性，适用于任何使用subprocess.run的多进程应用场景。

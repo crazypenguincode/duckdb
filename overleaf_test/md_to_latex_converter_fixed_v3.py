@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Markdown到LaTeX转换脚本 - 修复版本v2
+Markdown到LaTeX转换脚本 - 修复版本v3
 将md目录下的第一章到第六章的.md文件转换为overleaf/chapters/目录下对应的chapter-1到6.tex文件
+专门修复数学公式转换问题
 """
 
 import os
@@ -175,18 +176,24 @@ class MarkdownToLatexConverter:
             fig_num = None
             clean_title = "未命名图表"
             
-            # 优先在前面查找标题
-            matches_before = list(re.finditer(title_pattern, before_text))
-            if matches_before:
-                last_match = matches_before[-1]
-                fig_num = last_match.group(1)
-                clean_title = last_match.group(2).strip()
+            # 优先在后面查找标题（图片标题通常在图片后面）
+            match_after = re.search(title_pattern, after_text[:200])
+            if match_after:
+                fig_num = match_after.group(1)
+                clean_title = match_after.group(2).strip()
             else:
-                # 在后面查找标题
-                match_after = re.search(title_pattern, after_text[:200])
-                if match_after:
-                    fig_num = match_after.group(1)
-                    clean_title = match_after.group(2).strip()
+                # 如果后面没找到，在前面查找最近的标题
+                matches_before = list(re.finditer(title_pattern, before_text))
+                if matches_before:
+                    # 找到距离当前位置最近的标题（最后一个匹配）
+                    last_match = matches_before[-1]
+                    # 检查这个标题是否距离当前图片很近（在同一段落内）
+                    title_end_pos = last_match.end()
+                    text_between = before_text[title_end_pos:].strip()
+                    # 如果标题和图片之间只有很少的文本（比如小于100个字符），则认为是匹配的
+                    if len(text_between) < 100:
+                        fig_num = last_match.group(1)
+                        clean_title = last_match.group(2).strip()
             
             if not fig_num:
                 fig_num = f"{chapter_num}.0"
@@ -231,7 +238,23 @@ class MarkdownToLatexConverter:
         return content
     
     def escape_latex_special_chars(self, text: str) -> str:
-        """转义LaTeX特殊字符"""
+        """转义LaTeX特殊字符，但保护数学公式"""
+        # 先保护数学公式
+        math_placeholders = {}
+        math_counter = 0
+        
+        def protect_math(match):
+            nonlocal math_counter
+            math_content = match.group(0)
+            placeholder = f"__MATH_ESCAPE_PLACEHOLDER_{math_counter}__"
+            math_placeholders[placeholder] = math_content
+            math_counter += 1
+            return placeholder
+        
+        # 保护数学公式
+        text = re.sub(r'\$\$[^$]+\$\$', protect_math, text)  # 显示公式
+        text = re.sub(r'\$[^$\n]+\$', protect_math, text)    # 行内公式
+        
         # 转义特殊字符，但保留已经转义的
         text = re.sub(r'(?<!\\)&', r'\\&', text)
         text = re.sub(r'(?<!\\)%', r'\\%', text)
@@ -242,6 +265,10 @@ class MarkdownToLatexConverter:
         # 转换HTML标签为LaTeX格式
         text = text.replace('<br/>', '\\newline ')
         text = text.replace('<br>', '\\newline ')
+        
+        # 恢复数学公式
+        for placeholder, math_content in math_placeholders.items():
+            text = text.replace(placeholder, math_content)
         
         return text
     
@@ -356,35 +383,35 @@ class MarkdownToLatexConverter:
         return content
     
     def clean_latex_content(self, content: str) -> str:
-        """清理和优化LaTeX内容"""
+        """清理和优化LaTeX内容，特别处理数学公式"""
         # 移除多余的空行
         content = re.sub(r'\n{3,}', '\n\n', content)
         
-        # 先处理行内代码和数学公式，避免与其他格式转换冲突
-        code_placeholders = {}
+        # 先保护数学公式和行内代码，避免与其他格式转换冲突
         math_placeholders = {}
-        code_counter = 0
+        code_placeholders = {}
         math_counter = 0
-        
-        def protect_code(match):
-            nonlocal code_counter
-            code_content = match.group(1)
-            placeholder = f"__CODE_PLACEHOLDER_{code_counter}__"
-            code_placeholders[placeholder] = code_content
-            code_counter += 1
-            return placeholder
+        code_counter = 0
         
         def protect_math(match):
             nonlocal math_counter
             math_content = match.group(0)  # 保留完整的$...$格式
-            placeholder = f"__MATH_PLACEHOLDER_{math_counter}__"
+            placeholder = f"MATHPLACEHOLDER{math_counter}MATHPLACEHOLDER"
             math_placeholders[placeholder] = math_content
             math_counter += 1
             return placeholder
         
-        # 保护数学公式（行内公式和显示公式）
-        content = re.sub(r'\$\$[^$]+\$\$', protect_math, content)  # 显示公式 $$...$$
-        content = re.sub(r'\$[^$\n]+\$', protect_math, content)    # 行内公式 $...$
+        def protect_code(match):
+            nonlocal code_counter
+            code_content = match.group(1)
+            placeholder = f"CODEPLACEHOLDER{code_counter}CODEPLACEHOLDER"
+            code_placeholders[placeholder] = code_content
+            code_counter += 1
+            return placeholder
+        
+        # 保护数学公式（行内公式和显示公式）- 使用更精确的正则表达式
+        content = re.sub(r'\$\$[^$]+?\$\$', protect_math, content)  # 显示公式 $$...$$
+        content = re.sub(r'\$[^$\n]+?\$', protect_math, content)    # 行内公式 $...$
         
         # 保护行内代码
         content = re.sub(r'`([^`]+)`', protect_code, content)
@@ -426,38 +453,28 @@ class MarkdownToLatexConverter:
         
         content = '\n'.join(processed_lines)
         
-        # 转义其他特殊字符
-        content = re.sub(r'(?<!\\)\$', r'\\$', content)
+        # 转义其他特殊字符，但不转义$符号（数学公式需要保留）
         content = re.sub(r'(?<!\\)#', r'\\#', content)
+        
+        # 转义下划线，现在不需要担心占位符了
+        content = re.sub(r'(?<!\\)_', r'\\_', content)
         
         # 先恢复数学公式，保持原始格式
         for placeholder, math_content in math_placeholders.items():
             content = content.replace(placeholder, math_content)
         
-        # 再恢复行内代码，应用texttt格式，避免占位符被转义
+        # 再恢复行内代码，应用texttt格式
         for placeholder, code_content in code_placeholders.items():
             content = content.replace(placeholder, f'\\texttt{{{code_content}}}')
         
-        # 转义下划线，但避免转义LaTeX命令参数中的下划线和数学公式中的下划线
-        content = re.sub(r'(?<!\\)_', r'\\_', content)
-        
-        # 在LaTeX命令的大括号内和数学公式内恢复下划线（不转义）
+        # 在LaTeX命令的大括号内恢复下划线（不转义）
         def restore_underscore_in_latex(match):
             cmd = match.group(0)
             # 在LaTeX命令的大括号内，将 \_ 恢复为 _
             return cmd.replace('\\_', '_')
         
-        def restore_underscore_in_math(match):
-            math_expr = match.group(0)
-            # 在数学公式内，将 \_ 恢复为 _
-            return math_expr.replace('\\_', '_')
-        
         # 恢复LaTeX命令内的下划线
         content = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', restore_underscore_in_latex, content)
-        
-        # 恢复数学公式内的下划线
-        content = re.sub(r'\$\$[^$]+\$\$', restore_underscore_in_math, content)  # 显示公式
-        content = re.sub(r'\$[^$\n]+\$', restore_underscore_in_math, content)    # 行内公式
         
         return content
     
@@ -540,7 +557,7 @@ class MarkdownToLatexConverter:
         # 保存报告
         report_dir = self.base_dir / "overleaf_test"
         report_dir.mkdir(exist_ok=True)
-        report_file = report_dir / "conversion_report.json"
+        report_file = report_dir / "conversion_report_v3.json"
         
         with open(report_file, 'w', encoding='utf-8') as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
@@ -549,7 +566,7 @@ class MarkdownToLatexConverter:
     
     def run(self):
         """运行完整的转换流程"""
-        print("开始Markdown到LaTeX转换...")
+        print("开始Markdown到LaTeX转换 (v3 - 修复数学公式)...")
         print(f"输入目录: {self.md_dir}")
         print(f"输出目录: {self.overleaf_dir}")
         
@@ -570,7 +587,7 @@ class MarkdownToLatexConverter:
         
         # 打印摘要
         print("\n" + "="*60)
-        print("转换完成!")
+        print("转换完成! (v3 - 数学公式修复版)")
         print(f"成功转换章节: {success_count}/{len(self.chapter_files)}")
         print(f"总图片数量: {report['conversion_summary']['total_figures']}")
         print(f"总表格数量: {report['conversion_summary']['total_tables']}")

@@ -1,0 +1,43 @@
+graph TB
+    subgraph "应用接口层"
+        A1[SQL查询接口]
+        A2[CTE缓存接口]
+        A3[结果集缓存接口]
+    end
+    
+    subgraph "策略决策层"
+        B1[布隆过滤器预筛选]
+        B2[语义等价性检查]
+        B3[缓存价值评估]
+        B4[智能决策算法]
+    end
+    
+    subgraph "缓存管理层"
+        C1[QueryCache核心管理]
+        C2[CacheEntry条目管理]
+        C3[索引维护]
+        C4[统计信息收集]
+    end
+    
+    subgraph "存储层"
+        D1[内存存储]
+        D2[磁盘存储]
+        D3[混合存储]
+        D4[持久化管理]
+    end
+    
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    B4 --> C4
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+    C4 --> D4
+    
+    style B1 fill:#e3f2fd
+    style C1 fill:#e8f5e8
+    style D1 fill:#fff3e0

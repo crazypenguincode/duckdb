@@ -1,0 +1,25 @@
+graph LR
+    subgraph "持久化策略性能对比"
+        subgraph "高性能区域"
+            M[内存模式<br/>性能: 高<br/>可靠性: 低]
+            H[混合模式<br/>性能: 高<br/>可靠性: 高]
+        end
+        
+        subgraph "中等性能区域"
+            W[WAL模式<br/>性能: 中<br/>可靠性: 中]
+        end
+        
+        subgraph "高可靠性区域"
+            V[物化视图模式<br/>性能: 低<br/>可靠性: 高]
+        end
+    end
+    
+    M -.-> |性能优先| 场景1[临时缓存]
+    W -.-> |平衡选择| 场景2[生产环境]
+    V -.-> |可靠性优先| 场景3[关键业务]
+    H -.-> |智能选择| 场景4[自适应场景]
+    
+    style M fill:#ffcdd2
+    style W fill:#fff3e0
+    style V fill:#e8f5e8
+    style H fill:#e3f2fd

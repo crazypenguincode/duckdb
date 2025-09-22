@@ -1,0 +1,38 @@
+graph TD
+    subgraph "基础表层"
+        T1[orders表]
+        T2[customers表]
+        T3[products表]
+        T4[order_items表]
+    end
+    
+    subgraph "CTE层级1"
+        C1[customer_orders CTE]
+        C2[product_sales CTE]
+    end
+    
+    subgraph "CTE层级2"
+        C3[monthly_summary CTE]
+        C4[top_customers CTE]
+    end
+    
+    subgraph "最终查询"
+        Q1[主查询结果]
+    end
+    
+    T1 --> C1
+    T2 --> C1
+    T3 --> C2
+    T4 --> C2
+    
+    C1 --> C3
+    C2 --> C3
+    C1 --> C4
+    
+    C3 --> Q1
+    C4 --> Q1
+    
+    style T1 fill:#ffebee
+    style C1 fill:#e3f2fd
+    style C3 fill:#e8f5e8
+    style Q1 fill:#fff3e0

@@ -98,10 +98,10 @@ class ImageExtractor:
         png_file = mmd_file.with_suffix('.png')
         
         try:
-            # 尝试使用mmdc命令
+            # 尝试使用mmdc命令，设置透明背景
             result = subprocess.run([
                 'mmdc', '-i', str(mmd_file), '-o', str(png_file),
-                '--theme', 'default', '--backgroundColor', 'white'
+                '--theme', 'neutral', '--backgroundColor', 'transparent'
             ], capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:

@@ -38,4 +38,3 @@ erDiagram
     CacheEntry ||--o{ IndexStructure : "indexed_by"
     CacheEntry ||--|| BloomFilter : "filtered_by"
     CTECacheEntry ||--o{ CacheEntry : "referenced_by"
-    CTECacheEntry ||--o{ CTECacheEntry : "depends_on"

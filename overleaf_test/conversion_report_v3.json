@@ -3,8 +3,8 @@
     "total_chapters": 6,
     "chapters_converted": 6,
     "total_figures": 0,
-    "total_tables": 29,
-    "total_references": 59
+    "total_tables": 28,
+    "total_references": 67
   },
   "chapter_details": {
     "chapter_1": {
@@ -25,7 +25,7 @@
     },
     "chapter_5": {
       "figures": 0,
-      "tables": 29
+      "tables": 28
     },
     "chapter_6": {
       "figures": 0,

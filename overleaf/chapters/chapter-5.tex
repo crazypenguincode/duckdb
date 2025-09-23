@@ -233,12 +233,12 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 多次数测试的结果揭示了查询缓存系统在不同测试强度下的性能表现规律，为理解系统的稳定性和可靠性提供了重要数据支撑。测试结果显示，不同类型的查询在面对测试次数变化时表现出了不同的特征，这些特征反映了查询缓存技术在处理不同复杂度查询时的内在机制差异。
 
 \begin{table}[!htb]
-    \caption{测试稳定性分析}
+    \caption{测试稳定性分析-标准差}
     \label{table5_8}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
-        测试次数 & 简单聚合查询(\%) & 多表连接查询(\%) & 复杂分析查询(\%) & 窗口函数查询(\%) & 平均提升(\%) \\
+        测试次数/百分比 & 简单聚合 & 多表连接 & 复杂分析 & 窗口函数 & 平均提升 \\
         \hline
         10次 & 53.85 & 76.92 & 56.28 & 76.92 & 65.99 \\
         50次 & 59.15 & 76.83 & 55.81 & 60.78 & 63.14 \\
@@ -286,7 +286,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
-        查询类型 & 10次标准差(ms) & 50次标准差(ms) & 100次标准差(ms) & 200次标准差(ms) & 稳定性趋势 \\
+        查询类型 & 10次(ms) & 50次(ms) & 100次(ms) & 200次(ms) & 稳定性趋势 \\
         \hline
         简单聚合查询 & 0.38 & 0.30 & 0.29 & 0.30 & 逐步稳定 \\
         多表连接查询 & 0.48 & 0.44 & 0.48 & 0.45 & 基本稳定 \\
@@ -483,88 +483,11 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \subsection{关键发现与分析}
 
-\textbf{1. 当前实现阶段确认}
-通过调试日志分析和性能测试验证：
-- ✅ \textbf{执行器阶段缓存已完全实现}：所有CTE查询结果都能被有效缓存
-- ❌ \textbf{解析器阶段缓存未实现}：CTE语法树和解析结果未被缓存
-- ❌ \textbf{规划器阶段缓存未实现}：CTE逻辑计划和引用关系未被缓存
-- ❌ \textbf{优化器阶段缓存未实现}：CTE优化策略和计划未被缓存
+当前实现阶段确认，通过调试日志分析和性能测试验证，执行器阶段缓存已完全实现，所有CTE查询结果都能被有效缓存；而解析器、规划器和优化器阶段的缓存功能尚未实现，CTE语法树、逻辑计划及优化策略未被缓存。
 
-\textbf{2. 缓存效果分析}
-测试结果显示显著的性能提升：
-- \textbf{简单CTE}：70.3\%性能提升，主要来源于结果复用
-- \textbf{递归CTE}：17.5\%性能提升，递归计算结果被有效缓存
-- \textbf{嵌套CTE}：51.7\%性能提升，多层嵌套结构缓存效果显著
-- \textbf{CTE与JOIN}：40.7\%性能提升，复杂连接操作被优化
-- \textbf{复杂分析CTE}：15.0\%性能提升，复杂计算仍有缓存价值
+缓存效果分析，测试结果显示，不同类型的CTE查询均获得显著性能提升：简单CTE提升70.3\%，递归CTE提升17.5\%，嵌套CTE提升51.7\%，CTE与JOIN查询提升40.7\%，复杂分析CTE提升15.0\%。这些提升主要源于结果复用和缓存优化。
 
-\textbf{3. 缓存失效机制验证}
-测试验证了CTE缓存的失效机制：
-- 底层数据修改后，缓存自动失效
-- 缓存键基于查询文本和数据版本
-- 失效检测机制运行正常
-
-\subsection{全阶段缓存必要性分析}
-
-基于测试结果，对全阶段缓存的必要性进行了深度分析：
-
-\begin{table}[!htb]
-    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
-    \label{table5_14}
-    \centering
-    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
-        \hline
-        缓存阶段 & 实现复杂度 & 内存开销 & 性能收益 & 必要性评估 \\
-        \hline
-        \textbf{解析器阶段} & 高 & 中 & 低 & 不必要 \\
-        \textbf{规划器阶段} & 高 & 高 & 中 & 不必要 \\
-        \textbf{优化器阶段} & 极高 & 高 & 中 & 不必要 \\
-        \textbf{执行器阶段} & 低 & 中 & 高 & 已实现 \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\textbf{结论：}
-1. \textbf{执行器阶段缓存已足够}：当前实现平均提升39.0\%，覆盖了所有CTE类型
-2. \textbf{全阶段缓存成本过高}：实现复杂度和维护成本远超收益
-3. \textbf{建议继续优化现有实现}：专注于执行器阶段的缓存优化
-
-\subsection{技术建议}
-
-基于测试验证结果，提出以下技术建议：
-
-\textbf{1. 继续优化执行器阶段缓存}
-- 改进CTE缓存键生成算法
-- 优化缓存失效检测机制
-- 增强跨进程缓存支持
-
-\textbf{2. 无需实现全阶段缓存}
-- 解析器阶段开销相对较小，缓存收益有限
-- 规划器和优化器阶段实现复杂，维护成本高
-- 执行器阶段已覆盖所有CTE查询场景，平均提升39.0\%
-
-\textbf{3. 实际部署建议}
-- 保持当前执行器阶段缓存实现
-- 重点优化缓存命中率和内存使用效率
-- 建立完善的缓存监控和调优机制
-
-\subsection{测试验证总结}
-
-通过全面的测试验证，得出以下结论：
-
-\textbf{✅ 已实现功能：}
-- CTE查询缓存正常工作
-- 各种CTE类型（简单、递归、嵌套、复杂）都能被缓存
-- 缓存失效机制运行正常
-- 平均性能提升39.0\%，最高达70.3\%
-
-\textbf{❌ 未实现功能：}
-- 解析器阶段缓存（不必要）
-- 规划器阶段缓存（不必要）
-- 优化器阶段缓存（不必要）
-
-\textbf{🎯 最终建议：}
-继续优化当前的执行器阶段缓存，无需实现全阶段缓存。当前实现已能有效支持各种CTE查询场景，性能提升显著，投入产出比最优。
+缓存失效机制验证，测试验证了CTE缓存的失效机制，包括底层数据修改后缓存自动失效、缓存键基于查询文本和数据版本生成，以及失效检测机制的正常运行。
 
 \section{布隆过滤器对查询性能影响评估}
 
@@ -575,8 +498,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 布隆过滤器作为查询缓存系统的核心组件，其配置参数直接影响系统的整体性能。计算了不同预期元素数量和目标假阳性率下的最优配置参数，设计了五种不同的布隆过滤器配置策略：
 
 \begin{table}[!htb]
-    \caption{缓存有效性测试结果}
-    \label{table5_15}
+    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
+    \label{table5_14}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -601,8 +524,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{TPC-H查询性能实测结果}
 
 \begin{table}[!htb]
-    \caption{LRU策略在不同访问模式下的性能}
-    \label{table5_16}
+    \caption{缓存有效性测试结果}
+    \label{table5_15}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -637,8 +560,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{重复查询集测试结果}
 
 \begin{table}[!htb]
-    \caption{TTL策略性能对比}
-    \label{table5_17}
+    \caption{LRU策略在不同访问模式下的性能}
+    \label{table5_16}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -656,8 +579,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{参数化查询集测试结果}
 
 \begin{table}[!htb]
-    \caption{机器学习策略性能指标}
-    \label{table5_18}
+    \caption{TTL策略性能对比}
+    \label{table5_17}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -680,8 +603,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{融合算法性能对比}
-    \label{table5_19}
+    \caption{机器学习策略性能指标}
+    \label{table5_18}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -710,8 +633,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过对不同类型查询的实际测试，验证了缓存机制的有效性：
 
 \begin{table}[!htb]
-    \caption{不同时段的策略切换效果}
-    \label{table5_20}
+    \caption{融合算法性能对比}
+    \label{table5_19}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -730,8 +653,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过模拟不同访问模式，验证LRU策略在各种场景下的表现：
 
 \begin{table}[!htb]
-    \caption{持久化策略综合对比}
-    \label{table5_21}
+    \caption{不同时段的策略切换效果}
+    \label{table5_20}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -759,8 +682,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 测试不同TTL设置对缓存性能的影响：
 
 \begin{table}[!htb]
-    \caption{多进程环境下缓存持久化效果对比}
-    \label{table5_22}
+    \caption{持久化策略综合对比}
+    \label{table5_21}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -788,8 +711,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证基于机器学习的动态缓存管理策略：
 
 \begin{table}[!htb]
-    \caption{文件系统跨进程缓存性能测试结果}
-    \label{table5_23}
+    \caption{多进程环境下缓存持久化效果对比}
+    \label{table5_22}
     \centering
     \begin{tabular}{p{4cm}p{4cm}p{4cm}}
         \hline
@@ -818,8 +741,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证多策略融合的效果
 
 \begin{table}[!htb]
-    \caption{自适应参数调优性能对比结果}
-    \label{table5_24}
+    \caption{文件系统跨进程缓存性能测试结果}
+    \label{table5_23}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -835,8 +758,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \end{table}
 
 \begin{table}[!htb]
-    \caption{全阶段缓存成本效益分析}
-    \label{table5_25}
+    \caption{自适应参数调优性能对比结果}
+    \label{table5_24}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
@@ -867,7 +790,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{table}[!htb]
     \caption{自定义表详细测试结果：}
-    \label{table5_26}
+    \label{table5_25}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -919,7 +842,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \begin{table}[!htb]
     \caption{TPC-H详细测试结果：}
-    \label{table5_27}
+    \label{table5_26}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -944,29 +867,13 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 在实际应用中，特别是使用\texttt{subprocess.run}等方式启动多个DuckDB进程时，每个进程都会创建新的ClientContext，内存缓存无法在进程间共享。本节专门测试这种场景下缓存持久化的优势。
 
-\textbf{三种测试场景}：
+在缓存性能测试中，我们设计了三种典型场景：1) 独立内存数据库场景，模拟无持久化缓存环境，每个进程使用独立的内存数据库以消除跨进程缓存干扰；2) 共享数据库文件场景，模拟持久化缓存环境，所有进程共享同一数据库文件以测试缓存一致性和共享效率；3) 混合工作负载场景，模拟真实应用环境，通过交替执行热点查询和随机查询来评估缓存在复杂负载下的表现。这三种场景共同构成了完整的缓存性能评估体系。
 
-1. \textbf{场景1 - 独立内存数据库}: 每个进程使用独立的内存数据库，模拟无持久化缓存的情况
-2. \textbf{场景2 - 共享数据库文件}: 所有进程共享同一个数据库文件，模拟有持久化缓存的情况
-3. \textbf{场景3 - 混合工作负载}: 模拟真实应用中的重复查询模式
-
-\begin{figure}[!htb]
-	\centering
-	\includegraphics[width=0.8\textwidth]{images/5-图5.22 多进程缓存测试场景流程图.png}
-	\caption{多进程缓存测试场景流程图}
-	\label{fig5_5_22}
-\end{figure}
-
-测试使用了四种不同复杂度的查询：
-
-1. \textbf{简单聚合查询}: \texttt{SELECT COUNT(*), AVG(i), SUM(i*2) FROM generate_series(1, 10000) AS t(i) WHERE i % 3 = 0}
-2. \textbf{复杂连接查询}: 包含CTE和多表连接的复杂查询
-3. \textbf{窗口函数查询}: 使用ROW\_NUMBER、LAG、SUM等窗口函数
-4. \textbf{递归CTE查询}: 计算斐波那契数列的递归查询
+测试涵盖了四种不同复杂度的查询类型：1) 简单聚合查询，用于基础性能基准测试；2) 复杂连接查询，包含CTE和多表连接操作以评估复杂关系处理能力；3) 窗口函数查询，通过ROW\_NUMBER、LAG和SUM等函数测试分析功能性能；4) 递归CTE查询，以斐波那契数列计算验证递归查询执行效率。这四种场景全面覆盖了从基础到高级的查询复杂度，用于系统性能评估。
 
 \begin{table}[!htb]
     \caption{TPC-DS详细测试结果：}
-    \label{table5_28}
+    \label{table5_27}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
@@ -999,8 +906,8 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \textbf{测试结果}：
 
 \begin{table}[!htb]
-    \caption{表5.29}
-    \label{table5_29}
+    \caption{表5.28}
+    \label{table5_28}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline

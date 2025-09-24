@@ -202,8 +202,8 @@ class MarkdownToLatexConverter:
             img_filename = f"{chapter_num}-图{fig_num} {clean_title}.png"
             label = f"fig{chapter_num}_{fig_num.replace('.', '_')}"
             
-            # 生成LaTeX图片代码
-            latex_figure = f"""\\begin{{figure}}[!htb]
+            # 生成LaTeX图片代码 - 使用H参数强制在当前位置显示
+            latex_figure = f"""\\begin{{figure}}[H]
 \t\\centering
 \t\\includegraphics[width=0.8\\textwidth]{{images/{img_filename}}}
 \t\\caption{{{clean_title}}}
@@ -329,7 +329,7 @@ class MarkdownToLatexConverter:
             
             latex_table = f"""
 
-\\begin{{table}}[!htb]
+\\begin{{table}}[H]
     \\caption{{{caption}}}
     \\label{{{label}}}
     \\centering

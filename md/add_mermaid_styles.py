@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+             # -*- coding: utf-8 -*-
 """
 Mermaid样式增强脚本
 为所有mermaid图表中的节点添加统一的背景色样式

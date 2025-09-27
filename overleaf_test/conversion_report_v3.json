@@ -1,9 +1,9 @@
 {
   "conversion_summary": {
     "total_chapters": 6,
-    "chapters_converted": 6,
+    "chapters_converted": 3,
     "total_figures": 0,
-    "total_tables": 28,
+    "total_tables": 0,
     "total_references": 67
   },
   "chapter_details": {
@@ -16,18 +16,6 @@
       "tables": 0
     },
     "chapter_3": {
-      "figures": 0,
-      "tables": 0
-    },
-    "chapter_4": {
-      "figures": 0,
-      "tables": 0
-    },
-    "chapter_5": {
-      "figures": 0,
-      "tables": 28
-    },
-    "chapter_6": {
       "figures": 0,
       "tables": 0
     }

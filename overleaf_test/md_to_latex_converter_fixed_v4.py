@@ -26,9 +26,12 @@ class MarkdownToLatexConverter:
         self.chapters_dir.mkdir(parents=True, exist_ok=True)
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.references_dir.mkdir(parents=True, exist_ok=True)
+        self.abstract_dir = self.overleaf_dir / "abstract"
+        self.abstract_dir.mkdir(parents=True, exist_ok=True)
         
         # 章节文件映射
         self.chapter_files = {
+            0: "第0章-摘要.md",  # 添加摘要文件
             1: "第一章-绪论.md",
             2: "第二章-相关背景与理论基础.md", 
             3: "第三章-基于布隆过滤器的SQL和CTE动态缓存技术.md",
@@ -48,26 +51,56 @@ class MarkdownToLatexConverter:
         # 表格标题存储
         self.table_titles = {}
         
-    def extract_and_convert_images(self):
+    def extract_and_convert_images(self, force_regenerate=False):
         """提取并转换Mermaid图片为PNG"""
         print("正在提取和转换图片...")
+        
+        # 如果强制重新生成，先清理旧图片
+        if force_regenerate:
+            print("强制重新生成模式，清理旧图片...")
+            md_images_dir = self.md_dir / "images"
+            if md_images_dir.exists():
+                for img_file in md_images_dir.glob("*.png"):
+                    img_file.unlink()
+                    print(f"删除旧图片: {img_file.name}")
+                for img_file in md_images_dir.glob("*.mmd"):
+                    img_file.unlink()
+                    print(f"删除旧mmd文件: {img_file.name}")
         
         # 运行图片提取脚本
         extract_script = self.md_dir / "extract_all_images.py"
         if extract_script.exists():
             try:
-                subprocess.run(["python3", str(extract_script)], 
-                             cwd=str(self.md_dir), check=True)
+                result = subprocess.run(["python3", str(extract_script)], 
+                                      cwd=str(self.md_dir), 
+                                      capture_output=True, text=True, check=True)
                 print("图片提取完成")
+                if result.stdout:
+                    print("\n提取输出:")
+                    print(result.stdout)
             except subprocess.CalledProcessError as e:
                 print(f"图片提取失败: {e}")
+                if e.stderr:
+                    print(f"错误信息: {e.stderr}")
+                return False
+        else:
+            print(f"图片提取脚本不存在: {extract_script}")
+            return False
         
         # 复制图片到overleaf/images目录
         md_images_dir = self.md_dir / "images"
         if md_images_dir.exists():
+            copied_count = 0
             for img_file in md_images_dir.glob("*.png"):
-                shutil.copy2(img_file, self.images_dir)
+                dest_file = self.images_dir / img_file.name
+                shutil.copy2(img_file, dest_file)
                 print(f"复制图片: {img_file.name}")
+                copied_count += 1
+            print(f"共复制 {copied_count} 个图片文件")
+            return copied_count > 0
+        else:
+            print(f"图片目录不存在: {md_images_dir}")
+            return False
     
     def process_references(self):
         """处理参考文献，生成paper-manual.bib文件"""
@@ -635,6 +668,115 @@ class MarkdownToLatexConverter:
         
         return bibitem_entry
     
+    def convert_abstract(self) -> bool:
+        """转换摘要文件"""
+        filename = self.chapter_files.get(0)
+        if not filename:
+            print("摘要文件映射不存在")
+            return False
+        
+        input_file = self.md_dir / filename
+        if not input_file.exists():
+            print(f"摘要输入文件不存在: {input_file}")
+            return False
+        
+        print(f"正在转换摘要: {filename}")
+        
+        # 读取Markdown内容
+        with open(input_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 摘要特殊处理：移除标题，只保留正文内容
+        content = re.sub(r'^# 摘要\s*\n', '', content)  # 移除"# 摘要"标题
+        
+        # 执行基本转换步骤（摘要通常不包含图表）
+        content = self.convert_references(content)
+        
+        # 对摘要进行特殊的清理，不应用章节标题转换
+        content = self.clean_abstract_content(content)
+        
+        # 生成完整的LaTeX摘要格式
+        latex_content = f"""\\chapter*{{\\xiaosan\\heiti{{摘\\quad 要}}}}
+\\addcontentsline{{toc}}{{chapter}}{{摘要}}
+
+{content}
+
+\\vspace{{0.5cm}}
+% \\hspace{{-1cm}}
+\\sihao{{\\heiti{{关键词：}}}}\\xiaosi{{数据库系统，查询缓存、CTE、缓存策略，缓存持久化}}
+"""
+        
+        # 写入abstract.tex文件
+        output_file = self.abstract_dir / "abstract.tex"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(latex_content)
+        
+        print(f"生成摘要LaTeX文件: {output_file}")
+        return True
+    
+    def clean_abstract_content(self, content: str) -> str:
+        """专门用于清理摘要内容的函数"""
+        # 先保护数学公式和行内代码，避免与其他格式转换冲突
+        math_placeholders = {}
+        code_placeholders = {}
+        math_counter = 0
+        code_counter = 0
+        
+        def protect_math(match):
+            nonlocal math_counter
+            math_content = match.group(0)  # 保留完整的$...$格式
+            placeholder = f"MATHPLACEHOLDER{math_counter}MATHPLACEHOLDER"
+            math_placeholders[placeholder] = math_content
+            math_counter += 1
+            return placeholder
+        
+        def protect_code(match):
+            nonlocal code_counter
+            code_content = match.group(1)
+            placeholder = f"CODEPLACEHOLDER{code_counter}CODEPLACEHOLDER"
+            code_placeholders[placeholder] = code_content
+            code_counter += 1
+            return placeholder
+        
+        # 保护数学公式（行内公式和显示公式）
+        content = re.sub(r'\$\$[^$]+?\$\$', protect_math, content)  # 显示公式 $$...$$
+        content = re.sub(r'\$[^$\n]+?\$', protect_math, content)    # 行内公式 $...$
+        
+        # 保护行内代码
+        content = re.sub(r'`([^`]+)`', protect_code, content)
+        
+        # 转换粗体格式
+        content = re.sub(r'\*\*([^*]+)\*\*', r'\\textbf{\1}', content)
+        
+        # 转换斜体格式 - 避免与LaTeX命令冲突
+        content = re.sub(r'(?<!\\)\*([^*\\\n]+)\*(?!\\)', r'\\textit{\1}', content)
+        
+        # 转义LaTeX特殊字符
+        content = re.sub(r'(?<!\\)&', r'\\&', content)
+        content = re.sub(r'(?<!\\)%', r'\\%', content)
+        content = re.sub(r'(?<!\\)#', r'\\#', content)
+        content = re.sub(r'(?<!\\)_', r'\\_', content)
+        
+        # 转换HTML标签为LaTeX格式
+        content = content.replace('<br/>', '\\newline ')
+        content = content.replace('<br>', '\\newline ')
+        
+        # 先恢复数学公式，保持原始格式
+        for placeholder, math_content in math_placeholders.items():
+            content = content.replace(placeholder, math_content)
+        
+        # 再恢复行内代码，应用texttt格式
+        for placeholder, code_content in code_placeholders.items():
+            content = content.replace(placeholder, f'\\texttt{{{code_content}}}')
+        
+        # 清理多余的空行
+        content = re.sub(r'\n{3,}', '\n\n', content)
+        
+        # 确保段落间有适当的间距
+        content = content.strip()
+        
+        return content
+
     def convert_chapter(self, chapter_num: int) -> bool:
         """转换单个章节"""
         filename = self.chapter_files.get(chapter_num)
@@ -702,6 +844,12 @@ class MarkdownToLatexConverter:
         report["conversion_summary"]["chapters_converted"] = chapters_converted
         
         # 记录生成的文件
+        # 检查摘要文件
+        abstract_file = self.abstract_dir / "abstract.tex"
+        if abstract_file.exists():
+            report["files_generated"].append(str(abstract_file.relative_to(self.base_dir)))
+        
+        # 检查章节文件
         for chapter_num in range(1, 8):
             tex_file = self.chapters_dir / f"chapter-{chapter_num}.tex"
             if tex_file.exists():
@@ -828,25 +976,33 @@ class MarkdownToLatexConverter:
         # 步骤1: 生成优化的LaTeX导言区
         self.generate_latex_preamble()
         
-        # 步骤2: 提取和转换图片
-        self.extract_and_convert_images()
+        # 步骤2: 提取和转换图片（强制重新生成）
+        image_success = self.extract_and_convert_images(force_regenerate=True)
+        if not image_success:
+            print("警告: 图片生成失败，但继续转换流程")
         
         # 步骤3: 处理参考文献
         self.process_references()
         
-        # 步骤4: 转换各章节
+        # 步骤4: 转换摘要
+        abstract_success = self.convert_abstract()
+        if not abstract_success:
+            print("警告: 摘要转换失败")
+        
+        # 步骤5: 转换各章节
         success_count = 0
         for chapter_num in range(1, 8):
             if self.convert_chapter(chapter_num):
                 success_count += 1
         
-        # 步骤5: 生成报告
+        # 步骤6: 生成报告
         report = self.generate_conversion_report()
         
         # 打印摘要
         print("\n" + "="*60)
         print("转换完成! (v4 - 浮动体优化版)")
-        print(f"成功转换章节: {success_count}/{len(self.chapter_files)}")
+        print(f"摘要转换: {'成功' if abstract_success else '失败'}")
+        print(f"成功转换章节: {success_count}/{len(self.chapter_files)-1}")  # 减1是因为第0章是摘要
         print(f"总图片数量: {report['conversion_summary']['total_figures']}")
         print(f"总表格数量: {report['conversion_summary']['total_tables']}")
         print(f"总参考文献: {report['conversion_summary']['total_references']}")

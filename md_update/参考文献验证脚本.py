@@ -46,7 +46,7 @@ def main():
     chapter_files = [
         "/Users/max/src/duckdb/md_update/第一章-绪论.md",
         "/Users/max/src/duckdb/md_update/第二章-相关背景与理论基础.md",
-        "/Users/max/src/duckdb/md_update/第三章-动态缓存管理.md",
+        "/Users/max/src/duckdb/md_update/第三章-基于布隆过滤器的SQL和CTE动态缓存技术.md",
         "/Users/max/src/duckdb/md_update/第四章-动态缓存更新技术与持久化技术.md",
         "/Users/max/src/duckdb/md_update/第五章-实验与分析.md",
         "/Users/max/src/duckdb/md_update/第六章-总结与展望.md"

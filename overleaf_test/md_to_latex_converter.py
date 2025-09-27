@@ -31,7 +31,7 @@ class MarkdownToLatexConverter:
         self.chapter_files = {
             1: "第一章-绪论.md",
             2: "第二章-相关背景与理论基础.md", 
-            3: "第三章-动态缓存管理.md",
+            3: "第三章-基于布隆过滤器的SQL和CTE动态缓存技术.md",
             4: "第四章-动态缓存更新技术与持久化技术.md",
             5: "第五章-实验与分析.md",
             6: "第六章-总结与展望.md"

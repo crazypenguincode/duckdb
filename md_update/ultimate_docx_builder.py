@@ -26,7 +26,7 @@ MERGED_DOCX = BASE_DIR / "ultimate_merged_thesis.docx"
 CHAPTERS = [
     "第一章-绪论.md",
     "第二章-相关背景与理论基础.md", 
-    "第三章-动态缓存管理.md",
+    "第三章-基于布隆过滤器的SQL和CTE动态缓存技术.md",
     "第四章-动态缓存更新技术与持久化技术.md",
     "第五章-实验与分析.md",
     "第六章-总结与展望.md",

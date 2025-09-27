@@ -29,7 +29,7 @@
 软件环境的配置为整个测试体系提供了稳定可靠的基础平台。开发环境使用Python 3.13.7作为主要开发语言，其丰富的科学计算库和数据分析工具为实验数据的处理和分析提供了强大支持。编译工具链采用Apple Clang 16.0.0，该编译器针对Apple Silicon架构进行了专门优化，能够生成高效的原生代码，确保测试程序的性能表现。构建系统使用CMake 4.0.2，提供了跨平台的项目构建能力和灵活的配置管理功能。
 
 \begin{table}[htbp]
-    \caption{实验平台硬件配置详情}
+    \caption{软件环境配置信息}
     \label{table6_2}
     \centering
     \begin{tabular}{p{4.5cm}p{4.5cm}p{4.5cm}}
@@ -58,7 +58,7 @@ TPC-DS基准测试相比TPC-H具有更高的复杂度和更广泛的查询模式
 性能监控工具体系为实验过程提供了全方位的性能观测能力，确保能够准确捕获系统的各项性能指标。系统级监控通过macOS内置的Activity Monitor实现，能够实时监控CPU使用率、内存占用、磁盘I/O、网络流量等基础系统资源的使用情况。应用级性能分析使用Xcode工具链中的Instruments工具，该工具提供了时间分析、内存泄漏检测、CPU性能分析等高级功能，能够深入分析应用程序的性能瓶颈和资源使用模式。数据库级监控利用DuckDB 1.3.2内置的监控功能，能够精确测量查询执行时间、缓存统计信息、存储I/O等数据库特定的性能指标。
 
 \begin{table}[htbp]
-    \caption{软件环境配置信息}
+    \caption{性能监控工具配置信息}
     \label{table6_3}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -89,7 +89,7 @@ TPC-H基准数据集作为业界公认的决策支持系统标准测试工具，
 TPC-H数据集的生成过程采用标准化的dbgen工具，支持多种规模因子的数据生成，从1GB的小规模测试数据到100GB的大规模数据集，能够测试系统在不同数据量下的性能表现。数据生成过程严格遵循TPC-H规范，确保生成的数据具有真实商业数据的统计特征和分布规律。生成的数据经过系统化的加载和索引构建过程，形成了标准化的测试数据集，为后续的性能测试提供了一致可靠的数据基础。
 
 \begin{table}[htbp]
-    \caption{性能监控工具配置信息}
+    \caption{TPC-H基准数据集表结构}
     \label{table6_4}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -112,7 +112,7 @@ TPC-H查询集的设计体现了现代分析型数据库系统面临的典型查
 TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模式覆盖，更适合评估现代数据仓库和分析系统的综合性能\cite{c51}。该数据集模拟零售业务场景，包含24个基础表，构成了完整的零售数据仓库模型。数据模型的设计充分考虑了现代零售业务的复杂性，包括多渠道销售、复杂的促销策略、详细的客户行为分析等业务特征。99个标准查询覆盖了报表查询、即席查询、迭代式OLAP、数据挖掘等多种典型应用场景，为查询缓存系统提供了更加全面和深入的测试覆盖。
 
 \begin{table}[htbp]
-    \caption{TPC-H基准数据集表结构}
+    \caption{TPC-DS基准数据集核心表结构}
     \label{table6_5}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -130,7 +130,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 自定义测试数据集的设计填补了标准基准测试在查询缓存特定场景下的测试空白。这些数据集专门针对查询缓存系统的核心功能进行设计，能够更精确地评估缓存技术的效果。重复查询集包含1000个查询，其中80\%的查询是重复的，这种高重复率的设计能够直接测试缓存系统的命中率和响应时间改善效果。参数化查询集包含500个查询模板，通过参数变化生成大量相似但不完全相同的查询，专门用于测试SQL标准化算法的效果和缓存命中率的提升。
 
 \begin{table}[htbp]
-    \caption{TPC-DS基准数据集核心表结构}
+    \caption{自定义测试数据集配置}
     \label{table6_6}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -169,14 +169,14 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 \subsubsection{详细性能数据分析}
 
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
-\caption{自定义测试数据集配置} \label{table6_7} \\
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
+\caption{查询缓存性能实测数据} \label{table6_7} \\
 \hline
 查询类型 & 无缓存平均(ms) & 缓存平均(ms) & 缓存命中平均(ms) & 性能提升(\%) & 测试次数 \\
 \hline
 \endfirsthead
 
-\multicolumn{6}{c}{{续表 自定义测试数据集配置}} \\
+\multicolumn{6}{c}{{续表 查询缓存性能实测数据}} \\
 \hline
 查询类型 & 无缓存平均(ms) & 缓存平均(ms) & 缓存命中平均(ms) & 性能提升(\%) & 测试次数 \\
 \hline
@@ -218,14 +218,14 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 多次数测试的结果揭示了查询缓存系统在不同测试强度下的性能表现规律，为理解系统的稳定性和可靠性提供了重要数据支撑。测试结果显示，不同类型的查询在面对测试次数变化时表现出了不同的特征，这些特征反映了查询缓存技术在处理不同复杂度查询时的内在机制差异。
 
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
-\caption{查询缓存性能实测数据} \label{table6_8} \\
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
+\caption{测试稳定性分析-标准差} \label{table6_8} \\
 \hline
 测试次数/百分比 & 简单聚合 & 多表连接 & 复杂分析 & 窗口函数 & 平均提升 \\
 \hline
 \endfirsthead
 
-\multicolumn{6}{c}{{续表 查询缓存性能实测数据}} \\
+\multicolumn{6}{c}{{续表 测试稳定性分析-标准差}} \\
 \hline
 测试次数/百分比 & 简单聚合 & 多表连接 & 复杂分析 & 窗口函数 & 平均提升 \\
 \hline
@@ -268,7 +268,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 	\caption{不同测试次数下执行时间标准差变化趋势}
 	\label{fig6_6_5}
 \end{figure}
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
 \caption{不同测试次数的性能提升对比} \label{table6_9} \\
 \hline
 查询类型 & 10次(ms) & 50次(ms) & 100次(ms) & 200次(ms) & 稳定性趋势 \\
@@ -303,14 +303,14 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 	\caption{查询缓存测试数据集架构}
 	\label{fig6_6_6}
 \end{figure}
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
-\caption{测试稳定性分析-标准差} \label{table6_10} \\
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
+\caption{布隆过滤器配置策略} \label{table6_10} \\
 \hline
 数据集类型 & 数据规模 & 查询特点 & 测试目标 & 缓存提升 & 状态 \\
 \hline
 \endfirsthead
 
-\multicolumn{6}{c}{{续表 测试稳定性分析-标准差}} \\
+\multicolumn{6}{c}{{续表 布隆过滤器配置策略}} \\
 \hline
 数据集类型 & 数据规模 & 查询特点 & 测试目标 & 缓存提升 & 状态 \\
 \hline
@@ -369,7 +369,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 	\label{fig6_6_11}
 \end{figure}
 \begin{table}[htbp]
-    \caption{自定义表详细测试结果：}
+    \caption{TPC-H查询布隆过滤器性能测试结果（1000次测试）}
     \label{table6_11}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -392,7 +392,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 	\label{fig6_6_12}
 \end{figure}
 \begin{table}[htbp]
-    \caption{自定义表详细测试结果：}
+    \caption{重复查询集布隆过滤器性能测试（10000次测试）}
     \label{table6_12}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -445,7 +445,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过运行专门的CTE缓存测试脚本，获得了以下关键发现：
 
 \begin{table}[htbp]
-    \caption{TPC-DS详细测试结果：}
+    \caption{参数化查询集布隆过滤器性能测试（10000次测试）}
     \label{table6_13}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -476,7 +476,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 布隆过滤器作为查询缓存系统的核心组件，其配置参数直接影响系统的整体性能。计算了不同预期元素数量和目标假阳性率下的最优配置参数，设计了五种不同的布隆过滤器配置策略：
 
 \begin{table}[htbp]
-    \caption{TPC-DS详细测试结果：}
+    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
     \label{table6_14}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -501,7 +501,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{TPC-H查询性能实测结果}
 
 \begin{table}[htbp]
-    \caption{TPC-DS详细测试结果：}
+    \caption{缓存有效性测试结果}
     \label{table6_15}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -534,7 +534,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{重复查询集测试结果}
 
 \begin{table}[htbp]
-    \caption{TPC-DS详细测试结果：}
+    \caption{LRU策略在不同访问模式下的性能}
     \label{table6_16}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -552,7 +552,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsubsection{参数化查询集测试结果}
 
 \begin{table}[htbp]
-    \caption{布隆过滤器配置策略}
+    \caption{TTL策略性能对比}
     \label{table6_17}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -574,7 +574,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 	\label{fig6_6_16}
 \end{figure}
 \begin{table}[htbp]
-    \caption{布隆过滤器配置策略}
+    \caption{机器学习策略性能指标}
     \label{table6_18}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -600,7 +600,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过对不同类型查询的实际测试，验证了缓存机制的有效性：
 
 \begin{table}[htbp]
-    \caption{重复查询集布隆过滤器性能测试（10000次测试）}
+    \caption{融合算法性能对比}
     \label{table6_19}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -619,7 +619,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 通过模拟不同访问模式，验证LRU策略在各种场景下的表现：
 
 \begin{table}[htbp]
-    \caption{参数化查询集布隆过滤器性能测试（10000次测试）}
+    \caption{不同时段的策略切换效果}
     \label{table6_20}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -645,7 +645,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 测试不同TTL设置对缓存性能的影响：
 
 \begin{table}[htbp]
-    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
+    \caption{持久化策略综合对比}
     \label{table6_21}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -671,7 +671,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证基于机器学习的动态缓存管理策略：
 
 \begin{table}[htbp]
-    \caption{布隆过滤器综合性能统计（基于1000+20000次测试）}
+    \caption{多进程环境下缓存持久化效果对比}
     \label{table6_22}
     \centering
     \begin{tabular}{p{4.5cm}p{4.5cm}p{4.5cm}}
@@ -698,7 +698,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 验证多策略融合的效果
 
 \begin{table}[htbp]
-    \caption{缓存有效性测试结果}
+    \caption{文件系统跨进程缓存性能测试结果}
     \label{table6_23}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -714,7 +714,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
     \end{tabular}
 \end{table}
 \begin{table}[htbp]
-    \caption{LRU策略在不同访问模式下的性能}
+    \caption{自适应参数调优性能对比结果}
     \label{table6_24}
     \centering
     \begin{tabular}{p{3.2cm}p{3.2cm}p{3.2cm}p{3.2cm}}
@@ -743,7 +743,7 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 自适应调优框架的核心技术特征包括，采用梯度下降法的在线学习算法，能够实时更新性能模型权重；支持多维参数优化，可同时调整缓存大小、内存限制、TTL和淘汰策略；基于历史数据的性能预测模型，能够准确预测不同配置下的性能表现；以及根据系统负载动态调整调优触发条件的自适应阈值机制。这些技术共同构成了一个智能化的动态调优系统。
 
 \begin{table}[htbp]
-    \caption{TTL策略性能对比}
+    \caption{自定义表详细测试结果：}
     \label{table6_25}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -788,14 +788,14 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 \subsection{持久化策略对比验证}
 基于实际测试和理论分析，各持久化策略的性能特征对比：
 
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
-\caption{不同时段的策略切换效果} \label{table6_26} \\
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
+\caption{TPC-H详细测试结果：} \label{table6_26} \\
 \hline
 策略类型 & 平均响应时间 & 内存使用 & 持久性 & 适用场景 & 综合评分 \\
 \hline
 \endfirsthead
 
-\multicolumn{6}{c}{{续表 不同时段的策略切换效果}} \\
+\multicolumn{6}{c}{{续表 TPC-H详细测试结果：}} \\
 \hline
 策略类型 & 平均响应时间 & 内存使用 & 持久性 & 适用场景 & 综合评分 \\
 \hline
@@ -823,7 +823,7 @@ WAL格式 & 快 (22ms) & 中 & 高 & 通用生产环境 & 8.2/10 \\
 测试涵盖了四种不同复杂度的查询类型：1) 简单聚合查询，用于基础性能基准测试；2) 复杂连接查询，包含CTE和多表连接操作以评估复杂关系处理能力；3) 窗口函数查询，通过ROW\_NUMBER、LAG和SUM等函数测试分析功能性能；4) 递归CTE查询，以斐波那契数列计算验证递归查询执行效率。这四种场景全面覆盖了从基础到高级的查询复杂度，用于系统性能评估。
 
 \begin{table}[htbp]
-    \caption{自适应参数调优性能对比结果}
+    \caption{TPC-DS详细测试结果：}
     \label{table6_27}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -854,14 +854,14 @@ WAL格式 & 快 (22ms) & 中 & 高 & 通用生产环境 & 8.2/10 \\
 
 \textbf{测试结果}：
 
-\begin{longtable}{p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}p{2.2cm}}
-\caption{自适应参数调优性能对比结果} \label{table6_28} \\
+\begin{longtable}{p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}p{2cm}}
+\caption{表6.28} \label{table6_28} \\
 \hline
 查询类型 & 首次执行(ms) & 缓存读取(ms) & 无缓存执行(ms) & 加速比 & 性能提升(\%) \\
 \hline
 \endfirsthead
 
-\multicolumn{6}{c}{{续表 自适应参数调优性能对比结果}} \\
+\multicolumn{6}{c}{{续表 表6.28}} \\
 \hline
 查询类型 & 首次执行(ms) & 缓存读取(ms) & 无缓存执行(ms) & 加速比 & 性能提升(\%) \\
 \hline

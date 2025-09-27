@@ -32,9 +32,10 @@ class MarkdownToLatexConverter:
             1: "第一章-绪论.md",
             2: "第二章-相关背景与理论基础.md", 
             3: "第三章-动态缓存管理.md",
-            4: "第四章-动态缓存更新技术与持久化技术.md",
-            5: "第五章-实验与分析.md",
-            6: "第六章-总结与展望.md"
+            4: "第四章-智能缓存替换策略.md",
+            5: "第五章-持久化存储技术.md",
+            6: "第六章-实验与分析.md",
+            7: "第七章-总结与展望.md"
         }
         
         # 图片计数器
@@ -689,16 +690,19 @@ class MarkdownToLatexConverter:
             }
         }
         
-        for chapter_num in range(1, 7):
+        chapters_converted = 0
+        for chapter_num in range(1, 8):
             if chapter_num in self.figure_counter or chapter_num in self.table_counter:
-                report["conversion_summary"]["chapters_converted"] += 1
+                chapters_converted += 1
                 report["chapter_details"][f"chapter_{chapter_num}"] = {
                     "figures": self.figure_counter.get(chapter_num, 0),
                     "tables": self.table_counter.get(chapter_num, 0)
                 }
         
+        report["conversion_summary"]["chapters_converted"] = chapters_converted
+        
         # 记录生成的文件
-        for chapter_num in range(1, 7):
+        for chapter_num in range(1, 8):
             tex_file = self.chapters_dir / f"chapter-{chapter_num}.tex"
             if tex_file.exists():
                 report["files_generated"].append(str(tex_file.relative_to(self.base_dir)))
@@ -832,7 +836,7 @@ class MarkdownToLatexConverter:
         
         # 步骤4: 转换各章节
         success_count = 0
-        for chapter_num in range(1, 7):
+        for chapter_num in range(1, 8):
             if self.convert_chapter(chapter_num):
                 success_count += 1
         

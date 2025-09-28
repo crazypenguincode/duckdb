@@ -1,0 +1,82 @@
+{
+  "conversion_summary": {
+    "total_chapters": 8,
+    "chapters_converted": 7,
+    "total_figures": 0,
+    "total_tables": 25,
+    "total_references": 67,
+    "table_titles_found": 24
+  },
+  "chapter_details": {
+    "chapter_1": {
+      "figures": 0,
+      "tables": 0
+    },
+    "chapter_2": {
+      "figures": 0,
+      "tables": 0
+    },
+    "chapter_3": {
+      "figures": 0,
+      "tables": 4
+    },
+    "chapter_4": {
+      "figures": 0,
+      "tables": 0
+    },
+    "chapter_5": {
+      "figures": 0,
+      "tables": 3
+    },
+    "chapter_6": {
+      "figures": 0,
+      "tables": 18
+    },
+    "chapter_7": {
+      "figures": 0,
+      "tables": 0
+    }
+  },
+  "files_generated": [
+    "overleaf/abstract/abstract.tex",
+    "overleaf/chapters/chapter-1.tex",
+    "overleaf/chapters/chapter-2.tex",
+    "overleaf/chapters/chapter-3.tex",
+    "overleaf/chapters/chapter-4.tex",
+    "overleaf/chapters/chapter-5.tex",
+    "overleaf/chapters/chapter-6.tex",
+    "overleaf/chapters/chapter-7.tex"
+  ],
+  "improvements_v5": {
+    "table_title_positioning": "改进表格标题匹配，基于位置查找最近标题",
+    "enhanced_table_detection": "增强表格检测，支持更宽松的格式匹配",
+    "debugging_output": "添加详细的调试输出，便于问题诊断",
+    "title_extraction_logging": "记录表格标题提取过程，便于验证"
+  },
+  "table_titles_extracted": {
+    "3.1": "布隆过滤器配置策略",
+    "3.2": "TPC-H查询布隆过滤器性能测试结果（1000次测试）",
+    "6.6": "自定义测试数据集配置",
+    "6.12": "重复查询集布隆过滤器性能测试（10000次测试）",
+    "5.1": "持久化策略综合对比",
+    "5.2": "多进程环境下缓存持久化效果对比",
+    "5.3": "文件系统跨进程缓存性能测试结果",
+    "6.1": "实验平台硬件配置详情",
+    "6.2": "软件环境配置信息",
+    "6.3": "性能监控工具配置信息",
+    "6.4": "TPC-H基准数据集表结构",
+    "6.7": "查询缓存性能实测数据",
+    "6.9": "不同测试次数的性能提升对比",
+    "6.8": "测试稳定性分析-标准差",
+    "6.50": "自定义表详细测试结果：",
+    "6.51": "TPC-H详细测试结果：",
+    "6.52": "TPC-DS详细测试结果：",
+    "6.31": "自适应参数调优性能对比结果",
+    "6.22": "缓存有效性测试结果",
+    "6.23": "LRU策略在不同访问模式下的性能",
+    "6.24": "TTL策略性能对比",
+    "6.25": "机器学习策略性能指标",
+    "6.26": "融合算法性能对比",
+    "6.27": "不同时段的策略切换效果"
+  }
+}

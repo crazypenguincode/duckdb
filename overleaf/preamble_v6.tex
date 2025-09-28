@@ -1,0 +1,90 @@
+% LaTeX导言区配置 - 融合版本v6
+% 结合v2版本的简单表格转换和v5版本的优化图片处理
+
+\documentclass[12pt,a4paper]{book}
+
+% 基础包
+\usepackage[UTF8]{ctex}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{multicol}
+
+% 页面设置
+\geometry{
+    left=3cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% 浮动体参数优化
+\renewcommand{\topfraction}{0.9}        % 页面顶部浮动体最大比例
+\renewcommand{\bottomfraction}{0.8}     % 页面底部浮动体最大比例
+\setcounter{topnumber}{3}                % 页面顶部最多浮动体数量
+\setcounter{bottomnumber}{3}             % 页面底部最多浮动体数量
+\setcounter{totalnumber}{4}              % 每页最多浮动体总数
+\renewcommand{\textfraction}{0.07}      % 页面文本最小比例
+\renewcommand{\floatpagefraction}{0.7}  % 浮动页面浮动体最小比例
+
+% 图表间距优化
+\setlength{\floatsep}{12pt plus 2pt minus 2pt}           % 浮动体之间的间距
+\setlength{\textfloatsep}{20pt plus 2pt minus 4pt}       % 浮动体与文本间距
+\setlength{\intextsep}{14pt plus 2pt minus 2pt}          % 文中浮动体上下间距
+
+% 段落间距
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\parindent}{2em}
+
+% 标题间距
+\usepackage{titlesec}
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{5pt}
+\titlespacing*{\subsubsection}{0pt}{8pt}{4pt}
+
+% 图表标题格式
+\usepackage{caption}
+\captionsetup{
+    font=small,
+    labelfont=bf,
+    textfont=normal,
+    justification=centering,
+    singlelinecheck=false,
+    skip=10pt
+}
+
+% 表格优化
+\usepackage{tabularx}
+\renewcommand{\arraystretch}{1.2}
+
+% 数学公式
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+% 参考文献
+\usepackage{cite}
+
+% 超链接
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
+
+% 代码显示
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+
+% 防止孤行和寡行
+\widowpenalty=10000
+\clubpenalty=10000
+
+% 页眉页脚
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\leftmark}
+\fancyhead[RE]{\rightmark}
+\renewcommand{\headrulewidth}{0.4pt}

@@ -1,8 +1,14 @@
-graph LR
+flowchart LR
     A[SQL查询请求] --> B[布隆过滤器预筛选]
-    B --> C{命中}
-    C -->|否| D[直接执行查询]
-    C -->|是| E[缓存查找]
+    B --> C{命中检测}
+    C -->|No| D[直接执行查询]
+    C -->|Yes| E[缓存查找]
     E --> F{缓存命中}
-    F -->|是| G[返回缓存结果]
-    F -->|否| H[执行查询并缓存]
+    F -->|Yes| G[返回缓存结果]
+    F -->|No| H[执行查询并缓存]
+    D --> I[返回查询结果]
+    H --> I
+    
+    style B fill:#e3f2fd
+    style E fill:#e8f5e8
+    style G fill:#fff3e0

@@ -1,0 +1,77 @@
+{
+  "conversion_summary": {
+    "total_chapters": 8,
+    "chapters_converted": 6,
+    "total_figures": 37,
+    "total_tables": 25,
+    "total_references": 79
+  },
+  "chapter_details": {
+    "chapter_1": {
+      "figures": 2,
+      "tables": 0
+    },
+    "chapter_2": {
+      "figures": 2,
+      "tables": 0
+    },
+    "chapter_3": {
+      "figures": 5,
+      "tables": 4
+    },
+    "chapter_4": {
+      "figures": 5,
+      "tables": 0
+    },
+    "chapter_5": {
+      "figures": 4,
+      "tables": 3
+    },
+    "chapter_6": {
+      "figures": 19,
+      "tables": 18
+    },
+    "chapter_7": {
+      "figures": 0,
+      "tables": 0
+    }
+  },
+  "files_generated": [
+    "overleaf/abstract/abstract.tex",
+    "overleaf/chapters/chapter-1.tex",
+    "overleaf/chapters/chapter-2.tex",
+    "overleaf/chapters/chapter-3.tex",
+    "overleaf/chapters/chapter-4.tex",
+    "overleaf/chapters/chapter-5.tex",
+    "overleaf/chapters/chapter-6.tex",
+    "overleaf/chapters/chapter-7.tex"
+  ],
+  "version_info": {
+    "version": "v6 - 融合版本",
+    "improvements": {
+      "table_conversion": "使用v2版本的简单有效表格转换，避免v5版本的复杂逻辑导致的错乱",
+      "image_processing": "使用v5版本的优化图片处理，包括智能浮动体和强制重新生成",
+      "stability": "结合两个版本的优点，确保转换结果的稳定性和正确性"
+    }
+  },
+  "detailed_statistics": {
+    "figure_counter": {
+      "1": 2,
+      "2": 2,
+      "3": 5,
+      "4": 5,
+      "5": 4,
+      "6": 19,
+      "7": 0
+    },
+    "table_counter": {
+      "1": 0,
+      "2": 0,
+      "3": 4,
+      "4": 0,
+      "5": 3,
+      "6": 18,
+      "7": 0
+    }
+  }
+}

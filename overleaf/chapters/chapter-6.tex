@@ -7,17 +7,17 @@
 本研究的实验平台基于Apple Silicon架构构建，采用统一内存架构设计，为高性能数据库查询缓存系统提供了理想的测试环境。该平台的选择充分考虑了现代数据库系统对计算性能、内存带宽和存储I/O的综合要求，特别是针对查询缓存系统的特殊需求进行了优化配置。实验平台采用单机配置策略，所有测试均在同一台设备上进行，这种设计不仅确保了测试结果的一致性和可重现性，还避免了网络延迟和分布式环境复杂性对实验结果的干扰。
 
 \begin{table}[!htb]
-    \caption{缓存有效性测试结果}
+    \caption{实验平台硬件配置详情}
     \label{table6_1}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
         \hline
         组件 & 规格 & 数量 & 备注 \\
         \hline
-        CPU & Apple M4 Pro & 14核心 (10性能+4效率) & ARM64架构，集成GPU \\
+        CPU & Apple M4 Pro & 14核心 & ARM64架构，集成GPU \\
         内存 & 统一内存架构 & 48GB & 高带宽内存 \\
-        存储 & Apple SSD & 1TB & 顺序读写速度: 15360.9/4137.0 MB/s \\
-        网络 & 集成网络控制器 & Wi-Fi 6E + 蓝牙5.3 & 支持高速无线连接 \\
+        存储 & Apple SSD & 1TB & 顺序读写: 15360/4137MB/s \\
+        网络 & 集成网络控制器 & Wi-Fi 6E & 支持高速无线连接 \\
         主板 & MacBook Pro 16 & M4 Pro芯片组 & 集成设计 \\
         \hline
     \end{tabular}
@@ -32,7 +32,7 @@
 测试工具的选择和配置是确保实验结果准确性和可重现性的关键因素。本研究根据测试目标的不同，将测试工具体系分为查询缓存性能测试工具和数据库基准测试工具两大类别。查询缓存性能测试工具专门针对缓存系统的核心功能进行深入评估，包括缓存命中率、响应时间、内存利用效率等关键性能指标。数据库基准测试工具则从整体系统性能的角度，评估查询缓存技术对数据库系统整体性能的提升效果，确保技术改进能够在实际应用场景中产生显著的性能收益。
 
 \begin{table}[!htb]
-    \caption{实验平台硬件配置详情}
+    \caption{软件环境配置信息}
     \label{table6_2}
     \centering
     \begin{tabular}{p{4cm}p{4cm}p{4cm}}
@@ -59,7 +59,7 @@ TPC-DS基准测试相比TPC-H具有更高的复杂度和更广泛的查询模式
 性能监控工具体系为实验过程提供了全方位的性能观测能力，确保能够准确捕获系统的各项性能指标。
 
 \begin{table}[!htb]
-    \caption{软件环境配置信息}
+    \caption{性能监控工具配置信息}
     \label{table6_3}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
@@ -93,7 +93,7 @@ TPC-H基准数据集作为业界公认的决策支持系统标准测试工具，
 TPC-H数据集的生成过程采用标准化的dbgen工具，支持多种规模因子的数据生成，从1GB的小规模测试数据到100GB的大规模数据集，能够测试系统在不同数据量下的性能表现。数据生成过程严格遵循TPC-H规范，确保生成的数据具有真实商业数据的统计特征和分布规律。生成的数据经过系统化的加载和索引构建过程，形成了标准化的测试数据集，为后续的性能测试提供了一致可靠的数据基础。
 
 \begin{table}[!htb]
-    \caption{性能监控工具配置信息}
+    \caption{TPC-H基准数据集表结构}
     \label{table6_4}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
@@ -143,7 +143,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 \subsubsection{详细性能数据分析}
 
 \begin{table}[!htb]
-    \caption{TPC-H基准数据集表结构}
+    \caption{查询缓存性能实测数据}
     \label{table6_5}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -190,17 +190,16 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 多次数测试的结果揭示了查询缓存系统在不同测试强度下的性能表现规律，为理解系统的稳定性和可靠性提供了重要数据支撑。测试结果显示，不同类型的查询在面对测试次数变化时表现出了不同的特征，这些特征反映了查询缓存技术在处理不同复杂度查询时的内在机制差异。
 
 \begin{table}[!htb]
-    \caption{查询缓存性能实测数据}
+    \caption{不同测试次数的性能提升百分比}
     \label{table6_6}
     \centering
-    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
+    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
-        测试次数/百分比 & 简单聚合 & 多表连接 & 复杂分析 & 窗口函数 & 平均提升 \\
+        测试次数 & 简单聚合 & 多表连接 & 复杂分析 & 窗口函数 \\
         \hline
-        10次 & 53.85 & 76.92 & 56.28 & 76.92 & 65.99 \\
-        50次 & 59.15 & 76.83 & 55.81 & 60.78 & 63.14 \\
-        100次 & 40.59 & 76.92 & 55.03 & 75.25 & 61.95 \\
-        200次 & 31.38 & 78.87 & 55.10 & 75.12 & 60.12 \\
+        10次 & 53.85 & 76.92 & 56.28 & 76.92 \\
+        100次 & 40.59 & 76.92 & 55.03 & 75.25 \\
+        200次 & 31.38 & 78.87 & 55.10 & 75.12 \\
         \hline
     \end{tabular}
 \end{table}
@@ -238,7 +237,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{不同测试次数的性能提升对比}
+    \caption{测试稳定性分析-标准差(ms)}
     \label{table6_7}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -271,7 +270,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{测试稳定性分析-标准差(ms)}
+    \caption{自定义表详细测试结果：}
     \label{table6_8}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -337,7 +336,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{自定义表详细测试结果：}
+    \caption{TPC-H详细测试结果：}
     \label{table6_9}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -362,7 +361,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 \end{figure}
 
 \begin{table}[!htb]
-    \caption{TPC-H详细测试结果：}
+    \caption{TPC-DS详细测试结果：}
     \label{table6_10}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -421,7 +420,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 通过运行专门的CTE缓存测试脚本，获得了以下关键发现：
 
 \begin{table}[!htb]
-    \caption{TPC-DS详细测试结果：}
+    \caption{CTE缓存阶段验证测试结果}
     \label{table6_11}
     \centering
     \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
@@ -456,7 +455,7 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 通过对不同类型查询的实际测试，验证了缓存机制的有效性：
 
 \begin{table}[!htb]
-    \caption{CTE缓存阶段验证测试结果}
+    \caption{缓存有效性测试结果}
     \label{table6_12}
     \centering
     \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}

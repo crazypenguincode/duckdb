@@ -297,16 +297,34 @@ class MarkdownToLatexConverter:
         return content
     
     def convert_table_titles(self, content: str) -> str:
-        """提取并存储表格标题信息，然后移除独立的表格标题 - 使用v2版本的简单方式"""
+        """提取并存储表格标题信息，然后移除独立的表格标题 - 按文档顺序存储"""
         pattern = r'\*\*表(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
         
-        def extract_title(match):
-            table_num = match.group(1)  # 如 "5.3"
-            title = match.group(2).strip()  # 如 "性能监控工具配置信息"
-            self.table_titles[table_num] = title
-            return ''  # 移除原始标题
+        # 按照在文档中出现的顺序提取标题
+        matches = list(re.finditer(pattern, content))
         
-        content = re.sub(pattern, extract_title, content)
+        # 为每个章节创建有序的标题列表
+        for match in matches:
+            table_num = match.group(1)  # 如 "6.1"
+            title = match.group(2).strip()  # 如 "实验平台硬件配置详情"
+            
+            # 提取章节号
+            chapter_num = int(table_num.split('.')[0])
+            
+            # 为每个章节维护一个有序的标题列表
+            if not hasattr(self, 'ordered_table_titles'):
+                self.ordered_table_titles = {}
+            if chapter_num not in self.ordered_table_titles:
+                self.ordered_table_titles[chapter_num] = []
+            
+            # 按照出现顺序添加标题
+            self.ordered_table_titles[chapter_num].append(title)
+            
+            # 同时保持原有的字典格式以兼容其他代码
+            self.table_titles[table_num] = title
+        
+        # 移除原始标题
+        content = re.sub(pattern, '', content)
         return content
     
     def escape_latex_special_chars(self, text: str) -> str:
@@ -366,18 +384,15 @@ class MarkdownToLatexConverter:
 
             label = f"table{chapter_num}_{table_num}"
 
-            # 简化标题处理：按顺序使用找到的标题，不进行复杂匹配
+            # 简化标题处理：直接按照表格在文档中的出现顺序匹配标题
             caption = f"表{chapter_num}.{table_num}"  # 默认标题
             
-            # 获取当前章节的所有标题，按照在self.table_titles中的顺序
-            chapter_titles = []
-            for key, title in self.table_titles.items():
-                if key.startswith(f"{chapter_num}."):
-                    chapter_titles.append(title)
-            
-            # 如果有足够的标题，直接使用第table_num个标题
-            if len(chapter_titles) >= table_num:
-                caption = chapter_titles[table_num - 1]
+            # 使用有序的标题列表，直接按照表格出现的顺序获取标题
+            if (hasattr(self, 'ordered_table_titles') and 
+                chapter_num in self.ordered_table_titles and
+                len(self.ordered_table_titles[chapter_num]) >= table_num):
+                # 直接使用第table_num个标题（索引从0开始，所以减1）
+                caption = self.ordered_table_titles[chapter_num][table_num - 1]
             
             # 使用v2版本的简单table环境，不使用复杂的longtable
             latex_table = f"""

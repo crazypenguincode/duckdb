@@ -325,7 +325,7 @@ class MarkdownToLatexConverter:
         return text
     
     def convert_tables(self, content: str, chapter_num: int) -> str:
-        """转换Markdown表格为LaTeX格式 - 使用v2版本的简单有效实现"""
+        """转换Markdown表格为LaTeX格式 - 按顺序编号，直接使用找到的标题"""
         if chapter_num not in self.table_counter:
             self.table_counter[chapter_num] = 0
 
@@ -366,18 +366,18 @@ class MarkdownToLatexConverter:
 
             label = f"table{chapter_num}_{table_num}"
 
-            # 查找表格标题 - 使用v2版本的简单匹配逻辑
+            # 简化标题处理：按顺序使用找到的标题，不进行复杂匹配
             caption = f"表{chapter_num}.{table_num}"  # 默认标题
             
-            # 尝试从存储的标题中找到最匹配的标题
-            # 按照表格在文档中出现的顺序，找到对应的标题
-            available_keys = [k for k in self.table_titles.keys() if k.startswith(f"{chapter_num}.")]
-            available_keys.sort(key=lambda x: float(x.split('.')[1]))
+            # 获取当前章节的所有标题，按照在self.table_titles中的顺序
+            chapter_titles = []
+            for key, title in self.table_titles.items():
+                if key.startswith(f"{chapter_num}."):
+                    chapter_titles.append(title)
             
-            if len(available_keys) >= table_num:
-                # 使用第table_num个可用的标题
-                actual_key = available_keys[table_num - 1]
-                caption = self.table_titles[actual_key]
+            # 如果有足够的标题，直接使用第table_num个标题
+            if len(chapter_titles) >= table_num:
+                caption = chapter_titles[table_num - 1]
             
             # 使用v2版本的简单table环境，不使用复杂的longtable
             latex_table = f"""

@@ -515,6 +515,9 @@ class MarkdownToLatexConverter:
                         r'\\begin{verbatim}\n\2\n\\end{verbatim}', 
                         content, flags=re.DOTALL)
         
+        # 转换列表格式 - 在其他格式转换之前处理
+        content = self.convert_lists(content)
+        
         # 转换粗体格式
         content = re.sub(r'\*\*([^*]+)\*\*', r'\\textbf{\1}', content)
         
@@ -581,6 +584,123 @@ class MarkdownToLatexConverter:
         content = re.sub(r'\$[^$\n]+\$', restore_underscore_in_math, content)    # 行内公式
         
         return content
+    
+    def convert_lists(self, content: str) -> str:
+        """转换Markdown列表为LaTeX格式"""
+        lines = content.split('\n')
+        result_lines = []
+        in_itemize = False
+        in_enumerate = False
+        current_indent = 0
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            original_line = line
+            stripped_line = line.lstrip()
+            
+            # 计算缩进级别
+            indent_level = len(line) - len(stripped_line)
+            
+            # 检查是否是无序列表项 (- 或 *)
+            unordered_match = re.match(r'^(\s*)([-*])\s+(.+)$', line)
+            # 检查是否是有序列表项 (数字.)
+            ordered_match = re.match(r'^(\s*)(\d+\.)\s+(.+)$', line)
+            
+            if unordered_match:
+                indent, marker, content_text = unordered_match.groups()
+                new_indent = len(indent)
+                
+                # 处理嵌套级别变化
+                if not in_itemize or new_indent != current_indent:
+                    if in_enumerate:
+                        result_lines.append('\\end{enumerate}')
+                        in_enumerate = False
+                    if in_itemize and new_indent != current_indent:
+                        result_lines.append('\\end{itemize}')
+                        in_itemize = False
+                    
+                    if not in_itemize:
+                        result_lines.append('\\begin{itemize}')
+                        in_itemize = True
+                        current_indent = new_indent
+                
+                result_lines.append(f'\\item {content_text}')
+                
+            elif ordered_match:
+                indent, marker, content_text = ordered_match.groups()
+                new_indent = len(indent)
+                
+                # 处理嵌套级别变化
+                if not in_enumerate or new_indent != current_indent:
+                    if in_itemize:
+                        result_lines.append('\\end{itemize}')
+                        in_itemize = False
+                    if in_enumerate and new_indent != current_indent:
+                        result_lines.append('\\end{enumerate}')
+                        in_enumerate = False
+                    
+                    if not in_enumerate:
+                        result_lines.append('\\begin{enumerate}')
+                        in_enumerate = True
+                        current_indent = new_indent
+                
+                result_lines.append(f'\\item {content_text}')
+                
+            else:
+                # 不是列表项
+                if stripped_line == '' or not stripped_line:
+                    # 空行，可能结束列表
+                    if in_itemize or in_enumerate:
+                        # 检查下一行是否还是列表项
+                        next_is_list = False
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if (re.match(r'^[-*]\s+', next_line) or 
+                                re.match(r'^\d+\.\s+', next_line)):
+                                next_is_list = True
+                        
+                        if not next_is_list:
+                            # 结束列表
+                            if in_itemize:
+                                result_lines.append('\\end{itemize}')
+                                in_itemize = False
+                            if in_enumerate:
+                                result_lines.append('\\end{enumerate}')
+                                in_enumerate = False
+                            current_indent = 0
+                    
+                    result_lines.append(original_line)
+                else:
+                    # 非空行，非列表项
+                    # 如果当前在列表中，检查是否是列表项的续行
+                    if (in_itemize or in_enumerate) and indent_level > current_indent:
+                        # 可能是列表项的续行，保持在当前项中
+                        if result_lines and result_lines[-1].startswith('\\item'):
+                            # 将续行内容添加到上一个item中
+                            result_lines[-1] += ' ' + stripped_line
+                        else:
+                            result_lines.append(original_line)
+                    else:
+                        # 结束列表
+                        if in_itemize:
+                            result_lines.append('\\end{itemize}')
+                            in_itemize = False
+                        if in_enumerate:
+                            result_lines.append('\\end{enumerate}')
+                            in_enumerate = False
+                        current_indent = 0
+                        result_lines.append(original_line)
+            
+            i += 1
+        
+        # 确保在文档结尾关闭所有列表
+        if in_itemize:
+            result_lines.append('\\end{itemize}')
+        if in_enumerate:
+            result_lines.append('\\end{enumerate}')
+        
+        return '\n'.join(result_lines)
     
     def parse_reference_to_bibitem(self, ref_num: str, ref_text: str) -> str:
         """将参考文献解析为\\bibitem格式"""

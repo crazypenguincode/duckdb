@@ -285,11 +285,10 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
     \end{tabular}
 \end{table}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.8 四种数据集类型的缓存性能提升对比.png}
+	\includegraphics[width=0.8\textwidth]{images-man/图6.8 四种数据集类型的缓存性能提升.png}
 	\caption{四种数据集类型的缓存性能提升对比}
-	\label{fig6_6_8}
 \end{figure}
 
 \begin{figure}[tbp]
@@ -353,13 +352,6 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsubsection{TPC-DS基准测试结果}
 
-\begin{figure}[tbp]
-	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.12 TPC-DS查询缓存性能对比.png}
-	\caption{TPC-DS查询缓存性能对比}
-	\label{fig6_6_12}
-\end{figure}
-
 \begin{table}[!htb]
     \caption{TPC-DS详细测试结果}
     \label{table6_10}
@@ -376,13 +368,10 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
     \end{tabular}
 \end{table}
 
-\subsubsection{综合性能分析}
-
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.13 TPC标准查询缓存性能提升趋势.png}
-	\caption{TPC标准查询缓存性能提升趋势}
-	\label{fig6_6_13}
+	\includegraphics[width=0.8\textwidth]{images-man/图6.13 多次TPC-DS查询缓存对比.png}
+	\caption{四种数据集类型的缓存性能提升对比}
 \end{figure}
 
 测试结果显示整体性能表现优秀，平均性能提升达到54.2\%（±22.2\%），所有8项测试均成功完成，覆盖率100\%，其中TPC-DS在100次查询测试中实现了70.5\%的最佳性能提升，充分验证了缓存技术的有效性。
@@ -400,22 +389,12 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsection{CTE缓存阶段验证测试}
 
-基于用户提出的"CTE的缓存在什么阶段？是否全部阶段查询处理流程"的问题，本节通过实际测试验证CTE缓存的实现阶段和效果。
-
-\subsection{测试设计与方法}
-
-为了准确验证CTE缓存的实现阶段，设计了专门的测试框架：
-
 \begin{figure}[tbp]
 	\centering
 	\includegraphics[width=0.9\textwidth]{images/6-图6.25 CTE缓存阶段测试架构.png}
 	\caption{CTE缓存阶段测试架构}
 	\label{fig6_6_25}
 \end{figure}
-
-\subsection{实际测试结果验证}
-
-通过运行专门的CTE缓存测试脚本，获得了以下关键发现：
 
 \begin{table}[!htb]
     \caption{CTE缓存阶段验证测试结果}
@@ -488,13 +467,6 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
     \end{tabular}
 \end{table}
 
-\begin{figure}[tbp]
-	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.16 LRU策略在不同访问模式下的命中率.png}
-	\caption{LRU策略在不同访问模式下的命中率}
-	\label{fig6_6_16}
-\end{figure}
-
 测试结果表明，不同访问模式下的缓存命中率呈现显著差异：热点访问模式表现最佳，命中率达到81.0\%，充分体现了LRU算法对高频访问数据的优化特性；而顺序访问模式由于缓存大小限制导致频繁替换，命中率最低（0.0\%）；混合访问模式展现出良好的适应性，在兼顾随机性和局部性的场景下实现了55.0\%的命中率，验证了缓存系统对多样化工作负载的处理能力。
 
 \subsection{TTL策略模拟测试}
@@ -517,11 +489,10 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
     \end{tabular}
 \end{table}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.17 TTL设置对缓存命中率的影响.png}
-	\caption{TTL设置对缓存命中率的影响}
-	\label{fig6_6_17}
+	\includegraphics[width=0.8\textwidth]{images-man/图6.17 TTL设置对缓存命中率的影响.png}
+	\caption{四种数据集类型的缓存性能提升对比}
 \end{figure}
 
 测试结果表明，TTL设置与缓存命中率呈显著正相关关系，3600秒的TTL设置能够实现80.0\%的最高命中率，但实际应用中需要根据数据更新频率动态调整TTL值以平衡数据新鲜度需求，建议结合业务场景特点灵活配置。

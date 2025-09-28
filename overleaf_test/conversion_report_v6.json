@@ -2,7 +2,7 @@
   "conversion_summary": {
     "total_chapters": 8,
     "chapters_converted": 6,
-    "total_figures": 37,
+    "total_figures": 32,
     "total_tables": 25,
     "total_references": 79
   },
@@ -28,7 +28,7 @@
       "tables": 3
     },
     "chapter_6": {
-      "figures": 19,
+      "figures": 14,
       "tables": 18
     },
     "chapter_7": {
@@ -47,11 +47,12 @@
     "overleaf/chapters/chapter-7.tex"
   ],
   "version_info": {
-    "version": "v6 - 融合版本",
+    "version": "v7 - 增强版本",
     "improvements": {
       "table_conversion": "使用v2版本的简单有效表格转换，避免v5版本的复杂逻辑导致的错乱",
       "image_processing": "使用v5版本的优化图片处理，包括智能浮动体和强制重新生成",
-      "stability": "结合两个版本的优点，确保转换结果的稳定性和正确性"
+      "manual_images": "新增支持images-man目录下手动图片的处理和转换",
+      "stability": "结合多个版本的优点，确保转换结果的稳定性和正确性"
     }
   },
   "detailed_statistics": {
@@ -61,7 +62,7 @@
       "3": 5,
       "4": 5,
       "5": 4,
-      "6": 19,
+      "6": 14,
       "7": 0
     },
     "table_counter": {

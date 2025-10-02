@@ -1,0 +1,40 @@
+erDiagram
+    CacheEntry {
+        string query_sql
+        bytes result_data
+        timestamp created_time
+        timestamp last_accessed
+        int access_count
+        int data_size
+        string version_id
+        json metadata
+    }
+    
+    BloomFilter {
+        bitarray bit_vector
+        int hash_count
+        int capacity
+        float false_positive_rate
+        array hash_functions
+    }
+    
+    CTECacheEntry {
+        string cte_name
+        string definition_hash
+        string parameter_hash
+        bytes cte_result
+        int reference_count
+        json dependency_info
+    }
+    
+    IndexStructure {
+        hashmap main_index
+        btree time_index
+        btree size_index
+        btree frequency_index
+        skiplist lru_list
+    }
+    
+    CacheEntry ||--o{ IndexStructure : "indexed_by"
+    CacheEntry ||--|| BloomFilter : "filtered_by"
+    CTECacheEntry ||--o{ CacheEntry : "referenced_by"

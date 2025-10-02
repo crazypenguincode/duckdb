@@ -229,25 +229,24 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsubsection{测试稳定性统计分析}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.5 不同测试次数下执行时间标准差变化趋势.png}
-	\caption{不同测试次数下执行时间标准差变化趋势}
-	\label{fig6_6_5}
+	\includegraphics[width=0.8\textwidth]{images-man/图6.5 不同测试次数下执行时间标准差变化趋势.png}
+	\caption{四种数据集类型的缓存性能提升对比}
 \end{figure}
 
 \begin{table}[!htb]
     \caption{测试稳定性分析-标准差(ms)}
     \label{table6_7}
     \centering
-    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
+    \begin{tabular}{p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}p{2.5cm}}
         \hline
-        查询类型 & 10次 & 50次 & 100次 & 200次 & 稳定性趋势 \\
+        查询类型 & 10次 & 50次 & 100次 & 200次 \\
         \hline
-        简单聚合查询 & 0.38 & 0.30 & 0.29 & 0.30 & 逐步稳定 \\
-        多表连接查询 & 0.48 & 0.44 & 0.48 & 0.45 & 基本稳定 \\
-        复杂分析查询 & 1.85 & 0.81 & 1.01 & 0.80 & 显著改善 \\
-        窗口函数查询 & 0.44 & 0.92 & 0.45 & 0.44 & 波动后稳定 \\
+        简单聚合 & 0.38 & 0.30 & 0.29 & 0.30 \\
+        多表连接 & 0.48 & 0.44 & 0.48 & 0.45 \\
+        复杂分析 & 1.85 & 0.81 & 1.01 & 0.80 \\
+        窗口函数 & 0.44 & 0.92 & 0.45 & 0.44 \\
         \hline
     \end{tabular}
 \end{table}

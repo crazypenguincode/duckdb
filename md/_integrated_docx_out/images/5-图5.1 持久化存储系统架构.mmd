@@ -1,0 +1,18 @@
+graph TB
+    A[持久化请求] --> B[持久化管理层]
+    B --> C[策略选择层]
+    C --> D[内存模式]
+    C --> E[WAL模式]
+    C --> F[物化视图模式]
+    C --> G[混合模式]
+    D --> H[存储执行层]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[数据存储]
+    H --> J[索引维护]
+    H --> K[一致性保证]
+    
+    style C fill:#e3f2fd
+    style H fill:#e8f5e8
+    style I fill:#fff3e0

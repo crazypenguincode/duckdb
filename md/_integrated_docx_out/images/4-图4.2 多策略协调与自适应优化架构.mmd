@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph "策略协调层"
+        SC[StrategyCoordinator]
+        SE[StrategyEvaluator]
+        SS[StrategySwitcher]
+        HS[HybridStrategy]
+    end
+    
+    subgraph "具体策略层"
+        LRU[LRU策略]
+        TTL[TTL策略]
+        ML[机器学习策略]
+        MIXED[混合策略]
+    end
+    
+    subgraph "性能监控层"
+        PM[性能监控器]
+        LM[负载监控器]
+        SM[统计管理器]
+    end
+    
+    subgraph "决策反馈层"
+        FB[反馈收集器]
+        OPT[优化算法]
+        ADJ[参数调整器]
+    end
+    
+    SC --> LRU
+    SC --> TTL
+    SC --> ML
+    SC --> MIXED
+    
+    SE --> PM
+    SS --> LM
+    HS --> SM
+    
+    PM --> FB
+    LM --> FB
+    SM --> FB
+    
+    FB --> OPT
+    OPT --> ADJ
+    ADJ --> SC
+    
+    style SC fill:#e3f2fd
+    style PM fill:#e8f5e8
+    style FB fill:#fff3e0

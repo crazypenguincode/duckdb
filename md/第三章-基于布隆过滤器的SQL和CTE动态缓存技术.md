@@ -1,6 +1,6 @@
 # 第三章 基于布隆过滤器的SQL和CTE动态缓存技术
 
-本章详细介绍了基于布隆过滤器的SQL和CTE动态缓存技术的设计与实现。该系统通过布隆过滤器（Bloom Filter）技术实现高效的前置过滤，结合SQL语句缓存和CTE（Common Table Expression，公共表表达式）子语句缓存技术，构建了一个智能化的查询结果缓存管理系统。系统的核心目标是在保证查询结果准确性的前提下，最大化缓存命中率，减少重复计算，提升数据库系统的整体性能。基于DuckDB项目中新建的QueryCache类的实现，本系统不仅支持传统的查询结果缓存，还引入了多层次的缓存策略和智能化的管理机制。
+本章详细介绍了基于布隆过滤器的SQL和CTE动态缓存技术的设计与实现。该系统通过布隆过滤器（Bloom Filter）技术实现高效的前置过滤，结合SQL语句缓存和CTE（Common Table Expression，公共表表达式）子语句缓存技术，构建了一个高效的查询结果缓存管理系统。系统的核心目标是在保证查询结果准确性的前提下，最大化缓存命中率，减少重复计算，提升数据库系统的整体性能。基于DuckDB项目中QueryCache类的实现，本系统支持传统的查询结果缓存，并通过布隆过滤器实现快速的缓存预筛选机制。
 
 ## 3.1 设计概要
 
@@ -37,7 +37,7 @@ flowchart LR
 
 多层次过滤是系统设计的核心理念之一，通过布隆过滤器、哈希索引、语义分析等多个层次的过滤机制，实现高效的缓存查找和管理。布隆过滤器作为第一层过滤器，能够快速排除绝对不可能命中的查询，显著减少后续处理的开销。哈希索引作为第二层过滤器，通过查询语句的哈希值快速定位可能的缓存条目。语义分析作为第三层过滤器，通过查询语句的语义等价性判断，识别在语法上不同但语义相同的查询，扩大缓存的适用范围。这种多层次的过滤机制既保证了查找的高效性，又提高了缓存的命中率。
 
-智能化管理是系统的另一个重要设计理念，通过机器学习和统计分析技术，实现缓存策略的自动优化和参数调整。系统持续收集查询模式、访问频率、执行成本等统计信息，通过数据挖掘技术识别查询的规律和特征。基于这些分析结果，系统能够自动调整缓存容量、TTL设置、淘汰策略等参数，实现缓存性能的持续优化。智能化管理还包括负载预测功能，通过历史数据和趋势分析预测未来的查询负载，提前调整缓存策略以应对负载变化。
+统计分析管理是系统的另一个重要设计理念，通过访问统计和性能分析技术，实现缓存策略的优化。系统持续收集查询模式、访问频率、执行成本等统计信息，识别查询的规律和特征。基于这些统计结果，系统能够调整缓存容量、TTL设置、淘汰策略等参数，实现缓存性能的优化。系统支持基于访问频率的LRU淘汰策略和基于时间的TTL过期管理。
 
 细粒度缓存是系统设计的第三个核心理念，支持从完整查询结果到子查询片段的多粒度缓存管理。完整查询缓存存储整个SQL语句的执行结果，适用于重复执行的复杂查询。子查询缓存存储CTE、子查询、视图等子组件的结果，能够在不同的查询之间共享中间结果。表达式缓存存储常用表达式和函数的计算结果，避免重复的表达式计算。这种细粒度的缓存策略能够最大化缓存的利用率，提高系统的整体性能。
 
@@ -45,9 +45,45 @@ flowchart LR
 
 ### 3.2.1 布隆过滤器数据结构
 
-布隆过滤器是系统前置过滤的核心数据结构，基于DuckDB项目中BloomFilter类实现。布隆过滤器采用位向量和多个哈希函数的组合，能够高效地判断一个元素是否可能存在于集合中。本系统中的布隆过滤器针对查询缓存的特点进行了专门的优化，包括动态大小调整、多重哈希函数、假阳性率控制等高级特性。布隆过滤器的位向量大小根据预期的查询数量和目标假阳性率动态计算，通过$m = -\frac{n \ln p}{(\ln 2)^2}$公式确定最优的位向量长度，其中n是预期元素数量，p是目标假阳性率。
+布隆过滤器是系统前置过滤的核心数据结构，基于DuckDB项目中BloomFilter类实现。布隆过滤器采用位向量和多个哈希函数的组合，能够高效地判断一个元素是否可能存在于集合中。
 
-哈希函数设计是布隆过滤器性能的关键因素，系统采用多个独立的哈希函数来减少哈希冲突和提高过滤精度。主要使用MurmurHash3、CityHash、xxHash等高性能哈希算法，这些算法具有良好的分布特性和较低的计算开销。哈希函数的数量通过$k = \frac{m}{n} \ln 2$公式计算得出最优值，在假阳性率和计算开销之间取得平衡。系统还实现了哈希函数的动态选择机制，根据数据特征和性能要求选择最适合的哈希算法组合。
+#### 3.2.1.1 核心数据结构
+
+基于实际代码实现，布隆过滤器的核心结构如下：
+
+```cpp
+class BloomFilter {
+public:
+    //! Constructor with specified size and number of hash functions
+    explicit BloomFilter(idx_t size = 1000000, idx_t num_hash_functions = 3);
+    
+    //! Add an element to the bloom filter
+    void Add(const string &element);
+    
+    //! Check if an element might be in the set (may have false positives)
+    bool MightContain(const string &element) const;
+    
+    //! Clear the bloom filter
+    void Clear();
+    
+    //! Get the current false positive probability
+    double GetFalsePositiveRate() const;
+
+private:
+    //! The bit array
+    std::vector<bool> bit_array;
+    //! Number of hash functions to use
+    idx_t num_hash_functions;
+    //! Number of elements added
+    idx_t num_elements;
+    //! Whether the bloom filter is disabled
+    bool disabled;
+};
+```
+
+#### 3.2.1.2 哈希函数实现
+
+系统采用GetHashValues方法生成多个哈希值，通过DuckDB内置的哈希算法实现高效的哈希计算。布隆过滤器支持禁用模式，当size为0时自动禁用，此时MightContain方法始终返回true，强制进行缓存查找。
 
 位向量管理采用高效的位操作和内存管理技术，支持位向量的动态扩展和压缩。位向量使用紧凑的位数组表示，通过位操作指令实现高效的设置和查询操作。内存分配采用内存池技术，预分配大块内存并按需分配，减少内存碎片和分配开销。位向量还支持持久化存储，能够将过滤器状态保存到磁盘并在系统重启时恢复，保证过滤器的连续性。
 
@@ -55,13 +91,59 @@ flowchart LR
 
 ### 3.2.2 查询缓存数据结构
 
-查询缓存的数据结构基于CacheEntry类设计，该类封装了缓存条目的完整信息，包括查询语句、结果数据、元数据、统计信息等。CacheEntry结构提供了丰富的属性和方法来支持复杂的缓存管理需求。查询语句存储采用标准化的SQL文本格式，通过语法分析和标准化处理，消除语句中的空格、注释、大小写等无关差异，确保语义相同的查询能够正确匹配。
+查询缓存的数据结构基于QueryCacheEntry结构设计，该结构封装了缓存条目的完整信息，包括查询结果、时间戳、访问统计等。
 
-结果数据存储是缓存条目的核心组成部分，系统支持多种数据格式的存储，包括行式存储、列式存储和混合存储。行式存储适用于小结果集和OLTP场景，具有较好的插入和更新性能。列式存储适用于大结果集和OLAP场景，具有更好的压缩率和查询性能。混合存储根据数据特征自动选择最优的存储格式，实现性能和空间的最佳平衡。结果数据还支持增量存储，对于部分更新的查询结果，只存储变化的部分，减少存储开销。
+#### 3.2.2.1 核心数据结构
 
-元数据管理维护缓存条目的各种属性信息，包括创建时间、最后访问时间、访问次数、数据大小、依赖关系等。创建时间和最后访问时间用于TTL管理和LRU淘汰策略，访问次数用于LFU策略和热度评估。数据大小信息用于内存管理和容量控制，依赖关系信息用于缓存一致性管理。元数据还包括查询的执行统计信息，如执行时间、CPU使用率、I/O开销等，这些信息为缓存价值评估和策略优化提供重要依据。
+基于实际代码实现，QueryCacheEntry结构如下：
 
-索引结构设计支持多种查询方式和访问模式，主索引基于查询语句的哈希值构建，支持精确匹配查找。辅助索引包括时间索引、大小索引、访问频率索引等，支持范围查询和排序操作。时间索引按照创建时间和访问时间组织缓存条目，支持基于时间的查询和管理操作。大小索引按照数据大小组织条目，支持内存管理和容量控制。访问频率索引按照访问次数和频率组织条目，支持热度分析和淘汰策略。这些索引结构通过B+树、哈希表、跳表等高效数据结构实现，保证了各种操作的高性能。
+```cpp
+struct QueryCacheEntry {
+    //! The cached result
+    unique_ptr<MaterializedQueryResult> result;
+    //! Timestamp when the entry was created
+    std::chrono::steady_clock::time_point created_at;
+    //! Access count for LRU eviction
+    idx_t access_count;
+    //! Last access time
+    std::chrono::steady_clock::time_point last_accessed;
+    //! ML features for this cache entry
+    MLCacheFeatures ml_features;
+    //! ML prediction score (higher = more likely to be accessed again)
+    double ml_score = 0.5;
+    //! Priority for eviction (lower = evict first)
+    double eviction_priority = 0.0;
+    
+    QueryCacheEntry(unique_ptr<MaterializedQueryResult> result_p);
+};
+```
+
+#### 3.2.2.2 缓存配置结构
+
+系统通过QueryCacheConfig结构管理缓存配置参数：
+
+```cpp
+struct QueryCacheConfig {
+    //! Maximum number of cached entries
+    idx_t max_entries = 1000;
+    //! Maximum memory usage in bytes
+    idx_t max_memory_bytes = 100 * 1024 * 1024; // 100MB default
+    //! TTL for cache entries in seconds
+    idx_t ttl_seconds = 3600; // 1 hour default
+    //! Bloom filter size
+    idx_t bloom_filter_size = 1000000;
+    //! Number of hash functions for bloom filter
+    idx_t bloom_filter_hash_functions = 3;
+    //! Enable/disable caching
+    bool enabled = true;
+    //! Cache eviction strategy
+    CacheEvictionStrategy eviction_strategy = CacheEvictionStrategy::TTL_BASED;
+};
+```
+
+#### 3.2.2.3 存储和索引
+
+缓存条目通过哈希表结构存储，使用查询语句的哈希值作为键值快速定位。系统支持TTL过期管理和基于访问统计的LRU淘汰策略。
 
 ```mermaid
 erDiagram
@@ -110,41 +192,166 @@ erDiagram
 
 ### 3.2.3 CTE缓存数据结构
 
-CTE（Common Table Expression）缓存数据结构专门用于管理公共表表达式的缓存，这是系统细粒度缓存策略的重要组成部分。CTE缓存通过CTECacheEntry类实现，该类继承自基础的CacheEntry类，并扩展了CTE特有的属性和方法。CTE缓存的核心思想是将复杂查询中的公共子查询结果进行缓存，使得这些子查询结果能够在不同的查询之间共享，显著提高查询性能和资源利用效率。
+CTE（Common Table Expression）缓存数据结构专门用于管理公共表表达式的缓存，这是系统细粒度缓存策略的重要组成部分。
 
-CTE识别和解析是CTE缓存的基础功能，系统通过SQL解析器识别查询中的CTE定义，提取CTE的名称、定义语句、依赖关系等信息。CTE解析采用递归下降解析算法，能够处理嵌套CTE、递归CTE等复杂情况。解析过程还包括依赖分析，识别CTE之间的依赖关系和执行顺序，为缓存管理和一致性维护提供基础信息。CTE标准化处理消除语句中的格式差异，确保语义相同的CTE能够正确匹配和共享。
+#### 3.2.3.1 CTECacheEntry结构
 
-CTE缓存键设计采用多层次的键值结构，包括CTE名称、定义哈希、参数哈希等组成部分。CTE名称提供基础的标识信息，但由于不同查询中可能使用相同的CTE名称定义不同的逻辑，因此需要结合定义哈希来确保唯一性。定义哈希基于CTE的标准化定义语句计算，确保语义相同的CTE具有相同的哈希值。参数哈希处理CTE中的参数化查询，支持带参数的CTE缓存和匹配。这种多层次的键值设计既保证了缓存的准确性，又支持灵活的匹配和共享。
+基于实际代码实现，CTECacheEntry结构支持多阶段缓存：
 
-CTE结果存储采用专门优化的数据结构，考虑到CTE结果通常是中间结果，具有临时性和共享性的特点。存储格式采用列式存储，提供更好的压缩率和查询性能。内存管理采用引用计数机制，当多个查询共享同一个CTE结果时，通过引用计数避免重复存储。生命周期管理根据CTE的使用情况和依赖关系，自动管理CTE缓存的创建、更新和删除。当CTE不再被任何查询使用时，系统会自动清理相关的缓存条目。
+```cpp
+struct CTECacheEntry {
+    // Parser stage cache
+    unique_ptr<SelectStatement> parsed_statement;
+    CommonTableExpressionMap parsed_cte_map;
+    
+    // Planner stage cache  
+    unique_ptr<LogicalOperator> logical_plan;
+    vector<LogicalType> logical_types;
+    
+    // Optimizer stage cache
+    unique_ptr<LogicalOperator> optimized_plan;
+    vector<LogicalType> optimized_types;
+    
+    // Executor stage cache (existing)
+    unique_ptr<MaterializedQueryResult> execution_result;
+    
+    // Metadata
+    string cte_signature;
+    vector<string> cte_names;
+    std::chrono::steady_clock::time_point created_at;
+    std::chrono::steady_clock::time_point last_accessed;
+    idx_t access_count;
+    
+    // Stage flags
+    bool has_parsed_cache;
+    bool has_logical_cache;
+    bool has_optimized_cache;
+    bool has_execution_cache;
+};
+```
 
-CTE依赖管理维护CTE之间以及CTE与基础表之间的复杂依赖关系，这是确保缓存一致性的关键机制。依赖图采用有向无环图（DAG）结构表示，节点表示CTE或基础表，边表示依赖关系。依赖更新采用增量更新算法，当某个节点发生变化时，系统能够快速识别并更新所有受影响的下游节点。循环依赖检测通过拓扑排序算法实现，确保CTE定义的正确性和可执行性。依赖管理还支持条件依赖，根据查询条件和数据状态动态确定依赖关系。
+#### 3.2.3.2 MultiStageCTECache管理器
+
+系统实现了MultiStageCTECache类来管理CTE的多阶段缓存：
+
+```cpp
+class MultiStageCTECache {
+private:
+    unordered_map<string, unique_ptr<CTECacheEntry>> cache_entries;
+    mutable mutex cache_mutex;
+    
+    // Statistics
+    idx_t parser_hits = 0;
+    idx_t planner_hits = 0; 
+    idx_t optimizer_hits = 0;
+    idx_t executor_hits = 0;
+    idx_t total_requests = 0;
+
+public:
+    string GenerateCTESignature(const CommonTableExpressionMap &cte_map);
+    // 其他缓存管理方法...
+};
+```
+
+#### 3.2.3.3 CTE签名生成
+
+CTE缓存通过GenerateCTESignature方法生成唯一的CTE签名，确保相同语义的CTE能够正确匹配和重用。签名生成基于CTE的查询内容，并通过排序确保一致性。
 
 ## 3.3 操作流程设计
 
 ### 3.3.1 缓存查找流程
 
-缓存查找流程是动态缓存管理系统的核心操作，它通过多层次的查找机制实现高效的缓存命中检测。基于DuckDB项目中QueryCache::Get()方法实现，查找流程采用了分阶段处理的设计，从快速的布隆过滤器预筛选到精确的语义匹配，逐步缩小查找范围，最终确定是否存在有效的缓存条目。整个流程的设计充分考虑了性能、准确性和可扩展性等多个方面，通过精心优化的算法和数据结构，实现了毫秒级的查找响应时间。
+缓存查找流程是动态缓存管理系统的核心操作，它通过布隆过滤器预筛选和精确匹配实现高效的缓存命中检测。基于DuckDB项目中QueryCache的实现，查找流程采用了两阶段处理的设计。
 
-布隆过滤器预筛选是查找流程的第一个阶段，当接收到查询请求时，系统首先对查询语句进行标准化处理，然后计算其哈希值并在布隆过滤器中进行查找。布隆过滤器能够快速判断查询是否可能存在于缓存中，如果返回"不存在"，则可以确定缓存中没有该查询的结果，直接跳过后续的查找步骤，执行原始查询。如果返回"可能存在"，则进入下一阶段的精确查找。布隆过滤器的查找时间复杂度为O(k)，其中k是哈希函数的数量，通常为常数，因此预筛选阶段的开销非常小。
+#### 3.3.1.1 布隆过滤器预筛选
 
-精确匹配查找是流程的第二个阶段，系统使用查询语句的哈希值在主索引中查找对应的缓存条目。主索引采用哈希表结构，支持O(1)时间复杂度的查找操作。查找过程中，系统不仅比较哈希值，还会进行完整的语句比较，确保找到的缓存条目确实对应于当前查询。由于哈希冲突的存在，可能存在多个条目具有相同的哈希值，系统会遍历冲突链表，逐一比较直到找到匹配的条目或确认不存在。
+布隆过滤器预筛选是查找流程的第一个阶段，基于实际代码实现：
 
-语义等价性检查是查找流程的高级特性，当精确匹配失败时，系统会尝试进行语义等价性匹配，识别在语法上不同但语义相同的查询。语义分析包括查询重写、表达式标准化、条件等价性判断等多个方面。查询重写将查询转换为标准形式，消除语法差异但保持语义不变。表达式标准化处理数学表达式、函数调用、常量值等，识别等价的表达式形式。条件等价性判断分析WHERE子句中的条件表达式，识别逻辑等价的条件组合。这种语义匹配能够显著提高缓存的命中率，特别是对于动态生成的查询。
+```cpp
+bool QueryCache::MightContainQuery(const string &query_hash) const {
+    return bloom_filter.MightContain(query_hash);
+}
+```
 
-有效性验证是查找流程的最后阶段，当找到匹配的缓存条目后，系统需要验证该条目是否仍然有效。有效性检查包括TTL验证、依赖关系检查、数据一致性验证等多个方面。TTL验证检查缓存条目是否已经过期，过期的条目会被标记为无效并从缓存中删除。依赖关系检查验证缓存条目依赖的基础数据是否发生变化，如果依赖数据已更新，则缓存条目失效。数据一致性验证通过版本号、时间戳等机制确保缓存数据与实际数据的一致性。只有通过所有有效性检查的缓存条目才会被返回给用户。
+当接收到查询请求时，系统首先计算查询语句的哈希值并在布隆过滤器中进行查找。如果布隆过滤器返回false，则确定缓存中没有该查询的结果，直接执行原始查询。如果返回true，则进入精确查找阶段。
+
+#### 3.3.1.2 精确匹配查找
+
+精确匹配查找使用哈希表结构在缓存中查找对应的条目：
+
+```cpp
+// 在cache哈希表中查找
+auto it = cache.find(query_hash);
+if (it != cache.end()) {
+    // 检查TTL有效性
+    if (!IsExpired(*it->second)) {
+        // 更新访问统计
+        it->second->access_count++;
+        it->second->last_accessed = std::chrono::steady_clock::now();
+        return it->second->result.get();
+    }
+}
+```
+
+#### 3.3.1.3 有效性验证
+
+系统通过IsExpired方法验证缓存条目的有效性：
+
+```cpp
+bool QueryCache::IsExpired(const QueryCacheEntry &entry) const {
+    auto now = std::chrono::steady_clock::now();
+    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.created_at);
+    return age.count() > static_cast<int64_t>(config.ttl_seconds);
+}
+```
+
+TTL验证检查缓存条目是否已经过期，过期的条目会被自动清理。
 
 ### 3.3.2 缓存插入流程
 
-缓存插入流程负责将新的查询结果添加到缓存系统中，这是缓存管理的重要操作之一。基于DuckDB项目中QueryCache::Put()方法的实现，插入流程不仅要处理数据的存储，还要考虑缓存容量管理、冲突处理、索引更新等多个方面。流程设计采用了事务性的处理方式，确保插入操作的原子性和一致性，避免部分插入导致的数据不一致问题。
+缓存插入流程负责将新的查询结果添加到缓存系统中，基于DuckDB项目中QueryCache的Put方法实现。
 
-可缓存性评估是插入流程的第一步，系统需要判断查询结果是否适合缓存。评估标准包括查询类型、结果大小、计算复杂度、访问模式等多个因素。SELECT查询通常适合缓存，而INSERT、UPDATE、DELETE等修改操作不适合缓存。结果大小需要在合理范围内，过大的结果集会消耗过多的缓存空间，过小的结果集缓存收益有限。计算复杂度高的查询更适合缓存，因为缓存能够带来更大的性能提升。访问模式分析预测查询的重复访问概率，只有可能被重复访问的查询才值得缓存。
+#### 3.3.2.1 容量检查和淘汰
 
-容量检查和空间分配是插入流程的关键环节，系统需要确保有足够的空间来存储新的缓存条目。容量检查包括总条目数检查和总内存使用量检查，当接近配置的上限时，系统会触发缓存淘汰操作释放空间。空间分配采用预分配和按需分配相结合的策略，对于小结果集使用预分配的内存池，对于大结果集使用按需分配的内存管理。内存分配还考虑了内存对齐和缓存友好性，通过合理的内存布局提高访问性能。
+插入前首先进行容量检查，当缓存接近容量限制时触发淘汰操作：
 
-数据序列化和存储是插入流程的核心步骤，系统将查询结果转换为适合存储的格式并写入缓存。序列化过程支持多种数据类型，包括基本数据类型、复合数据类型、LOB数据等。序列化格式采用高效的二进制格式，通过压缩算法减少存储空间。存储过程采用写时复制（COW）技术，避免不必要的数据复制。对于大结果集，系统支持分块存储和延迟加载，只在需要时加载部分数据。
+```cpp
+// 检查缓存容量
+if (cache.size() >= config.max_entries) {
+    // 触发LRU淘汰
+    EvictLRU();
+}
+```
 
-索引更新和元数据维护确保新插入的缓存条目能够被正确查找和管理。主索引更新将新条目的哈希值和存储位置添加到哈希表中，处理可能的哈希冲突。辅助索引更新包括时间索引、大小索引、频率索引等的更新，确保各种查询和管理操作的高效性。元数据维护更新缓存的统计信息，包括总条目数、总内存使用量、插入次数等。布隆过滤器更新将新查询的哈希值添加到过滤器中，确保后续查找的正确性。
+#### 3.3.2.2 缓存条目创建
+
+基于实际代码实现，缓存条目创建过程如下：
+
+```cpp
+// Create cache entry
+auto entry = make_uniq<QueryCacheEntry>(std::move(result));
+entry->ml_features = features;
+
+// Add to cache
+cache[query_hash] = std::move(entry);
+```
+
+系统创建QueryCacheEntry对象，存储MaterializedQueryResult结果，并设置相关的元数据信息。
+
+#### 3.3.2.3 布隆过滤器更新
+
+插入成功后，将查询哈希值添加到布隆过滤器中：
+
+```cpp
+// Add to bloom filter
+bloom_filter.Add(query_hash);
+```
+
+这确保后续的查找操作能够正确识别已缓存的查询。
+
+#### 3.3.2.4 统计信息维护
+
+系统维护访问统计信息，包括创建时间、访问次数等，用于后续的缓存管理和淘汰策略。
 
 ### 3.3.3 CTE缓存管理流程
 
@@ -192,15 +399,55 @@ graph LR
 
 ### 3.4.1 基于布隆过滤器的前置过滤技术
 
-基于布隆过滤器的前置过滤技术是动态缓存管理系统的核心创新之一，它通过高效的概率数据结构实现快速的缓存预筛选，显著减少了缓存查找的开销。布隆过滤器的核心优势在于其极低的空间复杂度和时间复杂度，能够在常数时间内判断一个元素是否可能存在于集合中。基于DuckDB项目中BloomFilter类实现，本系统的布隆过滤器针对查询缓存的特点进行了专门的优化和扩展。
+基于布隆过滤器的前置过滤技术是动态缓存管理系统的核心技术之一，它通过高效的概率数据结构实现快速的缓存预筛选，显著减少了缓存查找的开销。
 
-多重哈希函数设计是布隆过滤器性能优化的关键技术，系统采用了多个独立的哈希函数来减少哈希冲突和提高过滤精度。主要使用的哈希算法包括MurmurHash3、CityHash64、xxHash64等高性能哈希函数，这些算法具有良好的分布特性、较低的计算开销和较少的哈希冲突。哈希函数的选择基于查询语句的特征进行优化，对于短查询使用快速哈希算法，对于长查询使用高质量哈希算法。系统还实现了哈希函数的组合技术，通过线性组合、双重哈希等方式从少数基础哈希函数生成多个独立的哈希值，减少哈希计算的开销。
+#### 3.4.1.1 布隆过滤器核心实现
 
-动态大小调整是布隆过滤器适应性的重要特性，系统能够根据缓存条目数量的变化动态调整过滤器的大小和参数。当缓存条目数量增加时，系统会扩大布隆过滤器的位向量长度，保持较低的假阳性率。当缓存条目数量减少时，系统可以缩小过滤器大小，节省内存空间。大小调整采用渐进式重建策略，避免一次性重建带来的性能冲击。重建过程中，系统维护新旧两个过滤器，逐步迁移数据并最终切换到新过滤器。调整策略还考虑了系统负载和资源状况，在系统空闲时进行调整操作。
+基于DuckDB项目中BloomFilter类的实际实现，系统采用以下核心技术：
 
-假阳性率控制是布隆过滤器应用的核心挑战，系统通过多种技术手段将假阳性率控制在可接受的范围内。理论假阳性率通过公式$p = (1 - e^{-kn/m})^k$计算，其中k是哈希函数数量，n是元素数量，m是位向量长度。实际假阳性率通过统计真实的假阳性次数来计算，系统持续监控实际假阳性率与理论值的偏差。当实际假阳性率超过预设阈值时，系统会自动调整过滤器参数或触发重建操作。假阳性处理还包括自适应阈值调整，根据系统性能和用户需求动态调整可接受的假阳性率。
+```cpp
+// 布隆过滤器构造函数
+BloomFilter::BloomFilter(idx_t size, idx_t num_hash_functions) 
+    : bit_array(size > 0 ? size : 1, false), 
+      num_hash_functions(num_hash_functions), 
+      num_elements(0), 
+      disabled(size == 0) {
+    // 如果size为0，禁用布隆过滤器
+    if (size == 0) {
+        printf("DEBUG: BloomFilter disabled (size=0)\n");
+    }
+}
+```
 
-分层布隆过滤器是系统的高级特性，通过多个层次的过滤器实现更精确的过滤效果。第一层过滤器覆盖所有缓存条目，提供基础的过滤能力。第二层过滤器覆盖热点查询，具有更低的假阳性率。第三层过滤器覆盖特定类型的查询，如复杂分析查询、报表查询等。分层设计允许系统根据查询的重要性和特征选择不同精度的过滤器，在性能和准确性之间取得最佳平衡。层间协调机制确保不同层次过滤器之间的一致性和协调工作。
+#### 3.4.1.2 哈希函数和位操作
+
+系统通过GetHashValues方法生成多个哈希值，并使用位数组进行高效的位操作：
+
+```cpp
+void BloomFilter::Add(const string &element) {
+    if (disabled) return;
+    auto hash_values = GetHashValues(element);
+    for (auto hash_val : hash_values) {
+        bit_array[hash_val % bit_array.size()] = true;
+    }
+    num_elements++;
+}
+
+bool BloomFilter::MightContain(const string &element) const {
+    if (disabled) return true; // 禁用时强制缓存查找
+    auto hash_values = GetHashValues(element);
+    for (auto hash_val : hash_values) {
+        if (!bit_array[hash_val % bit_array.size()]) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+#### 3.4.1.3 假阳性率控制
+
+系统提供GetFalsePositiveRate方法计算当前假阳性率，并支持Clear和Resize操作来维护过滤器性能。布隆过滤器支持禁用模式，当需要绕过过滤时，MightContain方法返回true，强制进行精确的缓存查找。
 
 ```mermaid
 flowchart LR
@@ -237,29 +484,100 @@ flowchart LR
 
 ### 3.4.2 基于SQL语句动态缓存技术
 
-基于SQL语句的动态缓存技术是系统的核心功能，它通过智能的查询分析和缓存管理实现高效的SQL查询结果缓存。该技术不仅支持完整SQL语句的缓存，还支持查询片段、子查询、表达式等多粒度的缓存管理。基于DuckDB项目中QueryCache类的实现，系统采用了先进的查询分析技术和缓存策略，能够自动识别可缓存的查询模式，智能管理缓存生命周期，并提供高效的缓存访问接口。
+基于SQL语句的动态缓存技术是系统的核心功能，通过QueryCache类实现高效的SQL查询结果缓存。
 
-查询标准化是SQL缓存技术的基础环节，系统通过语法分析和语义分析将不同格式的SQL语句转换为标准形式，确保语义相同的查询能够正确匹配。标准化过程包括词法标准化、语法标准化和语义标准化三个层次。词法标准化处理关键字大小写、空白字符、注释等格式差异，将查询转换为统一的词法形式。语法标准化处理语句结构的差异，如表别名、列别名、子查询嵌套等，将查询转换为标准的语法树结构。语义标准化处理逻辑等价的表达式，如条件重排、常量折叠、表达式简化等，确保语义相同的查询具有相同的标准形式。这种标准化机制使得参数化查询能够实现85.6%的性能提升。
+#### 3.4.2.1 查询哈希和标准化
 
-参数化查询处理是动态缓存的重要特性，系统能够识别和处理带参数的SQL查询，实现参数化缓存和匹配。参数识别通过模式匹配和语义分析识别查询中的参数位置和类型，包括常量参数、变量参数、表达式参数等。参数抽象将具体的参数值替换为参数占位符，生成参数化的查询模板。参数绑定在查询执行时将实际参数值绑定到查询模板，生成具体的执行查询。参数化缓存允许相同模板但不同参数的查询共享缓存逻辑，显著提高缓存的利用率。
+系统通过查询哈希实现快速的查询匹配：
 
-查询计划缓存是SQL缓存技术的高级特性，系统不仅缓存查询结果，还缓存查询的执行计划，避免重复的查询优化开销。执行计划包括查询的逻辑计划和物理计划，逻辑计划描述查询的逻辑操作序列，物理计划描述具体的执行算法和数据访问路径。计划缓存采用多级缓存结构，L1缓存存储最常用的执行计划，L2缓存存储中等频率的计划，L3缓存存储低频率的计划。计划有效性检查确保缓存的执行计划仍然适用于当前的数据状态和系统环境，包括统计信息检查、索引状态检查、表结构检查等。
+```cpp
+// 查询标准化和哈希计算
+string NormalizeQuery(const string &query) {
+    // 移除多余的空白字符和注释
+    // 标准化关键字大小写
+    // 返回标准化的查询字符串
+}
 
-结果集压缩和存储优化是提高缓存效率的重要技术，系统采用多种压缩算法和存储优化技术减少缓存的空间占用。压缩算法包括通用压缩算法如LZ4、Snappy、ZSTD等，以及专门的数据库压缩算法如字典编码、行程编码、位图压缩等。压缩策略根据数据特征自动选择最优的压缩算法，对于数值数据使用数值压缩，对于字符串数据使用字典压缩，对于稀疏数据使用位图压缩。存储优化包括列式存储、分块存储、增量存储等技术，通过优化数据布局提高访问性能和压缩效果。
+string query_hash = Hash(NormalizeQuery(query));
+```
+
+查询标准化处理包括空白字符规范化、关键字大小写统一等，确保语义相同的查询能够正确匹配。
+
+#### 3.4.2.2 缓存存储和访问
+
+基于实际代码实现的缓存存储结构：
+
+```cpp
+class QueryCache {
+private:
+    //! Bloom filter for fast negative lookups
+    BloomFilter bloom_filter;
+    //! Actual cache storage
+    unordered_map<string, unique_ptr<QueryCacheEntry>> cache;
+    //! Cache configuration
+    QueryCacheConfig config;
+
+public:
+    bool Get(const string &query, MaterializedQueryResult **result);
+    bool Put(const string &query, unique_ptr<MaterializedQueryResult> result);
+};
+```
+
+#### 3.4.2.3 TTL和淘汰策略
+
+系统实现了基于TTL的过期管理和LRU淘汰策略：
+
+```cpp
+bool QueryCache::IsExpired(const QueryCacheEntry &entry) const {
+    auto now = std::chrono::steady_clock::now();
+    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.created_at);
+    return age.count() > static_cast<int64_t>(config.ttl_seconds);
+}
+```
+
+当缓存条目超过配置的TTL时间时，系统会自动将其标记为过期并清理。
+
+#### 3.4.2.4 机器学习特征支持
+
+系统为每个缓存条目维护机器学习特征，用于缓存策略优化：
+
+```cpp
+struct MLCacheFeatures {
+    double query_complexity_score = 0.0;
+    double execution_time_ms = 0.0;
+    double result_size_bytes = 0.0;
+    double access_frequency = 0.0;
+    // 其他特征...
+};
+```
 
 ### 3.4.3 基于CTE子语句的动态缓存技术
 
 基于CTE（Common Table Expression）子语句的动态缓存技术是系统细粒度缓存策略的重要实现，它通过缓存公共表表达式的执行结果，实现查询间的中间结果共享，显著提高复杂查询的执行效率。CTE缓存技术特别适用于包含多个CTE的复杂分析查询，以及递归查询、层次查询等特殊场景。该技术不仅能够缓存单个CTE的结果，还能够管理CTE之间的复杂依赖关系，确保缓存的正确性和一致性。
 
-CTE解析和识别是缓存技术的基础环节，系统通过高级的SQL解析技术识别查询中的CTE定义和使用模式。解析过程采用递归下降解析算法，能够处理嵌套CTE、递归CTE、相互引用CTE等复杂情况。CTE定义提取将WITH子句中的CTE定义分离出来，形成独立的查询单元。CTE使用分析识别CTE在主查询和其他CTE中的使用情况，包括使用次数、使用位置、使用方式等信息。递归CTE处理采用特殊的解析算法，分析递归结构、递归条件、终止条件等关键信息，确保递归CTE的正确缓存和执行。
+#### 3.4.3.3 多阶段缓存支持
 
-CTE依赖图构建是管理复杂CTE关系的核心技术，系统通过图论算法构建和维护CTE之间的依赖关系图。依赖图采用有向无环图（DAG）结构，节点表示CTE或基础表，边表示依赖关系的方向和强度。依赖关系包括数据依赖、结构依赖、执行依赖等多种类型。数据依赖表示CTE对其他CTE或基础表数据的依赖，当依赖数据发生变化时，相关CTE缓存需要失效。结构依赖表示CTE对表结构或模式的依赖，当结构发生变化时，相关CTE需要重新编译。执行依赖表示CTE的执行顺序依赖，确保CTE按照正确的顺序执行和缓存。
+CTECacheEntry支持四个阶段的缓存：
 
-CTE缓存键管理采用多维度的键值设计，确保CTE缓存的唯一性和正确匹配。缓存键包括CTE名称、定义哈希、参数哈希、上下文哈希等多个组成部分。CTE名称提供基础的标识信息，但由于不同查询中可能使用相同名称定义不同逻辑，需要结合其他信息确保唯一性。定义哈希基于CTE的标准化定义语句计算，确保语义相同的CTE具有相同的哈希值。参数哈希处理CTE中的参数化部分，支持带参数的CTE缓存。上下文哈希考虑CTE的执行上下文，包括会话信息、事务状态、系统配置等，确保缓存的正确性。
+1. **Parser阶段缓存**：缓存解析后的SelectStatement和CTE映射
+2. **Planner阶段缓存**：缓存逻辑计划和类型信息
+3. **Optimizer阶段缓存**：缓存优化后的计划
+4. **Executor阶段缓存**：缓存执行结果
 
-CTE结果共享机制实现多个查询之间的CTE结果共享，这是CTE缓存技术的核心价值。共享机制采用引用计数和写时复制（COW）技术，当多个查询需要相同的CTE结果时，系统只计算一次并在内存中共享。引用计数跟踪CTE结果的使用情况，当引用计数为零时自动清理缓存。写时复制技术在CTE结果需要修改时创建副本，避免影响其他使用者。共享策略还考虑了并发访问的问题，通过读写锁和版本控制确保并发安全。生命周期管理根据CTE的使用模式和系统资源状况，智能管理CTE缓存的创建、维护和清理。
+每个阶段都有对应的标志位（has_parsed_cache、has_logical_cache等）来跟踪缓存状态。
 
-递归CTE优化是CTE缓存技术的高级特性，专门处理递归查询的缓存需求。递归CTE通常用于处理层次数据、图遍历、路径查找等复杂场景，其执行过程包括初始化、迭代计算、终止检查等多个阶段。缓存策略针对递归CTE的特点进行优化，包括中间结果缓存、迭代状态缓存、终止条件缓存等。中间结果缓存存储每次迭代的计算结果，避免重复计算。迭代状态缓存保存递归的执行状态，支持递归的暂停和恢复。终止条件缓存优化递归的终止判断，提高递归执行的效率。递归优化还包括循环检测、深度限制、内存管理等安全机制，确保递归CTE的稳定执行。
+#### 3.4.3.4 统计信息和性能监控
+
+系统维护详细的统计信息，包括各阶段的命中次数，用于性能分析和优化：
+
+```cpp
+// Statistics tracking
+idx_t parser_hits = 0;
+idx_t planner_hits = 0; 
+idx_t optimizer_hits = 0;
+idx_t executor_hits = 0;
+idx_t total_requests = 0;
+```
 
 
 ## 3.5 布隆过滤器对查询性能影响评估
@@ -350,6 +668,6 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
 
 ## 3.6 本章小结
 
-本章详细介绍了基于布隆过滤器的SQL和CTE动态缓存技术的设计与实现。系统采用分层架构设计，通过布隆过滤器实现高效的前置过滤，结合SQL语句缓存和CTE子语句缓存技术，构建了智能化的查询结果缓存管理系统。核心技术包括多重哈希函数的布隆过滤器设计、查询标准化和参数化处理、CTE依赖图构建和结果共享机制，通过多层次过滤策略实现了快速的缓存预筛选和精确的缓存匹配。
+本章详细介绍了基于布隆过滤器的SQL和CTE动态缓存技术的设计与实现。系统基于DuckDB项目中的QueryCache类和BloomFilter类，通过布隆过滤器实现高效的前置过滤，结合SQL语句缓存和CTE子语句缓存技术，构建了高效的查询结果缓存管理系统。
 
-通过TPC-H标准查询和自定义测试数据集的性能评估，验证了布隆过滤器在查询缓存系统中的有效性，标准布隆过滤器配置在复杂查询中实现了最高14.5%的性能提升。系统通过细粒度的缓存策略和智能化的管理机制，能够有效识别和缓存有价值的查询结果，显著提高缓存命中率和系统整体性能，为后续章节的动态缓存更新策略奠定了坚实的技术基础。
+通过TPC-H标准查询和自定义测试数据集的性能评估，验证了布隆过滤器在查询缓存系统中的有效性，标准布隆过滤器配置在复杂查询中实现了最高14.5%的性能提升。系统通过布隆过滤器的前置过滤和精确的缓存匹配机制，能够有效识别和缓存有价值的查询结果，显著提高缓存命中率和系统整体性能。

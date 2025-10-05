@@ -1,0 +1,28 @@
+# Simple Makefile for testing adaptive cache mechanism
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
+LDFLAGS = -pthread
+
+# Target executable
+TARGET = test_adaptive_simple
+
+.PHONY: all clean test
+
+all: $(TARGET)
+
+$(TARGET): test_adaptive_simple.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
+
+test: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET)
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  all     - Build the test executable"
+	@echo "  test    - Build and run the test"
+	@echo "  clean   - Remove all build artifacts"
+	@echo "  help    - Show this help message"

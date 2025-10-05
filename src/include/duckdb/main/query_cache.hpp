@@ -12,11 +12,15 @@
 #include "duckdb/common/common.hpp"
 #include "duckdb/common/mutex.hpp"
 #include "duckdb/common/unordered_map.hpp"
+#include "duckdb/common/enums/explain_format.hpp"
 #include "duckdb/main/materialized_query_result.hpp"
 #include "duckdb/parser/sql_statement.hpp"
+#include "duckdb/planner/expression/bound_parameter_data.hpp"
 #include <chrono>
 #include <memory>
 #include <queue>
+#include <deque>
+#include <functional>
 
 namespace duckdb {
 

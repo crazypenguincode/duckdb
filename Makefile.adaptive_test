@@ -1,0 +1,58 @@
+# Makefile for testing adaptive cache mechanism
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -I./src/include -I./third_party/fmt/include
+LDFLAGS = -pthread
+
+# DuckDB source files needed for the test
+DUCKDB_SOURCES = \
+	src/main/query_cache.cpp \
+	src/common/bloom_filter.cpp \
+	src/common/string_util.cpp \
+	src/common/types/hash.cpp
+
+# Object files
+OBJECTS = $(DUCKDB_SOURCES:.cpp=.o)
+TEST_OBJECTS = test_adaptive_cache.o
+
+# Target executable
+TARGET = test_adaptive_cache
+
+.PHONY: all clean test
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS) $(TEST_OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+test: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(OBJECTS) $(TEST_OBJECTS) $(TARGET)
+
+# Individual source compilation rules
+src/main/query_cache.o: src/main/query_cache.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+src/common/bloom_filter.o: src/common/bloom_filter.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+src/common/string_util.o: src/common/string_util.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+src/common/types/hash.o: src/common/types/hash.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+test_adaptive_cache.o: test_adaptive_cache.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  all     - Build the test executable"
+	@echo "  test    - Build and run the test"
+	@echo "  clean   - Remove all build artifacts"
+	@echo "  help    - Show this help message"

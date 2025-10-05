@@ -588,8 +588,8 @@ vector<double> MLCachePredictor::FeaturesToVector(const MLCacheFeatures &feature
 QueryCache::QueryCache(QueryCacheConfig config) 
     : config(std::move(config)), 
       bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
-      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor),
-      last_metrics_update(std::chrono::steady_clock::now()) {
+      last_metrics_update(std::chrono::steady_clock::now()),
+      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor) {
     
     // Initialize adaptive tuner if enabled
     if (this->config.adaptive_tuning_config.enabled) {
@@ -1008,7 +1008,17 @@ double QueryCacheKeyGenerator::CalculateComplexityScore(const SQLStatement &stat
 }
 
 void QueryCache::UpdateAdaptiveTuning() {
-    // Placeholder for adaptive tuning logic
+    if (!adaptive_tuner) {
+        return;
+    }
+    
+    // 收集当前系统指标
+    current_metrics = CollectSystemMetrics();
+    
+    // 更新自适应调优器
+    adaptive_tuner->UpdateMetrics(current_metrics, config);
+    
+    last_metrics_update = std::chrono::steady_clock::now();
 }
 
 //===----------------------------------------------------------------------===//
@@ -1279,21 +1289,356 @@ string QueryCache::FormatExplainInfoHTML(const CacheExplainInfo &info) const {
 
 AdaptiveParameterTuner::AdaptiveParameterTuner(AdaptiveTuningConfig config) : config(config) {
     tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+    printf("DEBUG: AdaptiveParameterTuner initialized with tuning_interval=%llu ms\n", (unsigned long long)config.tuning_interval_ms);
 }
 
 void AdaptiveParameterTuner::UpdateMetrics(const SystemPerformanceMetrics &metrics, QueryCacheConfig &cache_config) {
-    // Placeholder implementation for adaptive tuning
-    // This would contain the actual adaptive tuning logic
+    // 添加新的指标到历史记录
+    metrics_history.push_back(metrics);
+    
+    // 限制历史记录大小
+    while (metrics_history.size() > config.metrics_history_size) {
+        metrics_history.pop_front();
+    }
+    
+    printf("DEBUG: UpdateMetrics - hit_rate=%.2f%%, memory_usage=%.1fMB, cpu_usage=%.1f%%\n", 
+           metrics.cache_hit_rate * 100.0, metrics.cache_memory_usage_mb, metrics.cpu_usage_percent);
+    
+    // 检查是否需要调优
+    if (ShouldTune()) {
+        printf("DEBUG: Triggering adaptive tuning cycle\n");
+        
+        // 记录调优前的性能基线
+        double baseline_performance = CalculatePerformanceScore(metrics);
+        
+        bool any_adjustment = false;
+        
+        // 1. 自适应缓存大小调整
+        if (config.adapt_cache_size && AdaptCacheSize(cache_config, metrics)) {
+            tuning_stats.cache_size_adjustments++;
+            any_adjustment = true;
+        }
+        
+        // 2. 自适应内存限制调整
+        if (config.adapt_memory_limit && AdaptMemoryLimit(cache_config, metrics)) {
+            tuning_stats.memory_limit_adjustments++;
+            any_adjustment = true;
+        }
+        
+        // 3. 自适应TTL调整
+        if (config.adapt_ttl && AdaptTTL(cache_config, metrics)) {
+            tuning_stats.ttl_adjustments++;
+            any_adjustment = true;
+        }
+        
+        // 4. 自适应淘汰策略切换
+        if (config.adapt_eviction_strategy && AdaptEvictionStrategy(cache_config, metrics)) {
+            tuning_stats.strategy_changes++;
+            any_adjustment = true;
+        }
+        
+        if (any_adjustment) {
+            tuning_stats.total_adjustments++;
+            tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+            
+            // 更新性能模型
+            UpdatePerformanceModel(metrics, baseline_performance);
+            
+            printf("DEBUG: Adaptive tuning completed - total_adjustments=%llu\n", (unsigned long long)tuning_stats.total_adjustments);
+        }
+    }
 }
 
 bool AdaptiveParameterTuner::ForceTuning(QueryCacheConfig &cache_config) {
-    // Placeholder implementation
-    return false;
+    if (metrics_history.empty()) {
+        printf("DEBUG: ForceTuning - no metrics history available\n");
+        return false;
+    }
+    
+    printf("DEBUG: ForceTuning triggered\n");
+    
+    // 使用最新的指标进行强制调优
+    const auto &latest_metrics = metrics_history.back();
+    
+    bool any_adjustment = false;
+    
+    // 强制执行所有调优策略
+    if (AdaptCacheSize(cache_config, latest_metrics)) {
+        tuning_stats.cache_size_adjustments++;
+        any_adjustment = true;
+    }
+    
+    if (AdaptMemoryLimit(cache_config, latest_metrics)) {
+        tuning_stats.memory_limit_adjustments++;
+        any_adjustment = true;
+    }
+    
+    if (AdaptTTL(cache_config, latest_metrics)) {
+        tuning_stats.ttl_adjustments++;
+        any_adjustment = true;
+    }
+    
+    if (AdaptEvictionStrategy(cache_config, latest_metrics)) {
+        tuning_stats.strategy_changes++;
+        any_adjustment = true;
+    }
+    
+    if (any_adjustment) {
+        tuning_stats.total_adjustments++;
+        tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+        printf("DEBUG: ForceTuning completed with adjustments\n");
+    }
+    
+    return any_adjustment;
 }
 
 double AdaptiveParameterTuner::PredictPerformance(const QueryCacheConfig &config, const SystemPerformanceMetrics &metrics) const {
-    // Placeholder implementation
-    return 1.0;
+    // 使用简单的线性模型预测性能
+    double predicted_score = performance_model.bias;
+    
+    // 缓存大小因子 (归一化到0-1)
+    double cache_size_factor = static_cast<double>(config.max_entries) / this->config.max_cache_size;
+    predicted_score += performance_model.cache_size_weight * cache_size_factor;
+    
+    // 内存因子 (归一化到0-1)
+    double memory_factor = static_cast<double>(config.max_memory_bytes) / (this->config.max_memory_mb * 1024 * 1024);
+    predicted_score += performance_model.memory_weight * memory_factor;
+    
+    // TTL因子 (归一化到0-1)
+    double ttl_factor = static_cast<double>(config.ttl_seconds) / this->config.max_ttl_seconds;
+    predicted_score += performance_model.ttl_weight * ttl_factor;
+    
+    // 命中率因子
+    predicted_score += performance_model.hit_rate_weight * metrics.cache_hit_rate;
+    
+    // 应用sigmoid激活函数，确保输出在0-1之间
+    return 1.0 / (1.0 + std::exp(-predicted_score));
+}
+
+bool AdaptiveParameterTuner::ShouldTune() const {
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_last_tuning = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now - tuning_stats.last_tuning_time).count();
+    
+    return time_since_last_tuning >= static_cast<long>(config.tuning_interval_ms);
+}
+
+double AdaptiveParameterTuner::CalculatePerformanceScore(const SystemPerformanceMetrics &metrics) const {
+    // 综合性能评分，考虑多个维度
+    double score = 0.0;
+    
+    // 缓存命中率权重最高
+    score += 0.4 * metrics.cache_hit_rate;
+    
+    // 查询响应时间（越低越好，需要反转）
+    double normalized_query_time = std::max(0.0, 1.0 - metrics.avg_query_time_ms / 10000.0); // 假设10秒为最差情况
+    score += 0.3 * normalized_query_time;
+    
+    // CPU使用率（适中最好，过高或过低都不好）
+    double cpu_efficiency = 1.0 - std::abs(metrics.cpu_usage_percent - 70.0) / 100.0; // 70%为理想CPU使用率
+    score += 0.2 * std::max(0.0, cpu_efficiency);
+    
+    // 内存使用效率
+    double memory_efficiency = 1.0 - metrics.memory_usage_percent / 100.0;
+    score += 0.1 * memory_efficiency;
+    
+    return std::max(0.0, std::min(1.0, score)); // 确保在0-1范围内
+}
+
+bool AdaptiveParameterTuner::AdaptCacheSize(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 3) {
+        return false; // 需要足够的历史数据
+    }
+    
+    // 分析缓存命中率趋势
+    double hit_rate_trend = GetTrend([](const SystemPerformanceMetrics &m) { return m.cache_hit_rate; });
+    
+    idx_t old_max_entries = cache_config.max_entries;
+    
+    if (hit_rate_trend < -0.05 && current_metrics.memory_usage_percent < 80.0) {
+        // 命中率下降且内存充足，增加缓存大小
+        cache_config.max_entries = std::min(
+            static_cast<idx_t>(cache_config.max_entries * 1.2), 
+            config.max_cache_size
+        );
+        printf("DEBUG: Increasing cache size from %llu to %llu (hit_rate_trend=%.3f)\n", 
+               (unsigned long long)old_max_entries, (unsigned long long)cache_config.max_entries, hit_rate_trend);
+    } else if (current_metrics.memory_usage_percent > 90.0) {
+        // 内存压力大，减少缓存大小
+        cache_config.max_entries = std::max(
+            static_cast<idx_t>(cache_config.max_entries * 0.8), 
+            config.min_cache_size
+        );
+        printf("DEBUG: Decreasing cache size from %llu to %llu (memory_pressure=%.1f%%)\n", 
+               (unsigned long long)old_max_entries, (unsigned long long)cache_config.max_entries, current_metrics.memory_usage_percent);
+    }
+    
+    return cache_config.max_entries != old_max_entries;
+}
+
+bool AdaptiveParameterTuner::AdaptMemoryLimit(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 3) {
+        return false;
+    }
+    
+    idx_t old_memory_limit = cache_config.max_memory_bytes;
+    
+    // 根据系统内存使用情况调整
+    if (current_metrics.memory_usage_percent < 60.0 && current_metrics.cache_hit_rate > 0.8) {
+        // 内存充足且命中率高，可以增加内存限制
+        cache_config.max_memory_bytes = std::min(
+            static_cast<idx_t>(cache_config.max_memory_bytes * 1.3),
+            config.max_memory_mb * 1024 * 1024
+        );
+        printf("DEBUG: Increasing memory limit from %llu to %llu MB\n", 
+               (unsigned long long)(old_memory_limit / (1024*1024)), (unsigned long long)(cache_config.max_memory_bytes / (1024*1024)));
+    } else if (current_metrics.memory_usage_percent > 85.0) {
+        // 内存压力大，减少内存限制
+        cache_config.max_memory_bytes = std::max(
+            static_cast<idx_t>(cache_config.max_memory_bytes * 0.7),
+            config.min_memory_mb * 1024 * 1024
+        );
+        printf("DEBUG: Decreasing memory limit from %llu to %llu MB\n", 
+               (unsigned long long)(old_memory_limit / (1024*1024)), (unsigned long long)(cache_config.max_memory_bytes / (1024*1024)));
+    }
+    
+    return cache_config.max_memory_bytes != old_memory_limit;
+}
+
+bool AdaptiveParameterTuner::AdaptTTL(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 5) {
+        return false;
+    }
+    
+    // 分析查询时间趋势
+    double query_time_trend = GetTrend([](const SystemPerformanceMetrics &m) { return m.avg_query_time_ms; });
+    
+    idx_t old_ttl = cache_config.ttl_seconds;
+    
+    if (current_metrics.cache_hit_rate > 0.85 && query_time_trend > 50.0) {
+        // 命中率高但查询时间增长，延长TTL
+        cache_config.ttl_seconds = std::min(
+            static_cast<idx_t>(cache_config.ttl_seconds * 1.5),
+            config.max_ttl_seconds
+        );
+        printf("DEBUG: Increasing TTL from %llu to %llu seconds (hit_rate=%.2f%%, query_time_trend=%.1f)\n", 
+               (unsigned long long)old_ttl, (unsigned long long)cache_config.ttl_seconds, current_metrics.cache_hit_rate * 100.0, query_time_trend);
+    } else if (current_metrics.cache_hit_rate < 0.5 || current_metrics.memory_usage_percent > 90.0) {
+        // 命中率低或内存压力大，缩短TTL
+        cache_config.ttl_seconds = std::max(
+            static_cast<idx_t>(cache_config.ttl_seconds * 0.7),
+            config.min_ttl_seconds
+        );
+        printf("DEBUG: Decreasing TTL from %llu to %llu seconds (hit_rate=%.2f%%, memory_usage=%.1f%%)\n", 
+               (unsigned long long)old_ttl, (unsigned long long)cache_config.ttl_seconds, current_metrics.cache_hit_rate * 100.0, current_metrics.memory_usage_percent);
+    }
+    
+    return cache_config.ttl_seconds != old_ttl;
+}
+
+bool AdaptiveParameterTuner::AdaptEvictionStrategy(QueryCacheConfig &cache_config, const SystemPerformanceMetrics &current_metrics) {
+    if (metrics_history.size() < 10) {
+        return false; // 需要更多历史数据来做策略决策
+    }
+    
+    CacheEvictionStrategy old_strategy = cache_config.eviction_strategy;
+    CacheEvictionStrategy new_strategy = old_strategy;
+    
+    // 分析工作负载特征
+    double hit_rate_variance = 0.0;
+    double avg_hit_rate = 0.0;
+    
+    // 计算命中率的方差，用于判断工作负载的稳定性
+    for (const auto &metrics : metrics_history) {
+        avg_hit_rate += metrics.cache_hit_rate;
+    }
+    avg_hit_rate /= metrics_history.size();
+    
+    for (const auto &metrics : metrics_history) {
+        double diff = metrics.cache_hit_rate - avg_hit_rate;
+        hit_rate_variance += diff * diff;
+    }
+    hit_rate_variance /= metrics_history.size();
+    
+    printf("DEBUG: Analyzing eviction strategy - avg_hit_rate=%.3f, variance=%.6f, concurrent_queries=%llu\n", 
+           avg_hit_rate, hit_rate_variance, (unsigned long long)current_metrics.concurrent_queries);
+    
+    // 策略选择逻辑
+    if (hit_rate_variance > 0.01 && current_metrics.concurrent_queries > 10) {
+        // 工作负载变化大且并发高，使用ML策略
+        new_strategy = CacheEvictionStrategy::ML_BASED;
+        printf("DEBUG: Switching to ML_BASED strategy (high variance workload)\n");
+    } else if (avg_hit_rate > 0.8 && current_metrics.avg_query_time_ms < 100.0) {
+        // 命中率高且查询快，使用LRU策略
+        new_strategy = CacheEvictionStrategy::LRU_BASED;
+        printf("DEBUG: Switching to LRU_BASED strategy (stable high-performance workload)\n");
+    } else if (current_metrics.memory_usage_percent > 80.0 || current_metrics.cache_memory_usage_mb > 500.0) {
+        // 内存压力大，使用TTL策略快速释放空间
+        new_strategy = CacheEvictionStrategy::TTL_BASED;
+        printf("DEBUG: Switching to TTL_BASED strategy (memory pressure)\n");
+    }
+    
+    // 避免频繁切换策略
+    if (new_strategy != old_strategy) {
+        auto now = std::chrono::steady_clock::now();
+        auto time_since_last_change = std::chrono::duration_cast<std::chrono::minutes>(
+            now - tuning_stats.last_tuning_time).count();
+        
+        if (time_since_last_change < 5) { // 5分钟内不重复切换
+            printf("DEBUG: Strategy change suppressed (too frequent)\n");
+            return false;
+        }
+        
+        cache_config.eviction_strategy = new_strategy;
+        printf("DEBUG: Eviction strategy changed from %d to %d\n", (int)old_strategy, (int)new_strategy);
+        return true;
+    }
+    
+    return false;
+}
+
+void AdaptiveParameterTuner::UpdatePerformanceModel(const SystemPerformanceMetrics &metrics, double actual_performance) {
+    // 简单的在线学习更新性能模型权重
+    double predicted_performance = PredictPerformance({}, metrics); // 使用默认配置预测
+    double error = actual_performance - predicted_performance;
+    
+    // 梯度下降更新
+    double lr = config.learning_rate;
+    performance_model.hit_rate_weight += lr * error * metrics.cache_hit_rate;
+    performance_model.cache_size_weight += lr * error * 0.5; // 假设中等缓存大小
+    performance_model.memory_weight += lr * error * (1.0 - metrics.memory_usage_percent / 100.0);
+    performance_model.ttl_weight += lr * error * 0.5; // 假设中等TTL
+    performance_model.bias += lr * error;
+    
+    printf("DEBUG: Updated performance model - hit_rate_weight=%.3f, error=%.3f\n", 
+           performance_model.hit_rate_weight, error);
+}
+
+double AdaptiveParameterTuner::GetTrend(std::function<double(const SystemPerformanceMetrics&)> extractor) const {
+    if (metrics_history.size() < 3) {
+        return 0.0;
+    }
+    
+    // 简单的线性趋势计算（最近值 - 较早值）
+    size_t n = metrics_history.size();
+    double recent_avg = 0.0;
+    double early_avg = 0.0;
+    
+    // 取最近1/3的平均值
+    size_t recent_count = std::max(1UL, n / 3);
+    for (size_t i = n - recent_count; i < n; i++) {
+        recent_avg += extractor(metrics_history[i]);
+    }
+    recent_avg /= recent_count;
+    
+    // 取较早1/3的平均值
+    size_t early_count = std::max(1UL, n / 3);
+    for (size_t i = 0; i < early_count; i++) {
+        early_avg += extractor(metrics_history[i]);
+    }
+    early_avg /= early_count;
+    
+    return recent_avg - early_avg;
 }
 
 //===----------------------------------------------------------------------===//
@@ -1321,15 +1666,136 @@ QueryCache::PersistenceStats QueryCache::GetPersistenceStats() const {
 QueryCache::AdaptiveTuningStats QueryCache::GetAdaptiveTuningStats() const {
     AdaptiveTuningStats stats;
     stats.enabled = adaptive_tuner != nullptr;
-    stats.total_adjustments = 0;
-    stats.avg_performance_improvement = 0.0;
-    stats.last_tuning_time = std::chrono::steady_clock::now();
     stats.current_metrics = current_metrics;
     
-    // TODO: 实现自适应调优统计信息的收集
-    // 这里需要根据实际的自适应调优实现来填充统计信息
+    if (adaptive_tuner) {
+        auto tuning_stats = adaptive_tuner->GetTuningStats();
+        stats.total_adjustments = tuning_stats.total_adjustments;
+        stats.last_tuning_time = tuning_stats.last_tuning_time;
+        
+        // 计算平均性能改进（简化实现）
+        if (tuning_stats.total_adjustments > 0) {
+            stats.avg_performance_improvement = current_metrics.cache_hit_rate * 0.1; // 简化计算
+        }
+    } else {
+        stats.total_adjustments = 0;
+        stats.avg_performance_improvement = 0.0;
+        stats.last_tuning_time = std::chrono::steady_clock::now();
+    }
     
     return stats;
+}
+
+//===----------------------------------------------------------------------===//
+// QueryCache Adaptive Tuning Methods
+//===----------------------------------------------------------------------===//
+
+void QueryCache::EnableAdaptiveTuning(bool enabled, AdaptiveTuningConfig tuning_config) {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    if (enabled && !adaptive_tuner) {
+        adaptive_tuner = make_uniq<AdaptiveParameterTuner>(tuning_config);
+        printf("DEBUG: Adaptive tuning enabled with interval=%llu ms\n", (unsigned long long)tuning_config.tuning_interval_ms);
+    } else if (!enabled && adaptive_tuner) {
+        adaptive_tuner.reset();
+        printf("DEBUG: Adaptive tuning disabled\n");
+    }
+}
+
+void QueryCache::UpdateSystemMetrics(const SystemPerformanceMetrics &metrics) {
+    lock_guard<mutex> lock(cache_mutex);
+    current_metrics = metrics;
+    last_metrics_update = std::chrono::steady_clock::now();
+    
+    if (adaptive_tuner) {
+        adaptive_tuner->UpdateMetrics(metrics, config);
+    }
+}
+
+bool QueryCache::ForceAdaptiveTuning() {
+    if (!adaptive_tuner) {
+        printf("DEBUG: ForceAdaptiveTuning - adaptive tuner not enabled\n");
+        return false;
+    }
+    
+    lock_guard<mutex> lock(cache_mutex);
+    
+    // 收集当前系统指标
+    current_metrics = CollectSystemMetrics();
+    
+    // 强制执行调优
+    bool result = adaptive_tuner->ForceTuning(config);
+    
+    if (result) {
+        printf("DEBUG: ForceAdaptiveTuning completed successfully\n");
+        // 重新计算所有缓存条目的淘汰优先级
+        for (auto &entry : cache) {
+            if (config.eviction_strategy == CacheEvictionStrategy::ML_BASED) {
+                entry.second->ml_score = ml_predictor.Predict(entry.second->ml_features);
+                entry.second->eviction_priority = entry.second->ml_score;
+            } else if (config.eviction_strategy == CacheEvictionStrategy::LRU_BASED) {
+                entry.second->eviction_priority = static_cast<double>(
+                    entry.second->last_accessed.time_since_epoch().count());
+            } else {
+                // TTL-based: priority based on creation time
+                entry.second->eviction_priority = static_cast<double>(
+                    entry.second->created_at.time_since_epoch().count());
+            }
+        }
+    }
+    
+    return result;
+}
+
+SystemPerformanceMetrics QueryCache::CollectSystemMetrics() const {
+    SystemPerformanceMetrics metrics;
+    
+    // 计算缓存相关指标
+    auto stats = GetStats();
+    metrics.cache_hit_rate = stats.hit_rate / 100.0; // 转换为0-1范围
+    metrics.cache_memory_usage_mb = static_cast<double>(stats.memory_usage_bytes) / (1024.0 * 1024.0);
+    
+    // 计算平均查询时间（简化实现，基于缓存条目的访问模式）
+    double total_complexity = 0.0;
+    idx_t entry_count = 0;
+    for (const auto &entry : cache) {
+        total_complexity += entry.second->ml_features.execution_time_ms;
+        entry_count++;
+    }
+    metrics.avg_query_time_ms = entry_count > 0 ? total_complexity / entry_count : 100.0;
+    
+    // 模拟系统指标（在实际实现中，这些应该从系统API获取）
+    metrics.cpu_usage_percent = 50.0 + (rand() % 40); // 模拟50-90%的CPU使用率
+    metrics.memory_usage_percent = 60.0 + (rand() % 30); // 模拟60-90%的内存使用率
+    metrics.concurrent_queries = cache.size() / 10; // 简化的并发查询估算
+    metrics.disk_io_rate_mbps = 10.0 + (rand() % 50); // 模拟10-60MB/s的I/O速率
+    
+    metrics.timestamp = std::chrono::steady_clock::now();
+    
+    return metrics;
+}
+
+double QueryCache::CalculateSystemLoad() const {
+    auto metrics = CollectSystemMetrics();
+    
+    // 综合系统负载评分
+    double load_score = 0.0;
+    
+    // CPU负载权重
+    load_score += 0.3 * (metrics.cpu_usage_percent / 100.0);
+    
+    // 内存负载权重
+    load_score += 0.3 * (metrics.memory_usage_percent / 100.0);
+    
+    // 缓存内存使用权重
+    double cache_memory_ratio = metrics.cache_memory_usage_mb / (config.max_memory_bytes / (1024.0 * 1024.0));
+    load_score += 0.2 * cache_memory_ratio;
+    
+    // 并发查询负载权重
+    double concurrency_ratio = static_cast<double>(metrics.concurrent_queries) / 100.0; // 假设100为高并发
+    load_score += 0.2 * std::min(1.0, concurrency_ratio);
+    
+    return std::min(1.0, load_score);
 }
 
 } // namespace duckdb

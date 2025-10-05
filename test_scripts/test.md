@@ -586,5 +586,8 @@ DuckDB路径: build/release/duckdb
 * 跨进程缓存，持久化带来的优势。因为通常缓存都是进程内部的，进程间贡献缓存，缩短查询时间，尤其适合duckdb这种内嵌数据库。和大数据量重新加载的问题。sf=1000
 * 增加自适应缓存策略，adm
 
+# cte 缓存各个阶段分析
+CTE_CACHE_ANALYSIS_REPORT.md
+
 # todo
 目前d

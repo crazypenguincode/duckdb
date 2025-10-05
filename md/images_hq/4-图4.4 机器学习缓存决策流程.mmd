@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Q as 查询请求
+    participant FE as 特征提取器
+    participant ML as ML模型
+    participant CD as 缓存决策器
+    participant CM as 缓存管理器
+    participant FB as 反馈收集器
+    
+    Q->>FE: 提交查询
+    FE->>FE: 提取多维特征
+    FE->>ML: 特征向量
+    ML->>ML: 模型预测
+    ML->>CD: 预测评分+置信度
+    CD->>CD: 决策融合
+    CD->>CM: 缓存操作指令
+    CM->>CM: 执行缓存操作
+    CM->>FB: 操作结果反馈
+    FB->>ML: 更新训练数据
+    ML->>ML: 在线学习更新
+    
+    Note over ML: 持续学习优化
+    Note over CD: 多策略融合决策

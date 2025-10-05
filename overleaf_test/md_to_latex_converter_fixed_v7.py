@@ -71,7 +71,7 @@ class MarkdownToLatexConverter:
                     print(f"删除旧mmd文件: {img_file.name}")
         
         # 运行图片提取脚本
-        extract_script = self.md_dir / "extract_all_images.py"
+        extract_script = self.md_dir / "extract_all_images_hq.py"
         if extract_script.exists():
             try:
                 result = subprocess.run(["python3", str(extract_script)], 
@@ -272,19 +272,20 @@ class MarkdownToLatexConverter:
             
             # 根据图片大小和内容选择合适的宽度
             if "流程" in clean_title or "架构" in clean_title or "框架" in clean_title:
-                width = "0.9\\textwidth"
+                width = "1\\textwidth"
             elif "对比" in clean_title or "比较" in clean_title:
-                width = "0.85\\textwidth"
+                width = "0.95\\textwidth"
             else:
-                width = "0.8\\textwidth"
+                width = "0.9\\textwidth"
             
             # 选择合适的浮动参数
-            if needs_here:
-                # 需要就近显示，使用htbp参数，优先here，然后top，bottom，最后page
-                float_params = "htbp"
-            else:
-                # 不需要就近显示，使用tbp参数，让LaTeX自动选择最佳位置
-                float_params = "tbp"
+            float_params = "htbp"
+            # if needs_here:
+            #     # 需要就近显示，使用htbp参数，优先here，然后top，bottom，最后page
+            #     float_params = "htbp"
+            # else:
+            #     # 不需要就近显示，使用tbp参数，让LaTeX自动选择最佳位置
+            #     float_params = "tbp"
             
             # 生成优化的LaTeX图片代码
             latex_figure = f"""

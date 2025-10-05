@@ -8,9 +8,9 @@
 
 在数据库查询处理流程中，查询访问可以分为查询解析与优化和查询执行两部分。查询解析与优化是指数据库系统对SQL语句进行词法分析、语法分析、语义分析，并生成最优执行计划的过程，该过程计算密集，流程相对复杂\cite{c63}。查询执行则是指按照执行计划实际访问数据并生成结果的过程，该过程涉及大量的I/O操作和数据处理，通常是查询处理的性能瓶颈。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/1-图1.1 数据库查询处理性能瓶颈分析.png}
+	\includegraphics[width=0.9\textwidth]{images/1-图1.1 数据库查询处理性能瓶颈分析.png}
 	\caption{数据库查询处理性能瓶颈分析}
 	\label{fig1_1_1}
 \end{figure}
@@ -117,9 +117,9 @@
 
 研究内容二：本文提出基于多策略融合的智能缓存替换策略。为了实现高效灵活的缓存管理，本文设计了多策略融合框架，将传统缓存策略（LRU、TTL）与机器学习策略有机结合，通过全局协调机制管理策略间的协作关系，避免决策冲突。系统集成了线性回归预测模型和在线学习算法，能够根据查询访问模式和系统负载进行自适应优化。通过动态TTL计算、分层LRU优化和智能参数调优，该技术在保证数据一致性的同时，实现了缓存性能的显著提升。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/1-图1.3 本文技术方案整体架构.png}
+	\includegraphics[width=1\textwidth]{images/1-图1.3 本文技术方案整体架构.png}
 	\caption{本文技术方案整体架构}
 	\label{fig1_1_3}
 \end{figure}

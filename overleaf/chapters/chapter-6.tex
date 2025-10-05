@@ -83,9 +83,9 @@ TPC-DS基准测试相比TPC-H具有更高的复杂度和更广泛的查询模式
 
 TPC-H基准数据集作为业界公认的决策支持系统标准测试工具，为本研究提供了权威的性能基准参考\cite{c50}。该数据集由事务处理性能委员会制定，模拟了完整的批发商业务环境，其数据模型涵盖了现代商业系统中的核心业务实体和关系。数据集包含8个基础表，构成了一个完整的业务数据模型，从客户管理到订单处理，从商品供应到供应商关系，全面反映了真实商业环境中的数据特征和查询需求。22个标准分析查询覆盖了从简单聚合到复杂多表连接的各种查询类型，为查询缓存系统提供了全面的测试覆盖。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/6-图5.1 TPC-H数据集生成流程.png}
+	\includegraphics[width=1\textwidth]{images/6-图5.1 TPC-H数据集生成流程.png}
 	\caption{TPC-H数据集生成流程}
 	\label{fig6_5_1}
 \end{figure}
@@ -131,9 +131,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 基于实际测试数据，获得了精确的性能提升指标：
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.2 四类查询响应时间实测对比.png}
+	\includegraphics[width=0.95\textwidth]{images/6-图6.2 四类查询响应时间实测对比.png}
 	\caption{四类查询响应时间实测对比}
 	\label{fig6_6_2}
 \end{figure}
@@ -164,9 +164,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsubsection{缓存命中效果分析}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.3 不同查询类型的缓存性能提升效果.png}
+	\includegraphics[width=0.9\textwidth]{images/6-图6.3 不同查询类型的缓存性能提升效果.png}
 	\caption{不同查询类型的缓存性能提升效果}
 	\label{fig6_6_3}
 \end{figure}
@@ -214,9 +214,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 总体平均性能提升在60-66\%之间的稳定表现证明了查询缓存系统的整体效果显著且可靠。这一结果不仅验证了缓存技术的有效性，还表明系统在面对不同测试强度时能够保持稳定的性能输出。60\%以上的平均性能提升对于数据库系统而言是一个非常显著的改进，这样的性能提升在实际应用中能够带来用户体验的显著改善和系统资源利用效率的大幅提高。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.4 不同查询类型的执行时间对比-含误差棒.png}
+	\includegraphics[width=0.95\textwidth]{images/6-图6.4 不同查询类型的执行时间对比-含误差棒.png}
 	\caption{不同查询类型的执行时间对比-含误差棒}
 	\label{fig6_6_4}
 \end{figure}
@@ -261,9 +261,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 根据实际应用场景，设计了四种具有代表性的数据集类型：
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/6-图6.6 查询缓存测试数据集架构.png}
+	\includegraphics[width=1\textwidth]{images/6-图6.6 查询缓存测试数据集架构.png}
 	\caption{查询缓存测试数据集架构}
 	\label{fig6_6_6}
 \end{figure}
@@ -290,9 +290,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 	\caption{四种数据集类型的缓存性能提升对比}
 \end{figure}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.9 查询执行时间对比.png}
+	\includegraphics[width=0.95\textwidth]{images/6-图6.9 查询执行时间对比.png}
 	\caption{查询执行时间对比}
 	\label{fig6_6_9}
 \end{figure}
@@ -303,9 +303,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 并发查询集的性能提升相对较低(27.2\%)，主要原因分析：
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.10 并发查询性能限制因素分析.png}
+	\includegraphics[width=0.9\textwidth]{images/6-图6.10 并发查询性能限制因素分析.png}
 	\caption{并发查询性能限制因素分析}
 	\label{fig6_6_10}
 \end{figure}
@@ -326,9 +326,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsubsection{TPC-H基准测试结果}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.11 TPC-H查询缓存性能对比.png}
+	\includegraphics[width=0.95\textwidth]{images/6-图6.11 TPC-H查询缓存性能对比.png}
 	\caption{TPC-H查询缓存性能对比}
 	\label{fig6_6_11}
 \end{figure}
@@ -377,9 +377,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 在不同重复次数下，查询性能呈现明显差异：少量重复（10次）时TPC-H表现更优（57.7\% vs 1.4\%），中等重复（50次）时两者性能相近（51.1\% vs 57.9\%），而大量重复（100-200次）时TPC-DS展现出更优表现（68.1-70.5\%），表明重复次数对缓存效果具有显著影响。
 缓存适应性分析显示，结构相对简单的TPC-H查询具有稳定的缓存效果，平均提升59.3\%；而复杂度更高的TPC-DS查询在大量重复场景下优势明显，虽然平均提升为49.0\%，但展现了缓存技术对复杂查询的优化潜力
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.14 TPC标准查询缓存特征分析.png}
+	\includegraphics[width=0.9\textwidth]{images/6-图6.14 TPC标准查询缓存特征分析.png}
 	\caption{TPC标准查询缓存特征分析}
 	\label{fig6_6_14}
 \end{figure}
@@ -388,9 +388,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \subsection{CTE缓存阶段验证测试}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/6-图6.25 CTE缓存阶段测试架构.png}
+	\includegraphics[width=1\textwidth]{images/6-图6.25 CTE缓存阶段测试架构.png}
 	\caption{CTE缓存阶段测试架构}
 	\label{fig6_6_25}
 \end{figure}
@@ -517,9 +517,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \textbf{特征重要性分析}:
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/6-图6.18 机器学习模型特征重要性分布.png}
+	\includegraphics[width=0.9\textwidth]{images/6-图6.18 机器学习模型特征重要性分布.png}
 	\caption{机器学习模型特征重要性分布}
 	\label{fig6_6_18}
 \end{figure}
@@ -569,9 +569,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 \textbf{自适应调优架构设计}：
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/6-图6.20 自适应参数调优架构流程图.png}
+	\includegraphics[width=1\textwidth]{images/6-图6.20 自适应参数调优架构流程图.png}
 	\caption{自适应参数调优架构流程图}
 	\label{fig6_6_20}
 \end{figure}
@@ -594,9 +594,9 @@ TPC-DS查询集的技术特性体现了现代SQL标准的高级功能，包括�
 
 自适应调优框架展现了良好的工作机制，平均查询时间从192.91ms降低到187.84ms，实现了2.63\%的相对性能提升，且平均每轮产生2.4个调优事件。测试过程中记录的12个调优事件显示了系统的智能化特征，其中TTL调整占58.3\%，主要针对查询访问模式的变化；缓存大小调整占25\%，响应内存使用情况；策略切换占16.7\%，根据工作负载特征优化。在模拟高系统负载的第3轮测试中，系统成功识别负载变化，及时调整缓存参数以适应新的负载条件，并在高负载下仍保持性能改进。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/6-图6.22 自适应调优vs传统方法对比.png}
+	\includegraphics[width=0.95\textwidth]{images/6-图6.22 自适应调优vs传统方法对比.png}
 	\caption{自适应调优vs传统方法对比}
 	\label{fig6_6_22}
 \end{figure}

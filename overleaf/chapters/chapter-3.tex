@@ -12,9 +12,9 @@
 
 缓存一致性管理是系统架构的重要组成部分，通过版本控制和依赖跟踪机制确保缓存数据的正确性。版本控制为每个缓存条目分配唯一的版本号，当底层数据发生变化时，相关的缓存条目版本号会相应更新，过期的缓存条目会被自动失效。依赖跟踪机制维护查询与数据表之间的依赖关系，当某个数据表发生更新时，系统能够快速识别并失效所有依赖该表的缓存条目。这种设计既保证了缓存数据的一致性，又最小化了缓存失效的范围，提高了缓存的有效性。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/3-图3.1 动态缓存管理系统整体流程.png}
+	\includegraphics[width=1\textwidth]{images/3-图3.1 动态缓存管理系统整体流程.png}
 	\caption{动态缓存管理系统整体流程}
 	\label{fig3_3_1}
 \end{figure}
@@ -49,9 +49,9 @@
 
 索引结构设计支持多种查询方式和访问模式，主索引基于查询语句的哈希值构建，支持精确匹配查找。辅助索引包括时间索引、大小索引、访问频率索引等，支持范围查询和排序操作。时间索引按照创建时间和访问时间组织缓存条目，支持基于时间的查询和管理操作。大小索引按照数据大小组织条目，支持内存管理和容量控制。访问频率索引按照访问次数和频率组织条目，支持热度分析和淘汰策略。这些索引结构通过B+树、哈希表、跳表等高效数据结构实现，保证了各种操作的高性能。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/3-图3.2 缓存数据结构关系图.png}
+	\includegraphics[width=0.9\textwidth]{images/3-图3.2 缓存数据结构关系图.png}
 	\caption{缓存数据结构关系图}
 	\label{fig3_3_2}
 \end{figure}
@@ -106,9 +106,9 @@ CTE缓存策略采用分层管理的方式，根据CTE的特征和使用模式�
 
 生命周期管理控制CTE缓存的创建、更新、失效和删除等操作，确保缓存的正确性和有效性。创建操作在CTE首次执行时触发，系统评估CTE的缓存价值并决定是否进行缓存。更新操作在依赖数据发生变化时触发，系统根据变化的范围和影响决定是否需要重新计算CTE结果。失效操作在CTE不再有效时触发，包括TTL过期、依赖失效、手动失效等情况。删除操作在CTE缓存不再需要时触发，释放占用的存储空间和系统资源。生命周期管理还包括引用计数机制，跟踪CTE缓存的使用情况，当引用计数为零时自动清理缓存。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/3-图3.3 动态缓存管理系统局部流程详情.png}
+	\includegraphics[width=1\textwidth]{images/3-图3.3 动态缓存管理系统局部流程详情.png}
 	\caption{动态缓存管理系统局部流程详情}
 	\label{fig3_3_3}
 \end{figure}
@@ -127,9 +127,9 @@ CTE缓存策略采用分层管理的方式，根据CTE的特征和使用模式�
 
 分层布隆过滤器是系统的高级特性，通过多个层次的过滤器实现更精确的过滤效果。第一层过滤器覆盖所有缓存条目，提供基础的过滤能力。第二层过滤器覆盖热点查询，具有更低的假阳性率。第三层过滤器覆盖特定类型的查询，如复杂分析查询、报表查询等。分层设计允许系统根据查询的重要性和特征选择不同精度的过滤器，在性能和准确性之间取得最佳平衡。层间协调机制确保不同层次过滤器之间的一致性和协调工作。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/3-图3.4 分层布隆过滤器架构.png}
+	\includegraphics[width=1\textwidth]{images/3-图3.4 分层布隆过滤器架构.png}
 	\caption{分层布隆过滤器架构}
 	\label{fig3_3_4}
 \end{figure}
@@ -209,9 +209,9 @@ CTE结果共享机制实现多个查询之间的CTE结果共享，这是CTE缓�
     \end{tabular}
 \end{table}
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.85\textwidth]{images/3-图3.15 TPC-H查询不同布隆过滤器配置性能对比.png}
+	\includegraphics[width=0.95\textwidth]{images/3-图3.15 TPC-H查询不同布隆过滤器配置性能对比.png}
 	\caption{TPC-H查询不同布隆过滤器配置性能对比}
 	\label{fig3_3_15}
 \end{figure}

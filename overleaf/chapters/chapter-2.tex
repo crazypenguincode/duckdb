@@ -8,9 +8,9 @@
 
 查询规划阶段将抽象语法树转换为可执行的查询计划，包括逻辑计划生成、物理计划生成和代价估算三个步骤。查询优化是数据库系统的核心技术之一，负责选择最优的执行策略，主要采用基于规则的优化和基于代价的优化两种方法。查询执行阶段负责实际的数据处理和结果生成，通过算子执行、数据访问和结果物化完成最终的查询结果输出。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.9\textwidth]{images/2-图2.1 数据库查询处理流水线架构.png}
+	\includegraphics[width=1\textwidth]{images/2-图2.1 数据库查询处理流水线架构.png}
 	\caption{数据库查询处理流水线架构}
 	\label{fig2_2_1}
 \end{figure}
@@ -24,9 +24,9 @@ DuckDB是一款定位于本地分析的OLAP数据库，具有灵活扩展性\cit
 
 缓存技术是计算机系统中提高性能的重要手段，其基本原理是利用时间局部性和空间局部性原理，将频繁访问的数据存储在快速存储介质中。现代计算机系统采用多级缓存层次结构，从CPU寄存器到机械硬盘形成了访问时间从纳秒级到毫秒级的存储层次。缓存性能主要通过命中率、未命中率和平均访问时间等指标来衡量\cite{c75}，其中命中率$H = \frac{N_{hit}}{N_{total}}$，平均访问时间$T_{avg} = H \times T_{hit} + M \times T_{miss}$。
 
-\begin{figure}[tbp]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.8\textwidth]{images/2-图2.2 计算机系统缓存层次结构.png}
+	\includegraphics[width=0.9\textwidth]{images/2-图2.2 计算机系统缓存层次结构.png}
 	\caption{计算机系统缓存层次结构}
 	\label{fig2_2_2}
 \end{figure}

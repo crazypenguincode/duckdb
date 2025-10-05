@@ -276,7 +276,7 @@ class MarkdownToLatexConverter:
             elif "对比" in clean_title or "比较" in clean_title:
                 width = "0.95\\textwidth"
             else:
-                width = "0.9\\textwidth"
+                width = "0.95\\textwidth"
             
             # 选择合适的浮动参数
             float_params = "htbp"

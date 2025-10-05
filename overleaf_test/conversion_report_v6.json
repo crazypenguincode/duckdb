@@ -2,9 +2,9 @@
   "conversion_summary": {
     "total_chapters": 8,
     "chapters_converted": 6,
-    "total_figures": 31,
+    "total_figures": 30,
     "total_tables": 25,
-    "total_references": 103
+    "total_references": 102
   },
   "chapter_details": {
     "chapter_1": {
@@ -28,7 +28,7 @@
       "tables": 3
     },
     "chapter_6": {
-      "figures": 13,
+      "figures": 12,
       "tables": 18
     },
     "chapter_7": {
@@ -47,12 +47,12 @@
     "overleaf/chapters/chapter-7.tex"
   ],
   "version_info": {
-    "version": "v8 - 图片优化版本",
+    "version": "v7 - 增强版本",
     "improvements": {
-      "image_sizing": "优化图片尺寸设置，避免大图片占整页：流程图75%，对比图70%，普通图65%",
-      "float_parameters": "优化LaTeX浮动体参数，促进文图混排，减少单独浮动页",
-      "manual_images": "手动图片宽度调整为60%，更适合文档排版",
-      "text_image_balance": "增加页面文本最小比例到20%，确保图片上下有足够文字填充"
+      "table_conversion": "使用v2版本的简单有效表格转换，避免v5版本的复杂逻辑导致的错乱",
+      "image_processing": "使用v5版本的优化图片处理，包括智能浮动体和强制重新生成",
+      "manual_images": "新增支持images-man目录下手动图片的处理和转换",
+      "stability": "结合多个版本的优点，确保转换结果的稳定性和正确性"
     }
   },
   "detailed_statistics": {
@@ -62,7 +62,7 @@
       "3": 5,
       "4": 5,
       "5": 4,
-      "6": 13,
+      "6": 12,
       "7": 0
     },
     "table_counter": {

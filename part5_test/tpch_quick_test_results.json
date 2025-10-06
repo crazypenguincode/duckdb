@@ -1,0 +1,36 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T17:54:52.211831",
+    "query": "q01.sql"
+  },
+  "results": {
+    "q01": {
+      "no_cache": [
+        {
+          "success": false,
+          "execution_time": 0.022511720657348633,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3772) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": true,
+          "execution_time": 0.06993794441223145,
+          "output_lines": 68,
+          "error": null
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "error": "查询超时 (30秒)",
+          "execution_time": 30
+        },
+        {
+          "success": false,
+          "error": "查询超时 (30秒)",
+          "execution_time": 30
+        }
+      ]
+    }
+  }
+}

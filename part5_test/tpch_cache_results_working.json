@@ -1,0 +1,218 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T17:50:10.093665",
+    "duckdb_executable": "/Users/max/src/duckdb/build/release/duckdb",
+    "database_path": "/Users/max/test/tpc/tpch-sf1.db",
+    "queries_dir": "/Users/max/src/duckdb/extension/tpch/dbgen/queries"
+  },
+  "results": {
+    "q01": {
+      "no_cache_runs": [
+        {
+          "success": true,
+          "execution_time": 0.07189202308654785,
+          "output_lines": 68,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.05304312705993652,
+          "output_lines": 68,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.0560758113861084,
+          "output_lines": 68,
+          "error": null
+        }
+      ],
+      "with_cache_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (120秒)",
+          "execution_time": 120
+        },
+        {
+          "success": false,
+          "error": "查询超时 (120秒)",
+          "execution_time": 120
+        },
+        {
+          "success": false,
+          "execution_time": 39.22970104217529,
+          "output_lines": 0,
+          "error": ""
+        }
+      ]
+    },
+    "q02": {
+      "no_cache_runs": [
+        {
+          "success": true,
+          "execution_time": 0.04236721992492676,
+          "output_lines": 131,
+          "error": null
+        },
+        {
+          "success": false,
+          "execution_time": 0.023590803146362305,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02166295051574707,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ],
+      "with_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.022006988525390625,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.021414756774902344,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02230215072631836,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ]
+    },
+    "q03": {
+      "no_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.02315807342529297,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02250075340270996,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.022230863571166992,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ],
+      "with_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.023419857025146484,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.022578954696655273,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.022285938262939453,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ]
+    },
+    "q04": {
+      "no_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.021544933319091797,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.022037029266357422,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.021953105926513672,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ],
+      "with_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.02175593376159668,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.020869731903076172,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.021723031997680664,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ]
+    },
+    "q05": {
+      "no_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.021659135818481445,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.022729873657226562,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02152705192565918,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ],
+      "with_cache_runs": [
+        {
+          "success": false,
+          "execution_time": 0.023972034454345703,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.021397829055786133,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02197408676147461,
+          "output_lines": 10,
+          "error": "Error: unable to open database \"/Users/max/test/tpc/tpch-sf1.db\": IO Error: Could not set lock on file \"/Users/max/test/tpc/tpch-sf1.db\": Conflicting lock is held in /Users/max/src/duckdb/build/release/duckdb (PID 3782) by user max. See also https://duckdb.org/docs/stable/connect/concurrency\n"
+        }
+      ]
+    }
+  }
+}

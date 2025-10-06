@@ -1,0 +1,220 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T17:56:42.283914",
+    "duckdb_executable": "/Users/max/src/duckdb/build/release/duckdb",
+    "database_path": "/Users/max/test/tpc/tpch-sf1.db"
+  },
+  "query_results": {
+    "Q01": {
+      "cold_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_3"
+        }
+      ],
+      "warm_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_3"
+        }
+      ]
+    },
+    "Q02": {
+      "cold_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_3"
+        }
+      ],
+      "warm_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_3"
+        }
+      ]
+    },
+    "Q03": {
+      "cold_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_3"
+        }
+      ],
+      "warm_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_3"
+        }
+      ]
+    },
+    "Q04": {
+      "cold_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_3"
+        }
+      ],
+      "warm_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_1"
+        },
+        {
+          "success": false,
+          "execution_time": 10.992252349853516,
+          "output_lines": 0,
+          "error": "",
+          "test_name": "warm_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_3"
+        }
+      ]
+    },
+    "Q05": {
+      "cold_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "cold_run_3"
+        }
+      ],
+      "warm_runs": [
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_1"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_2"
+        },
+        {
+          "success": false,
+          "error": "查询超时 (15秒)",
+          "execution_time": 15,
+          "test_name": "warm_run_3"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T18:04:40.259663",
+    "test_type": "TPC-H缓存性能演示",
+    "duckdb_executable": "/Users/max/src/duckdb/build/release/duckdb"
+  },
+  "query_results": {
+    "简单聚合": {
+      "no_cache": [
+        {
+          "success": true,
+          "execution_time": 0.03041815757751465,
+          "output_lines": 89,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.02940964698791504,
+          "output_lines": 89,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.02932572364807129,
+          "output_lines": 89,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029367923736572266,
+          "output_lines": 89,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029115915298461914,
+          "output_lines": 89,
+          "error": null
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        }
+      ]
+    },
+    "分组聚合": {
+      "no_cache": [
+        {
+          "success": true,
+          "execution_time": 0.04243302345275879,
+          "output_lines": 94,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029175996780395508,
+          "output_lines": 94,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.028615951538085938,
+          "output_lines": 94,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.028380870819091797,
+          "output_lines": 94,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029298782348632812,
+          "output_lines": 94,
+          "error": null
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        }
+      ]
+    },
+    "条件查询": {
+      "no_cache": [
+        {
+          "success": true,
+          "execution_time": 0.03369498252868652,
+          "output_lines": 96,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.030801057815551758,
+          "output_lines": 96,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029230117797851562,
+          "output_lines": 96,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.031177043914794922,
+          "output_lines": 96,
+          "error": null
+        },
+        {
+          "success": true,
+          "execution_time": 0.029881000518798828,
+          "output_lines": 96,
+          "error": null
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        },
+        {
+          "success": false,
+          "error": "查询超时 (10秒)",
+          "execution_time": 10
+        }
+      ]
+    }
+  }
+}

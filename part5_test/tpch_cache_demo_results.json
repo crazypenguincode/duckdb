@@ -1,0 +1,134 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T18:03:30.089986",
+    "test_type": "内存数据库缓存演示"
+  },
+  "query_results": {
+    "Q01_简化版": {
+      "no_cache": [
+        {
+          "success": false,
+          "execution_time": 0.026855945587158203,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.025695085525512695,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02603292465209961,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "execution_time": 0.026536226272583008,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02664804458618164,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.025506973266601562,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ]
+    },
+    "聚合查询": {
+      "no_cache": [
+        {
+          "success": false,
+          "execution_time": 0.025303125381469727,
+          "output_lines": 78,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02565288543701172,
+          "output_lines": 78,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02565908432006836,
+          "output_lines": 78,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "execution_time": 0.0257108211517334,
+          "output_lines": 120,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.026302814483642578,
+          "output_lines": 120,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.026041030883789062,
+          "output_lines": 120,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ]
+    },
+    "复杂查询": {
+      "no_cache": [
+        {
+          "success": false,
+          "execution_time": 0.02531290054321289,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.025860071182250977,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.025650978088378906,
+          "output_lines": 84,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ],
+      "with_cache": [
+        {
+          "success": false,
+          "execution_time": 0.025914907455444336,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.02704310417175293,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        },
+        {
+          "success": false,
+          "execution_time": 0.026144027709960938,
+          "output_lines": 132,
+          "error": "Binder Error: There are no UNIQUE/PRIMARY KEY Indexes that refer to this table, ON CONFLICT is a no-op\n"
+        }
+      ]
+    }
+  }
+}

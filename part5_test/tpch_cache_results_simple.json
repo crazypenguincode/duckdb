@@ -1,0 +1,48 @@
+{
+  "test_info": {
+    "timestamp": "2025-10-06T17:49:29.573189",
+    "test_queries": [
+      "q01.sql",
+      "q02.sql",
+      "q03.sql"
+    ]
+  },
+  "results": {
+    "q01": {
+      "no_cache": {
+        "success": false,
+        "execution_time": 0.08358097076416016,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=false; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                         ^\n"
+      },
+      "with_cache": {
+        "success": false,
+        "execution_time": 0.02858901023864746,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=true; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                        ^\n"
+      }
+    },
+    "q02": {
+      "no_cache": {
+        "success": false,
+        "execution_time": 0.026684284210205078,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=false; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                         ^\n"
+      },
+      "with_cache": {
+        "success": false,
+        "execution_time": 0.027122974395751953,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=true; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                        ^\n"
+      }
+    },
+    "q03": {
+      "no_cache": {
+        "success": false,
+        "execution_time": 0.027553081512451172,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=false; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                         ^\n"
+      },
+      "with_cache": {
+        "success": false,
+        "execution_time": 0.026826858520507812,
+        "error": "Parser Error: syntax error at or near \".\"\n\nLINE 1: PRAGMA enable_query_cache=true; .read /Users/max/src/duckdb/extension/tpch/dbgen/queries...\n                                        ^\n"
+      }
+    }
+  }
+}

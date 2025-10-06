@@ -67,6 +67,8 @@ shell或python调用时就使用build/release/duckdb
 在part5_test下，写一个测试缓存的脚本，并给出对应的结论，更新进md/第五章-实验与分析.md中的5.2.9 ，运行10次 50次 100次 200次的结果。/md/第五章-实验与分析.md
 
 注意避免避免“"每次调用 subprocess.run 都会创建新的 DuckDB 进程和 ClientContext，缓存无法在进程间共享"的问题
+
+写一个测试脚本 用于测试通过tpch每个查询sql在有无缓存的情况下的性能对比。要求extension/tpch/dbgen/queries(对应sf=1的数据库为/Users/max/test/tpc/tpch-sf1.db)，这22个sql 每个都执行，并记录运行1次，10次的（有无缓存）时间。根据结果，并生成对比mermaid柱状图、折线图。 可以cd /Users/max/src/duckdb/ 。之前的测试脚本在/Users/max/src/duckdb/part5_test下面，可以参考。生成新的脚本也放在这里。可执行文件在/Users/max/src/duckdb/build/release/duckdb @/src/main/query_cache.cpp @/tools/sqlite3_api_wrapper/sqlite3_api_wrapper.cpp
 ## 为什么缓存没有提升
 python3 run_simple_cache_test.py /Users/max/src/duckdb/build/release/duckdb为什么重复sql 查询效率没有提升，是否开启了缓存？
 ### 结论：

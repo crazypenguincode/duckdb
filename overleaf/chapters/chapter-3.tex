@@ -86,29 +86,32 @@ CTE（Common Table Expression）缓存采用多阶段缓存架构，支持解析
 
 缓存查找算法采用两阶段过滤机制，通过布隆过滤器预筛选和精确匹配实现高效的缓存命中检测。算法设计充分考虑了查找效率和准确性的平衡，通过多层次过滤减少不必要的计算开销。
 
-\textbf{算法3.1 缓存查找算法}
-``\texttt{
-输入: query_string (查询字符串)
-输出: query_result (查询结果)
+\begin{algorithm}[htbp]
+\caption{缓存查找算法}
+\label{alg3_3_1}
+\begin{algorithmic}[1]
+\Require {query\_string (查询字符串)}
+\Ensure {query\_result (查询结果)}
 
-1. query_hash ← Hash(Normalize(query_string))     // 对查询字符串进行标准化并计算哈希值
-2. if NOT bloom_filter.MightContain(query_hash) then  // 布隆过滤器预筛选检查
-3.     return ExecuteQuery(query_string)         // 布隆过滤器确定不存在，直接执行查询
-4. end if
-5. 
-6. cache_entry ← cache_table.Find(query_hash)   // 在缓存表中查找对应的缓存条目
-7. if cache_entry = NULL then                    // 缓存条目不存在（假阳性情况）
-8.     return ExecuteQuery(query_string)         // 执行原始查询并返回结果
-9. end if
-10.
-11. if IsExpired(cache_entry) then              // 检查缓存条目是否已过期
-12.     cache_table.Remove(query_hash)           // 移除过期的缓存条目
-13.     return ExecuteQuery(query_string)        // 重新执行查询
-14. end if
-15.
-16. UpdateAccessStats(cache_entry)              // 更新缓存条目的访问统计信息
-17. return cache_entry.result                    // 返回缓存的查询结果
-}`\texttt{
+\State query\_hash $\leftarrow$ Hash(Normalize(query\_string)) \Comment{对查询字符串进行标准化并计算哈希值}
+\If{NOT bloom_filter.MightContain(query_hash)} \Comment{布隆过滤器预筛选检查}
+\State \Return {ExecuteQuery(query\_string)} \Comment{布隆过滤器确定不存在，直接执行查询}
+\EndIf
+\State 
+\State cache\_entry $\leftarrow$ cache\_table.Find(query\_hash) \Comment{在缓存表中查找对应的缓存条目}
+\If{cache_entry = NULL} \Comment{缓存条目不存在（假阳性情况）}
+\State \Return {ExecuteQuery(query\_string)} \Comment{执行原始查询并返回结果}
+\EndIf
+\State 
+\If{IsExpired(cache_entry)} \Comment{检查缓存条目是否已过期}
+\State cache\_table.Remove(query\_hash) \Comment{移除过期的缓存条目}
+\State \Return {ExecuteQuery(query\_string)} \Comment{重新执行查询}
+\EndIf
+\State 
+\State UpdateAccessStats(cache\_entry) \Comment{更新缓存条目的访问统计信息}
+\State \Return {cache\_entry.result} \Comment{返回缓存的查询结果}
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{CTE多阶段缓存算法}
 
@@ -128,29 +131,32 @@ CTE多阶段缓存算法专门处理公共表表达式的缓存操作，支持�
         \hline
         技术特征 & 实现方式 & 性能影响 & 优化策略 \\
         \hline
-        **哈希函数** & 多重哈希算法 & 计算开销vs准确性 & 自适应哈希数量调整 \\
-        **位向量** & 紧凑位数组存储 & 内存占用vs容量 & 动态扩展和压缩 \\
-        **假阳性控制** & 统计监控和参数调整 & 查找效率vs准确性 & 阈值自适应控制 \\
-        **禁用机制** & 条件性绕过过滤 & 灵活性vs一致性 & 智能启用/禁用策略 \\
+        \textbf{哈希函数} & 多重哈希算法 & 计算开销vs准确性 & 自适应哈希数量调整 \\
+        \textbf{位向量} & 紧凑位数组存储 & 内存占用vs容量 & 动态扩展和压缩 \\
+        \textbf{假阳性控制} & 统计监控和参数调整 & 查找效率vs准确性 & 阈值自适应控制 \\
+        \textbf{禁用机制} & 条件性绕过过滤 & 灵活性vs一致性 & 智能启用/禁用策略 \\
         \hline
     \end{tabular}
 \end{table}
 
-**算法3.5 布隆过滤器存在性检测算法**
-}`\texttt{
-输入: element (待检测元素)
-输出: might_exist (可能存在标志)
+\begin{algorithm}[htbp]
+\caption{布隆过滤器存在性检测算法}
+\label{alg3_3_5}
+\begin{algorithmic}[1]
+\Require {element (待检测元素)}
+\Ensure {might\_exist (可能存在标志)}
 
-1. if disabled then return true                     // 如果布隆过滤器被禁用，返回true（不过滤）
-2. hash_values ← GetHashValues(element)             // 使用多个哈希函数计算元素的哈希值数组
-3. for each hash_val in hash_values do              // 遍历所有哈希值
-4.     bit_index ← hash_val mod bit_array.size()   // 计算在位数组中的索引位置
-5.     if bit_array[bit_index] = false then        // 如果任何一个对应位为0
-6.         return false                            // 确定元素不存在，返回false
-7.     end if
-8. end for                                          // 所有对应位都为1
-9. return true                                      // 元素可能存在，返回true（可能有假阳性）
-}`\texttt{
+\If{disabled} \Comment{如果布隆过滤器被禁用，返回true（不过滤）}
+\State hash\_values $\leftarrow$ GetHashValues(element) \Comment{使用多个哈希函数计算元素的哈希值数组}
+\For{each hash_val in hash_values} \Comment{遍历所有哈希值}
+\State bit\_index $\leftarrow$ hash\_val mod bit\_array.size() \Comment{计算在位数组中的索引位置}
+\If{bit_array[bit_index] = false} \Comment{如果任何一个对应位为0}
+\State \Return {false} \Comment{确定元素不存在，返回false}
+\EndIf
+\EndFor \Comment{所有对应位都为1}
+\State \Return {true} \Comment{元素可能存在，返回true（可能有假阳性）}
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{SQL语句动态缓存技术}
 
@@ -164,27 +170,30 @@ SQL语句动态缓存技术通过查询标准化、哈希索引和智能淘汰�
         \hline
         技术组件 & 核心功能 & 关键算法 & 性能特征 \\
         \hline
-        **查询标准化** & 语义等价识别 & 语法树规范化 & 提高缓存命中率 \\
-        **哈希索引** & 快速查询定位 & 一致性哈希算法 & O(1)查找复杂度 \\
-        **TTL管理** & 自动过期清理 & 时间窗口滑动 & 保证数据时效性 \\
-        **LRU淘汰** & 容量控制策略 & 最近最少使用 & 优化内存利用率 \\
-        **ML特征** & 智能缓存决策 & 特征工程分析 & 预测访问模式 \\
+        \textbf{查询标准化} & 语义等价识别 & 语法树规范化 & 提高缓存命中率 \\
+        \textbf{哈希索引} & 快速查询定位 & 一致性哈希算法 & O(1)查找复杂度 \\
+        \textbf{TTL管理} & 自动过期清理 & 时间窗口滑动 & 保证数据时效性 \\
+        \textbf{LRU淘汰} & 容量控制策略 & 最近最少使用 & 优化内存利用率 \\
+        \textbf{ML特征} & 智能缓存决策 & 特征工程分析 & 预测访问模式 \\
         \hline
     \end{tabular}
 \end{table}
 
-**算法3.6 查询标准化算法**
-}`\texttt{
-输入: raw_query (原始查询字符串)
-输出: normalized_query (标准化查询)
+\begin{algorithm}[htbp]
+\caption{查询标准化算法}
+\label{alg3_3_6}
+\begin{algorithmic}[1]
+\Require {raw\_query (原始查询字符串)}
+\Ensure {normalized\_query (标准化查询)}
 
-1. query ← RemoveComments(raw_query)                // 移除SQL注释（单行和多行注释）
-2. query ← NormalizeWhitespace(query)               // 标准化空白字符（空格、制表符、换行符）
-3. query ← StandardizeKeywords(query)               // 将SQL关键字转换为统一大小写格式
-4. query ← SortClauseElements(query)                // 对子句元素进行排序（如WHERE条件、SELECT列表）
-5. query ← RemoveRedundantParentheses(query)        // 移除冗余的括号
-6. return query                                     // 返回标准化后的查询字符串
-}``
+\State query $\leftarrow$ RemoveComments(raw\_query) \Comment{移除SQL注释（单行和多行注释）}
+\State query $\leftarrow$ NormalizeWhitespace(query) \Comment{标准化空白字符（空格、制表符、换行符）}
+\State query $\leftarrow$ StandardizeKeywords(query) \Comment{将SQL关键字转换为统一大小写格式}
+\State query $\leftarrow$ SortClauseElements(query) \Comment{对子句元素进行排序（如WHERE条件、SELECT列表）}
+\State query $\leftarrow$ RemoveRedundantParentheses(query) \Comment{移除冗余的括号}
+\State \Return {query} \Comment{返回标准化后的查询字符串}
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{CTE细粒度缓存技术}
 

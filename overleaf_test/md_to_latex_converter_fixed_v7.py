@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Markdown到LaTeX转换脚本 - 增强版本v7
-基于v6版本，新增支持images-man目录下手动图片的处理
-支持![描述](images-man/图片名称.png)格式的图片引用转换
+基于v6版本，新增功能：
+1. 支持images-man目录下手动图片的处理
+2. 支持![描述](images-man/图片名称.png)格式的图片引用转换
+3. 新增算法代码块转换功能，支持将Markdown算法转换为LaTeX algorithm环境
+4. 自动识别算法特征（输入/输出、控制结构、步骤编号等）
+5. 生成标准的LaTeX algorithmic格式，支持中文关键词
 """
 
 import os
@@ -339,9 +343,255 @@ class MarkdownToLatexConverter:
         
         return content
     
+    def convert_algorithms(self, content: str, chapter_num: int) -> str:
+        """将算法代码块转换为LaTeX algorithm环境"""
+        
+        # 初始化算法计数器
+        if not hasattr(self, 'algorithm_counter'):
+            self.algorithm_counter = {}
+        if chapter_num not in self.algorithm_counter:
+            self.algorithm_counter[chapter_num] = 0
+        
+        def replace_algorithm(match):
+            # 更新算法计数器
+            self.algorithm_counter[chapter_num] += 1
+            
+            def escape_latex_in_algorithm(text):
+                """在算法环境中转义LaTeX特殊字符"""
+                # 保护数学符号和操作符
+                text = text.replace('←', '$\\leftarrow$')
+                text = text.replace('→', '$\\rightarrow$')
+                text = text.replace('≥', '$\\geq$')
+                text = text.replace('≤', '$\\leq$')
+                text = text.replace('≠', '$\\neq$')
+                text = text.replace('∈', '$\\in$')
+                text = text.replace('∉', '$\\notin$')
+                
+                # 转义特殊字符，但保持变量名的可读性
+                text = text.replace('&', '\\&')
+                text = text.replace('%', '\\%')
+                text = text.replace('#', '\\#')
+                text = text.replace('^', '\\^{}')
+                text = text.replace('~', '\\~{}')
+                
+                # 处理下划线：在变量名中转义为\\_
+                text = text.replace('_', '\\_')
+                
+                return text
+            
+            def process_algorithm_statement(step_content):
+                """处理单个算法语句，返回相应的LaTeX命令"""
+                step_content = step_content.strip()
+                
+                # 处理控制结构
+                if step_content.lower().startswith('if ') and ' then' in step_content.lower():
+                    # 提取条件部分
+                    condition_part = step_content.split(' then')[0]
+                    condition = re.sub(r'^if\s+', '', condition_part, flags=re.IGNORECASE).strip()
+                    condition = escape_latex_in_algorithm(condition)
+                    return f"\\If{{{condition}}}"
+                elif step_content.lower().strip() in ['end if', 'endif']:
+                    return "\\EndIf"
+                elif step_content.lower().startswith('for ') and ' do' in step_content.lower():
+                    loop_part = step_content.split(' do')[0]
+                    loop_condition = re.sub(r'^for\s+', '', loop_part, flags=re.IGNORECASE).strip()
+                    loop_condition = escape_latex_in_algorithm(loop_condition)
+                    return f"\\For{{{loop_condition}}}"
+                elif step_content.lower().strip() in ['end for', 'endfor']:
+                    return "\\EndFor"
+                elif step_content.lower().startswith('while ') and ' do' in step_content.lower():
+                    while_part = step_content.split(' do')[0]
+                    while_condition = re.sub(r'^while\s+', '', while_part, flags=re.IGNORECASE).strip()
+                    while_condition = escape_latex_in_algorithm(while_condition)
+                    return f"\\While{{{while_condition}}}"
+                elif step_content.lower().strip() in ['end while', 'endwhile']:
+                    return "\\EndWhile"
+                elif step_content.lower().startswith('return '):
+                    return_value = step_content[7:].strip()  # 移除 'return '
+                    return_value = escape_latex_in_algorithm(return_value)
+                    return f"\\State \\Return {{{return_value}}}"
+                else:
+                    # 普通语句，需要转义LaTeX特殊字符
+                    escaped_content = escape_latex_in_algorithm(step_content)
+                    return f"\\State {escaped_content}"
+            
+            algorithm_content = match.group(1).strip()
+            algorithm_pos = match.start()
+            
+            # 在前后文中找到算法标题
+            before_text = content[:algorithm_pos]
+            after_text = content[match.end():]
+            
+            # 查找算法标题模式，提取完整的算法号和标题
+            title_pattern = r'\*\*算法(\d+\.\d+)\s+([^*]+)\*\*'
+            
+            alg_num = None
+            clean_title = "未命名算法"
+            
+            # 优先在前面查找标题（算法标题通常在算法前面）
+            matches_before = list(re.finditer(title_pattern, before_text))
+            if matches_before:
+                # 找到距离当前位置最近的标题（最后一个匹配）
+                last_match = matches_before[-1]
+                # 检查这个标题是否距离当前算法很近（在同一段落内）
+                title_end_pos = last_match.end()
+                text_between = before_text[title_end_pos:].strip()
+                # 如果标题和算法之间只有很少的文本（比如小于100个字符），则认为是匹配的
+                if len(text_between) < 100:
+                    alg_num = last_match.group(1)
+                    clean_title = last_match.group(2).strip()
+            
+            # 如果前面没找到，在后面查找标题
+            if not alg_num:
+                match_after = re.search(title_pattern, after_text[:200])
+                if match_after:
+                    alg_num = match_after.group(1)
+                    clean_title = match_after.group(2).strip()
+            
+            if not alg_num:
+                alg_num = f"{chapter_num}.{self.algorithm_counter[chapter_num]}"
+            
+            # 处理算法内容，转换为algorithmic格式
+            lines = algorithm_content.split('\n')
+            algorithmic_lines = []
+            
+            for line in lines:
+                original_line = line
+                line = line.strip()
+                if not line:
+                    # 保留空行作为分隔
+                    algorithmic_lines.append("")
+                    continue
+                
+                # 处理输入输出
+                if line.startswith('输入:') or line.startswith('输入：'):
+                    input_text = line.split(':', 1)[1].strip() if ':' in line else line.split('：', 1)[1].strip()
+                    algorithmic_lines.append(f"\\Require {{{input_text}}}")
+                elif line.startswith('输出:') or line.startswith('输出：'):
+                    output_text = line.split(':', 1)[1].strip() if ':' in line else line.split('：', 1)[1].strip()
+                    algorithmic_lines.append(f"\\Ensure {{{output_text}}}")
+                # 处理步骤编号
+                elif re.match(r'^\d+\.', line):
+                    # 移除步骤编号，保留内容
+                    step_content = re.sub(r'^\d+\.\s*', '', line)
+                    
+                    # 检查是否包含注释
+                    if '//' in step_content:
+                        # 分离代码和注释
+                        parts = step_content.split('//', 1)
+                        code_part = parts[0].strip()
+                        comment_part = parts[1].strip()
+                        
+                        # 处理代码部分
+                        if code_part:
+                            code_line = process_algorithm_statement(code_part)
+                            if comment_part:
+                                algorithmic_lines.append(f"{code_line} \\Comment{{{comment_part}}}")
+                            else:
+                                algorithmic_lines.append(code_line)
+                        elif comment_part:
+                            algorithmic_lines.append(f"\\Comment{{{comment_part}}}")
+                    else:
+                        # 没有注释的普通语句
+                        algorithmic_lines.append(process_algorithm_statement(step_content))
+                        
+                # 处理注释（以//开头的行）
+                elif line.startswith('//'):
+                    comment = line[2:].strip()
+                    algorithmic_lines.append(f"\\Comment{{{comment}}}")
+                else:
+                    # 其他内容作为普通语句
+                    escaped_line = escape_latex_in_algorithm(line)
+                    algorithmic_lines.append(f"\\State {escaped_line}")
+            
+            # 过滤掉连续的空行，只保留单个空行作为分隔
+            filtered_lines = []
+            prev_empty = False
+            for line in algorithmic_lines:
+                if line == "":
+                    if not prev_empty:
+                        filtered_lines.append("")
+                    prev_empty = True
+                else:
+                    filtered_lines.append(line)
+                    prev_empty = False
+            
+            # 移除开头和结尾的空行
+            while filtered_lines and filtered_lines[0] == "":
+                filtered_lines.pop(0)
+            while filtered_lines and filtered_lines[-1] == "":
+                filtered_lines.pop()
+            
+            algorithmic_lines = filtered_lines
+            
+            # 生成LaTeX算法代码
+            label = f"alg{chapter_num}_{alg_num.replace('.', '_')}"
+            
+            latex_algorithm = f"""
+\\begin{{algorithm}}[htbp]
+\\caption{{{clean_title}}}
+\\label{{{label}}}
+\\begin{{algorithmic}}[ALGORITHM_ONE]
+{chr(10).join(algorithmic_lines)}
+\\end{{algorithmic}}
+\\end{{algorithm}}
+
+"""
+            return latex_algorithm
+
+        
+        # 替换算法代码块，匹配以```开头的代码块
+        pattern = r'```[^\n]*\n(.*?)\n```'
+        
+        # 只转换明确标记为算法的代码块，或者包含算法关键词的代码块
+        def should_convert_to_algorithm(match):
+            content_block = match.group(1)
+            # 检查是否包含算法特征
+            algorithm_indicators = [
+                '输入:', '输出:', '输入：', '输出：',
+                'if ', 'then', 'else', 'end if',
+                'for ', 'do', 'end for',
+                'while ', 'end while',
+                'return ', 'Return',
+                r'^\d+\.',  # 步骤编号
+            ]
+            
+            # 检查是否包含步骤编号（这是算法的强特征）
+            if re.search(r'^\d+\.', content_block, re.MULTILINE):
+                return True
+            
+            # 检查是否同时包含输入和输出
+            has_input = re.search(r'输入[:：]', content_block, re.IGNORECASE)
+            has_output = re.search(r'输出[:：]', content_block, re.IGNORECASE)
+            if has_input and has_output:
+                return True
+            
+            # 检查其他算法特征
+            for indicator in algorithm_indicators:
+                if re.search(indicator, content_block, re.IGNORECASE | re.MULTILINE):
+                    return True
+            return False
+        
+        # 先找到所有代码块
+        all_matches = list(re.finditer(pattern, content, flags=re.DOTALL))
+        
+        # 从后往前替换，避免位置偏移
+        for match in reversed(all_matches):
+            if should_convert_to_algorithm(match):
+                replacement = replace_algorithm(match)
+                content = content[:match.start()] + replacement + content[match.end():]
+        
+        return content
+    
     def convert_figure_titles(self, content: str) -> str:
         """移除独立的图片标题，因为标题会在LaTeX图片的caption中显示"""
         pattern = r'\*\*图(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
+        content = re.sub(pattern, '', content)
+        return content
+    
+    def convert_algorithm_titles(self, content: str) -> str:
+        """移除独立的算法标题，因为标题会在LaTeX算法的caption中显示"""
+        pattern = r'\*\*算法(\d+\.\d+)\s+([^*]+)\*\*\s*\n?'
         content = re.sub(pattern, '', content)
         return content
     
@@ -523,6 +773,9 @@ class MarkdownToLatexConverter:
         # 使用正则表达式匹配范围引用格式
         content = re.sub(r'\[(\d+\s*-\s*\d+)\]', expand_range_reference, content)
         
+        # 还原算法环境中的特殊标记
+        content = content.replace('[ALGORITHM_ONE]', '[1]')
+        
         return content
     
     def clean_latex_content(self, content: str) -> str:
@@ -559,10 +812,31 @@ class MarkdownToLatexConverter:
         # 保护行内代码
         content = re.sub(r'`([^`]+)`', protect_code, content)
         
-        # 转换代码块
-        content = re.sub(r'```(\w+)?\n(.*?)\n```', 
-                        r'\\begin{verbatim}\n\2\n\\end{verbatim}', 
-                        content, flags=re.DOTALL)
+        # 转换剩余的代码块（不是算法的代码块）
+        # 注意：算法代码块已经在之前的步骤中转换为algorithm环境了
+        def convert_remaining_code_blocks(match):
+            lang = match.group(1) if match.group(1) else ""
+            code_content = match.group(2)
+            
+            # 检查是否是算法相关的代码块，如果是则跳过转换
+            algorithm_indicators = [
+                '输入:', '输出:', '输入：', '输出：',
+                'if ', 'then', 'else', 'end if',
+                'for ', 'do', 'end for',
+                'while ', 'end while',
+                'return ', 'Return',
+                r'^\d+\.',  # 步骤编号
+            ]
+            
+            for indicator in algorithm_indicators:
+                if re.search(indicator, code_content, re.IGNORECASE | re.MULTILINE):
+                    # 这是算法代码块，保持原样（应该已经被转换为algorithm环境）
+                    return match.group(0)
+            
+            # 这是普通代码块，转换为verbatim环境
+            return f'\\begin{{verbatim}}\n{code_content}\n\\end{{verbatim}}'
+        
+        content = re.sub(r'```(\w+)?\n(.*?)\n```', convert_remaining_code_blocks, content, flags=re.DOTALL)
         
         # 转换列表格式 - 在其他格式转换之前处理
         content = self.convert_lists(content)
@@ -895,7 +1169,9 @@ class MarkdownToLatexConverter:
         content = self.convert_headers(content)
         content = self.convert_mermaid_to_figures(content, chapter_num)  # 使用v5版本的优化图片处理
         content = self.convert_manual_images(content)  # 新增：处理手动图片引用
+        content = self.convert_algorithms(content, chapter_num)  # 新增：处理算法代码块
         content = self.convert_figure_titles(content)  # 处理独立的图片标题
+        content = self.convert_algorithm_titles(content)  # 新增：处理独立的算法标题
         content = self.convert_table_titles(content)   # 处理独立的表格标题
         content = self.convert_tables(content, chapter_num)  # 使用v2版本的简单表格转换
         content = self.convert_references(content)
@@ -914,6 +1190,7 @@ class MarkdownToLatexConverter:
         # 重新计算统计信息，确保准确性
         total_figures = sum(self.figure_counter.values())
         total_tables = sum(self.table_counter.values())
+        total_algorithms = sum(getattr(self, 'algorithm_counter', {}).values())
         
         report = {
             "conversion_summary": {
@@ -921,6 +1198,7 @@ class MarkdownToLatexConverter:
                 "chapters_converted": 0,
                 "total_figures": total_figures,
                 "total_tables": total_tables,
+                "total_algorithms": total_algorithms,
                 "total_references": len(self.reference_mapping)
             },
             "chapter_details": {},
@@ -931,12 +1209,14 @@ class MarkdownToLatexConverter:
                     "table_conversion": "使用v2版本的简单有效表格转换，避免v5版本的复杂逻辑导致的错乱",
                     "image_processing": "使用v5版本的优化图片处理，包括智能浮动体和强制重新生成",
                     "manual_images": "新增支持images-man目录下手动图片的处理和转换",
+                    "algorithm_conversion": "新增算法代码块转换功能，支持将Markdown算法转换为LaTeX algorithm环境",
                     "stability": "结合多个版本的优点，确保转换结果的稳定性和正确性"
                 }
             },
             "detailed_statistics": {
                 "figure_counter": dict(self.figure_counter),
-                "table_counter": dict(self.table_counter)
+                "table_counter": dict(self.table_counter),
+                "algorithm_counter": dict(getattr(self, 'algorithm_counter', {}))
             }
         }
         
@@ -945,14 +1225,16 @@ class MarkdownToLatexConverter:
         for chapter_num in range(1, 8):
             figures = self.figure_counter.get(chapter_num, 0)
             tables = self.table_counter.get(chapter_num, 0)
+            algorithms = getattr(self, 'algorithm_counter', {}).get(chapter_num, 0)
             
-            if figures > 0 or tables > 0:
+            if figures > 0 or tables > 0 or algorithms > 0:
                 chapters_converted += 1
             
             # 记录所有章节的详细信息，包括没有图表的章节
             report["chapter_details"][f"chapter_{chapter_num}"] = {
                 "figures": figures,
-                "tables": tables
+                "tables": tables,
+                "algorithms": algorithms
             }
         
         report["conversion_summary"]["chapters_converted"] = chapters_converted
@@ -995,6 +1277,24 @@ class MarkdownToLatexConverter:
 \\usepackage{array}
 \\usepackage{multirow}
 \\usepackage{multicol}
+
+% 算法包
+\\usepackage{algorithm}
+\\usepackage{algorithmic}
+\\renewcommand{\\algorithmicrequire}{\\textbf{输入:}}
+\\renewcommand{\\algorithmicensure}{\\textbf{输出:}}
+\\renewcommand{\\algorithmicif}{\\textbf{如果}}
+\\renewcommand{\\algorithmicthen}{\\textbf{那么}}
+\\renewcommand{\\algorithmicelse}{\\textbf{否则}}
+\\renewcommand{\\algorithmicelsif}{\\textbf{否则如果}}
+\\renewcommand{\\algorithmicendif}{\\textbf{结束}}
+\\renewcommand{\\algorithmicfor}{\\textbf{对于}}
+\\renewcommand{\\algorithmicdo}{\\textbf{执行}}
+\\renewcommand{\\algorithmicendfor}{\\textbf{结束}}
+\\renewcommand{\\algorithmicwhile}{\\textbf{当}}
+\\renewcommand{\\algorithmicendwhile}{\\textbf{结束}}
+\\renewcommand{\\algorithmicreturn}{\\textbf{返回}}
+\\renewcommand{\\algorithmiccomment}[1]{\\hfill // #1}
 
 % 页面设置
 \\geometry{
@@ -1119,16 +1419,17 @@ class MarkdownToLatexConverter:
         print(f"成功转换章节: {success_count}/{len(self.chapter_files)-1}")  # 减1是因为第0章是摘要
         print(f"总图片数量: {report['conversion_summary']['total_figures']}")
         print(f"总表格数量: {report['conversion_summary']['total_tables']}")
+        print(f"总算法数量: {report['conversion_summary']['total_algorithms']}")
         print(f"总参考文献: {report['conversion_summary']['total_references']}")
         
         print("\nv7增强版本特点:")
         for key, value in report["version_info"]["improvements"].items():
             print(f"  • {value}")
         
-        print("\n各章节详情:")
+        print("\\n各章节详情:")
         for chapter, details in report["chapter_details"].items():
             chapter_num = chapter.split('_')[1]
-            print(f"  第{chapter_num}章: {details['figures']}个图片, {details['tables']}个表格")
+            print(f"  第{chapter_num}章: {details['figures']}个图片, {details['tables']}个表格, {details['algorithms']}个算法")
         
         print(f"\n生成的文件:")
         for file_path in report["files_generated"]:
@@ -1138,10 +1439,11 @@ class MarkdownToLatexConverter:
         print("="*60)
         
         # 使用建议
-        print("\n📋 v7增强版本说明:")
+        print("\\n📋 v7增强版本说明:")
         print("✅ 表格转换: 使用v2版本的简单有效方法，避免复杂逻辑导致的错乱")
         print("✅ 图片处理: 使用v5版本的优化浮动体处理和智能标题匹配")
         print("✅ 手动图片: 新增支持images-man目录下手动图片的处理和转换")
+        print("✅ 算法转换: 新增算法代码块转换功能，支持将Markdown算法转换为LaTeX algorithm环境")
         print("✅ 稳定性: 结合多个版本的优点，确保转换结果正确")
         print("✅ 兼容性: 生成标准的LaTeX代码，易于编译和调试")
 

@@ -19,26 +19,29 @@
 
 缓存插入算法负责将新的查询结果添加到缓存系统中，包括容量管理、淘汰策略和一致性维护等关键步骤。算法通过智能的容量管理和淘汰策略，确保缓存系统的高效运行。
 
-\textbf{算法3.2 缓存插入算法}
-``\texttt{
-输入: query_string, query_result
-输出: success (插入成功标志)
+\begin{algorithm}[htbp]
+\caption{缓存插入算法}
+\label{alg4_3_2}
+\begin{algorithmic}[1]
+\Require {query\_string, query\_result}
+\Ensure {success (插入成功标志)}
 
-1. if cache_table.Size() ≥ max_entries then      // 检查缓存容量是否已满
-2.     victim ← SelectLRUVictim()               // 选择最近最少使用的缓存条目作为淘汰对象
-3.     cache_table.Remove(victim.hash)          // 从缓存表中移除被淘汰的条目
-4. end if
-5.
-6. query_hash ← Hash(Normalize(query_string))   // 对查询字符串标准化并计算哈希值
-7. cache_entry ← CreateCacheEntry(query_result) // 创建新的缓存条目对象
-8. cache_entry.created_at ← CurrentTime()       // 设置缓存条目的创建时间戳
-9. cache_entry.access_count ← 1                 // 初始化访问计数为1
-10.
-11. cache_table.Insert(query_hash, cache_entry) // 将新缓存条目插入到缓存表中
-12. bloom_filter.Add(query_hash)                // 将查询哈希值添加到布隆过滤器中
-13. UpdateCacheStatistics()                     // 更新缓存系统的统计信息
-14. return true                                 // 返回插入成功标志
-}``
+\If{cache_table.Size() $\geq$ max_entries} \Comment{检查缓存容量是否已满}
+\State victim $\leftarrow$ SelectLRUVictim() \Comment{选择最近最少使用的缓存条目作为淘汰对象}
+\State cache\_table.Remove(victim.hash) \Comment{从缓存表中移除被淘汰的条目}
+\EndIf
+\State 
+\State query\_hash $\leftarrow$ Hash(Normalize(query\_string)) \Comment{对查询字符串标准化并计算哈希值}
+\State cache\_entry $\leftarrow$ CreateCacheEntry(query\_result) \Comment{创建新的缓存条目对象}
+\State cache\_entry.created\_at $\leftarrow$ CurrentTime() \Comment{设置缓存条目的创建时间戳}
+\State cache\_entry.access\_count $\leftarrow$ 1 \Comment{初始化访问计数为1}
+\State 
+\State cache\_table.Insert(query\_hash, cache\_entry) \Comment{将新缓存条目插入到缓存表中}
+\State bloom\_filter.Add(query\_hash) \Comment{将查询哈希值添加到布隆过滤器中}
+\State UpdateCacheStatistics() \Comment{更新缓存系统的统计信息}
+\State \Return {true} \Comment{返回插入成功标志}
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{核心设计理念}
 

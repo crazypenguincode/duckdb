@@ -117,7 +117,7 @@ def run_query(duckdb_exe, database, sql):
             input=sql,
             text=True,
             capture_output=True,
-            timeout=30
+            timeout=30000
         )
         end_time = time.time()
         

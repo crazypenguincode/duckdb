@@ -41,109 +41,24 @@ flowchart LR
 
 细粒度缓存是系统设计的第三个核心理念，支持从完整查询结果到子查询片段的多粒度缓存管理。完整查询缓存存储整个SQL语句的执行结果，适用于重复执行的复杂查询。子查询缓存存储CTE、子查询、视图等子组件的结果，能够在不同的查询之间共享中间结果。表达式缓存存储常用表达式和函数的计算结果，避免重复的表达式计算。这种细粒度的缓存策略能够最大化缓存的利用率，提高系统的整体性能。
 
-## 3.2 数据结构设计
+## 3.2 核心数据结构与算法设计
 
-### 3.2.1 布隆过滤器数据结构
+### 3.2.1 系统数据结构架构
 
-布隆过滤器是系统前置过滤的核心数据结构，基于DuckDB项目中BloomFilter类实现。布隆过滤器采用位向量和多个哈希函数的组合，能够高效地判断一个元素是否可能存在于集合中。
+动态缓存管理系统采用分层数据结构设计，核心组件包括布隆过滤器、查询缓存条目和CTE缓存条目三个主要部分。布隆过滤器作为前置过滤层，提供快速的存在性检测；查询缓存条目存储完整的查询结果和元数据信息；CTE缓存条目支持多阶段缓存，实现细粒度的查询优化。
 
-#### 3.2.1.1 核心数据结构
+**表3.1 核心数据结构组件**
 
-基于实际代码实现，布隆过滤器的核心结构如下：
+| 组件名称 | 主要功能 | 关键属性 | 存储结构 |
+|----------|----------|----------|----------|
+| **BloomFilter** | 前置过滤检测 | 位向量、哈希函数数量、元素计数 | 位数组 |
+| **QueryCacheEntry** | 查询结果缓存 | 结果数据、时间戳、访问统计 | 哈希表 |
+| **CTECacheEntry** | CTE多阶段缓存 | 解析结果、逻辑计划、优化计划 | 分层存储 |
+| **CacheConfig** | 配置管理 | 容量限制、TTL设置、策略参数 | 配置结构 |
 
-```cpp
-class BloomFilter {
-public:
-    //! Constructor with specified size and number of hash functions
-    explicit BloomFilter(idx_t size = 1000000, idx_t num_hash_functions = 3);
-    
-    //! Add an element to the bloom filter
-    void Add(const string &element);
-    
-    //! Check if an element might be in the set (may have false positives)
-    bool MightContain(const string &element) const;
-    
-    //! Clear the bloom filter
-    void Clear();
-    
-    //! Get the current false positive probability
-    double GetFalsePositiveRate() const;
+### 3.2.3 查询缓存条目设计
 
-private:
-    //! The bit array
-    std::vector<bool> bit_array;
-    //! Number of hash functions to use
-    idx_t num_hash_functions;
-    //! Number of elements added
-    idx_t num_elements;
-    //! Whether the bloom filter is disabled
-    bool disabled;
-};
-```
-
-#### 3.2.1.2 哈希函数实现
-
-系统采用GetHashValues方法生成多个哈希值，通过DuckDB内置的哈希算法实现高效的哈希计算。布隆过滤器支持禁用模式，当size为0时自动禁用，此时MightContain方法始终返回true，强制进行缓存查找。
-
-位向量管理采用高效的位操作和内存管理技术，支持位向量的动态扩展和压缩。位向量使用紧凑的位数组表示，通过位操作指令实现高效的设置和查询操作。内存分配采用内存池技术，预分配大块内存并按需分配，减少内存碎片和分配开销。位向量还支持持久化存储，能够将过滤器状态保存到磁盘并在系统重启时恢复，保证过滤器的连续性。
-
-假阳性处理是布隆过滤器应用中的重要考虑因素，系统通过多级验证机制处理假阳性情况。当布隆过滤器返回"可能存在"的结果时，系统会进行进一步的精确查找来确认是否真正命中。假阳性率的监控通过统计实际的假阳性次数和查询次数来计算，当假阳性率超过预设阈值时，系统会自动调整过滤器参数或重建过滤器。系统还实现了自适应假阳性率控制，根据系统负载和性能要求动态调整目标假阳性率。
-
-### 3.2.2 查询缓存数据结构
-
-查询缓存的数据结构基于QueryCacheEntry结构设计，该结构封装了缓存条目的完整信息，包括查询结果、时间戳、访问统计等。
-
-#### 3.2.2.1 核心数据结构
-
-基于实际代码实现，QueryCacheEntry结构如下：
-
-```cpp
-struct QueryCacheEntry {
-    //! The cached result
-    unique_ptr<MaterializedQueryResult> result;
-    //! Timestamp when the entry was created
-    std::chrono::steady_clock::time_point created_at;
-    //! Access count for LRU eviction
-    idx_t access_count;
-    //! Last access time
-    std::chrono::steady_clock::time_point last_accessed;
-    //! ML features for this cache entry
-    MLCacheFeatures ml_features;
-    //! ML prediction score (higher = more likely to be accessed again)
-    double ml_score = 0.5;
-    //! Priority for eviction (lower = evict first)
-    double eviction_priority = 0.0;
-    
-    QueryCacheEntry(unique_ptr<MaterializedQueryResult> result_p);
-};
-```
-
-#### 3.2.2.2 缓存配置结构
-
-系统通过QueryCacheConfig结构管理缓存配置参数：
-
-```cpp
-struct QueryCacheConfig {
-    //! Maximum number of cached entries
-    idx_t max_entries = 1000;
-    //! Maximum memory usage in bytes
-    idx_t max_memory_bytes = 100 * 1024 * 1024; // 100MB default
-    //! TTL for cache entries in seconds
-    idx_t ttl_seconds = 3600; // 1 hour default
-    //! Bloom filter size
-    idx_t bloom_filter_size = 1000000;
-    //! Number of hash functions for bloom filter
-    idx_t bloom_filter_hash_functions = 3;
-    //! Enable/disable caching
-    bool enabled = true;
-    //! Cache eviction strategy
-    CacheEvictionStrategy eviction_strategy = CacheEvictionStrategy::TTL_BASED;
-};
-```
-
-#### 3.2.2.3 存储和索引
-
-缓存条目通过哈希表结构存储，使用查询语句的哈希值作为键值快速定位。系统支持TTL过期管理和基于访问统计的LRU淘汰策略。
+查询缓存条目封装了完整的缓存信息，包括查询结果、元数据、访问统计和机器学习特征。系统支持基于TTL的过期管理和LRU淘汰策略，通过访问模式分析实现智能的缓存管理。
 
 ```mermaid
 erDiagram
@@ -190,394 +105,126 @@ erDiagram
 
 **图3.2 缓存数据结构关系图**
 
-### 3.2.3 CTE缓存数据结构
+### 3.2.4 CTE多阶段缓存设计
 
-CTE（Common Table Expression）缓存数据结构专门用于管理公共表表达式的缓存，这是系统细粒度缓存策略的重要组成部分。
+CTE（Common Table Expression）缓存采用多阶段缓存架构，支持解析、规划、优化和执行四个阶段的独立缓存管理。每个阶段都有对应的缓存条目和管理策略，通过CTE签名机制确保语义等价的CTE能够正确匹配和重用。
 
-#### 3.2.3.1 CTECacheEntry结构
+**表3.2 CTE缓存阶段特征**
 
-基于实际代码实现，CTECacheEntry结构支持多阶段缓存：
+| 缓存阶段 | 缓存内容 | 适用场景 | 性能收益 |
+|----------|----------|----------|----------|
+| **Parser阶段** | 解析后的语法树和CTE映射 | 语法复杂的重复查询 | 避免重复解析开销 |
+| **Planner阶段** | 逻辑计划和类型信息 | 结构相似的查询变体 | 跳过逻辑规划过程 |
+| **Optimizer阶段** | 优化后的执行计划 | 参数化查询模板 | 重用优化结果 |
+| **Executor阶段** | 最终执行结果 | 完全相同的查询 | 直接返回结果 |
 
-```cpp
-struct CTECacheEntry {
-    // Parser stage cache
-    unique_ptr<SelectStatement> parsed_statement;
-    CommonTableExpressionMap parsed_cte_map;
-    
-    // Planner stage cache  
-    unique_ptr<LogicalOperator> logical_plan;
-    vector<LogicalType> logical_types;
-    
-    // Optimizer stage cache
-    unique_ptr<LogicalOperator> optimized_plan;
-    vector<LogicalType> optimized_types;
-    
-    // Executor stage cache (existing)
-    unique_ptr<MaterializedQueryResult> execution_result;
-    
-    // Metadata
-    string cte_signature;
-    vector<string> cte_names;
-    std::chrono::steady_clock::time_point created_at;
-    std::chrono::steady_clock::time_point last_accessed;
-    idx_t access_count;
-    
-    // Stage flags
-    bool has_parsed_cache;
-    bool has_logical_cache;
-    bool has_optimized_cache;
-    bool has_execution_cache;
-};
+## 3.3 核心算法设计
+
+### 3.3.1 缓存查找算法
+
+缓存查找算法采用两阶段过滤机制，通过布隆过滤器预筛选和精确匹配实现高效的缓存命中检测。算法设计充分考虑了查找效率和准确性的平衡，通过多层次过滤减少不必要的计算开销。
+
+
+**算法3.1 缓存查找算法**
+```
+输入: query_string (查询字符串)
+输出: query_result (查询结果)
+
+1. query_hash ← Hash(Normalize(query_string))     // 对查询字符串进行标准化并计算哈希值
+2. if NOT bloom_filter.MightContain(query_hash) then  // 布隆过滤器预筛选检查
+3.     return ExecuteQuery(query_string)         // 布隆过滤器确定不存在，直接执行查询
+4. end if
+5. 
+6. cache_entry ← cache_table.Find(query_hash)   // 在缓存表中查找对应的缓存条目
+7. if cache_entry = NULL then                    // 缓存条目不存在（假阳性情况）
+8.     return ExecuteQuery(query_string)         // 执行原始查询并返回结果
+9. end if
+10.
+11. if IsExpired(cache_entry) then              // 检查缓存条目是否已过期
+12.     cache_table.Remove(query_hash)           // 移除过期的缓存条目
+13.     return ExecuteQuery(query_string)        // 重新执行查询
+14. end if
+15.
+16. UpdateAccessStats(cache_entry)              // 更新缓存条目的访问统计信息
+17. return cache_entry.result                    // 返回缓存的查询结果
 ```
 
-#### 3.2.3.2 MultiStageCTECache管理器
+### 3.3.3 CTE多阶段缓存算法
 
-系统实现了MultiStageCTECache类来管理CTE的多阶段缓存：
+CTE多阶段缓存算法专门处理公共表表达式的缓存操作，支持解析、规划、优化和执行四个阶段的独立缓存管理。算法通过CTE签名机制和依赖关系分析，实现细粒度的查询优化和中间结果共享。
 
-```cpp
-class MultiStageCTECache {
-private:
-    unordered_map<string, unique_ptr<CTECacheEntry>> cache_entries;
-    mutable mutex cache_mutex;
-    
-    // Statistics
-    idx_t parser_hits = 0;
-    idx_t planner_hits = 0; 
-    idx_t optimizer_hits = 0;
-    idx_t executor_hits = 0;
-    idx_t total_requests = 0;
+## 3.4 关键技术实现
 
-public:
-    string GenerateCTESignature(const CommonTableExpressionMap &cte_map);
-    // 其他缓存管理方法...
-};
+### 3.4.1 布隆过滤器前置过滤技术
+
+布隆过滤器前置过滤技术通过概率数据结构实现快速的缓存预筛选，显著减少缓存查找开销。系统采用多哈希函数和位向量的组合，在保证较低假阳性率的同时实现高效的元素存在性检测。
+
+**表3.3 布隆过滤器技术特征**
+
+| 技术特征 | 实现方式 | 性能影响 | 优化策略 |
+|----------|----------|----------|----------|
+| **哈希函数** | 多重哈希算法 | 计算开销vs准确性 | 自适应哈希数量调整 |
+| **位向量** | 紧凑位数组存储 | 内存占用vs容量 | 动态扩展和压缩 |
+| **假阳性控制** | 统计监控和参数调整 | 查找效率vs准确性 | 阈值自适应控制 |
+| **禁用机制** | 条件性绕过过滤 | 灵活性vs一致性 | 智能启用/禁用策略 |
+
+
+**算法3.5 布隆过滤器存在性检测算法**
+```
+输入: element (待检测元素)
+输出: might_exist (可能存在标志)
+
+1. if disabled then return true                     // 如果布隆过滤器被禁用，返回true（不过滤）
+2. hash_values ← GetHashValues(element)             // 使用多个哈希函数计算元素的哈希值数组
+3. for each hash_val in hash_values do              // 遍历所有哈希值
+4.     bit_index ← hash_val mod bit_array.size()   // 计算在位数组中的索引位置
+5.     if bit_array[bit_index] = false then        // 如果任何一个对应位为0
+6.         return false                            // 确定元素不存在，返回false
+7.     end if
+8. end for                                          // 所有对应位都为1
+9. return true                                      // 元素可能存在，返回true（可能有假阳性）
 ```
 
-#### 3.2.3.3 CTE签名生成
+### 3.4.2 SQL语句动态缓存技术
 
-CTE缓存通过GenerateCTESignature方法生成唯一的CTE签名，确保相同语义的CTE能够正确匹配和重用。签名生成基于CTE的查询内容，并通过排序确保一致性。
+SQL语句动态缓存技术通过查询标准化、哈希索引和智能淘汰策略实现高效的查询结果缓存。系统支持语义等价查询的识别和匹配，通过机器学习特征分析优化缓存策略。
 
-## 3.3 操作流程设计
+**表3.4 SQL缓存技术组件**
 
-### 3.3.1 缓存查找流程
+| 技术组件 | 核心功能 | 关键算法 | 性能特征 |
+|----------|----------|----------|----------|
+| **查询标准化** | 语义等价识别 | 语法树规范化 | 提高缓存命中率 |
+| **哈希索引** | 快速查询定位 | 一致性哈希算法 | O(1)查找复杂度 |
+| **TTL管理** | 自动过期清理 | 时间窗口滑动 | 保证数据时效性 |
+| **LRU淘汰** | 容量控制策略 | 最近最少使用 | 优化内存利用率 |
+| **ML特征** | 智能缓存决策 | 特征工程分析 | 预测访问模式 |
 
-缓存查找流程是动态缓存管理系统的核心操作，它通过布隆过滤器预筛选和精确匹配实现高效的缓存命中检测。基于DuckDB项目中QueryCache的实现，查找流程采用了两阶段处理的设计。
+**算法3.6 查询标准化算法**
+```
+输入: raw_query (原始查询字符串)
+输出: normalized_query (标准化查询)
 
-#### 3.3.1.1 布隆过滤器预筛选
-
-布隆过滤器预筛选是查找流程的第一个阶段，基于实际代码实现：
-
-```cpp
-bool QueryCache::MightContainQuery(const string &query_hash) const {
-    return bloom_filter.MightContain(query_hash);
-}
+1. query ← RemoveComments(raw_query)                // 移除SQL注释（单行和多行注释）
+2. query ← NormalizeWhitespace(query)               // 标准化空白字符（空格、制表符、换行符）
+3. query ← StandardizeKeywords(query)               // 将SQL关键字转换为统一大小写格式
+4. query ← SortClauseElements(query)                // 对子句元素进行排序（如WHERE条件、SELECT列表）
+5. query ← RemoveRedundantParentheses(query)        // 移除冗余的括号
+6. return query                                     // 返回标准化后的查询字符串
 ```
 
-当接收到查询请求时，系统首先计算查询语句的哈希值并在布隆过滤器中进行查找。如果布隆过滤器返回false，则确定缓存中没有该查询的结果，直接执行原始查询。如果返回true，则进入精确查找阶段。
 
-#### 3.3.1.2 精确匹配查找
+### 3.4.4 CTE细粒度缓存技术
 
-精确匹配查找使用哈希表结构在缓存中查找对应的条目：
+CTE细粒度缓存技术通过多阶段缓存架构实现公共表表达式的高效管理，支持解析、规划、优化和执行四个阶段的独立缓存。该技术特别适用于复杂分析查询和递归查询场景，通过中间结果共享显著提高查询执行效率。
 
-```cpp
-// 在cache哈希表中查找
-auto it = cache.find(query_hash);
-if (it != cache.end()) {
-    // 检查TTL有效性
-    if (!IsExpired(*it->second)) {
-        // 更新访问统计
-        it->second->access_count++;
-        it->second->last_accessed = std::chrono::steady_clock::now();
-        return it->second->result.get();
-    }
-}
-```
+**表3.6 CTE多阶段缓存特征**
 
-#### 3.3.1.3 有效性验证
-
-系统通过IsExpired方法验证缓存条目的有效性：
-
-```cpp
-bool QueryCache::IsExpired(const QueryCacheEntry &entry) const {
-    auto now = std::chrono::steady_clock::now();
-    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.created_at);
-    return age.count() > static_cast<int64_t>(config.ttl_seconds);
-}
-```
-
-TTL验证检查缓存条目是否已经过期，过期的条目会被自动清理。
-
-### 3.3.2 缓存插入流程
-
-缓存插入流程负责将新的查询结果添加到缓存系统中，基于DuckDB项目中QueryCache的Put方法实现。
-
-#### 3.3.2.1 容量检查和淘汰
-
-插入前首先进行容量检查，当缓存接近容量限制时触发淘汰操作：
-
-```cpp
-// 检查缓存容量
-if (cache.size() >= config.max_entries) {
-    // 触发LRU淘汰
-    EvictLRU();
-}
-```
-
-#### 3.3.2.2 缓存条目创建
-
-基于实际代码实现，缓存条目创建过程如下：
-
-```cpp
-// Create cache entry
-auto entry = make_uniq<QueryCacheEntry>(std::move(result));
-entry->ml_features = features;
-
-// Add to cache
-cache[query_hash] = std::move(entry);
-```
-
-系统创建QueryCacheEntry对象，存储MaterializedQueryResult结果，并设置相关的元数据信息。
-
-#### 3.3.2.3 布隆过滤器更新
-
-插入成功后，将查询哈希值添加到布隆过滤器中：
-
-```cpp
-// Add to bloom filter
-bloom_filter.Add(query_hash);
-```
-
-这确保后续的查找操作能够正确识别已缓存的查询。
-
-#### 3.3.2.4 统计信息维护
-
-系统维护访问统计信息，包括创建时间、访问次数等，用于后续的缓存管理和淘汰策略。
-
-### 3.3.3 CTE缓存管理流程
-
-CTE缓存管理流程专门处理公共表表达式的缓存操作，这是系统细粒度缓存策略的重要实现。CTE缓存管理比普通查询缓存更加复杂，需要处理CTE的识别、解析、依赖分析、生命周期管理等多个方面。流程设计充分考虑了CTE的特殊性，包括嵌套结构、递归定义、参数化查询等复杂情况，通过专门的算法和数据结构实现高效的CTE缓存管理。
-
-CTE识别和提取是管理流程的第一步，系统通过SQL解析器分析查询语句，识别其中的CTE定义和使用。识别过程采用语法分析和语义分析相结合的方式，不仅识别WITH子句中的CTE定义，还分析CTE在查询中的使用情况。提取过程将CTE定义从完整查询中分离出来，形成独立的子查询单元。对于嵌套CTE，系统采用递归解析算法，逐层提取各级CTE定义。对于递归CTE，系统进行特殊处理，分析递归结构和终止条件。
-
-依赖关系分析是CTE缓存管理的核心技术，系统需要分析CTE之间以及CTE与基础表之间的复杂依赖关系。依赖分析采用图论算法，构建依赖图来表示各种依赖关系。节点表示CTE或基础表，边表示依赖关系的方向和类型。依赖类型包括数据依赖、结构依赖、参数依赖等多种类型。数据依赖表示CTE对基础数据的依赖，当基础数据变化时，相关CTE缓存需要失效。结构依赖表示CTE对表结构的依赖，当表结构变化时，相关CTE缓存需要重新编译。参数依赖表示CTE对查询参数的依赖，不同参数值对应不同的缓存条目。
-
-CTE缓存策略采用分层管理的方式，根据CTE的特征和使用模式选择不同的缓存策略。热点CTE采用长期缓存策略，在内存中保持较长时间，支持快速访问。中等热度的CTE采用中期缓存策略，在内存压力较大时可能被换出到磁盘。冷CTE采用短期缓存策略，主要用于同一查询内的重复使用。缓存策略还考虑了CTE的大小、复杂度、计算成本等因素，通过综合评分确定最优的缓存策略。
-
-生命周期管理控制CTE缓存的创建、更新、失效和删除等操作，确保缓存的正确性和有效性。创建操作在CTE首次执行时触发，系统评估CTE的缓存价值并决定是否进行缓存。更新操作在依赖数据发生变化时触发，系统根据变化的范围和影响决定是否需要重新计算CTE结果。失效操作在CTE不再有效时触发，包括TTL过期、依赖失效、手动失效等情况。删除操作在CTE缓存不再需要时触发，释放占用的存储空间和系统资源。生命周期管理还包括引用计数机制，跟踪CTE缓存的使用情况，当引用计数为零时自动清理缓存。
-```mermaid
-graph LR
-    subgraph s1["查询执行分支"]
-        H2["查询标准化处理"]
-        H1["执行查询"]
-        J1["CTE解析识别"]
-        K1["CTE结果共享缓存"]
-        L1["返回查询结果"]
-    end
-    subgraph s2["直接执行分支"]
-        M1["查询计划分析"]
-        D1["直接执行查询"]
-        M2["参数化查询处理"]
-        O1{"是否缓存"}
-    end
-    H1 --> H2
-    H2 --> J1
-    J1 --> K1
-    K1 --> L1
-    D1 --> M1
-    M1 --> M2
-    M2 -->  O1
-    O1 -- 是 --> H2
-    O1 -- 否 --> L1
-
-    style J1 fill:#e3f2fd
-    style M2 fill:#e8f5e8
-
-```
-
-**图3.3 动态缓存管理系统局部流程详情**
-## 3.4 详细设计及相关技术
-
-### 3.4.1 基于布隆过滤器的前置过滤技术
-
-基于布隆过滤器的前置过滤技术是动态缓存管理系统的核心技术之一，它通过高效的概率数据结构实现快速的缓存预筛选，显著减少了缓存查找的开销。
-
-#### 3.4.1.1 布隆过滤器核心实现
-
-基于DuckDB项目中BloomFilter类的实际实现，系统采用以下核心技术：
-
-```cpp
-// 布隆过滤器构造函数
-BloomFilter::BloomFilter(idx_t size, idx_t num_hash_functions) 
-    : bit_array(size > 0 ? size : 1, false), 
-      num_hash_functions(num_hash_functions), 
-      num_elements(0), 
-      disabled(size == 0) {
-    // 如果size为0，禁用布隆过滤器
-    if (size == 0) {
-        printf("DEBUG: BloomFilter disabled (size=0)\n");
-    }
-}
-```
-
-#### 3.4.1.2 哈希函数和位操作
-
-系统通过GetHashValues方法生成多个哈希值，并使用位数组进行高效的位操作：
-
-```cpp
-void BloomFilter::Add(const string &element) {
-    if (disabled) return;
-    auto hash_values = GetHashValues(element);
-    for (auto hash_val : hash_values) {
-        bit_array[hash_val % bit_array.size()] = true;
-    }
-    num_elements++;
-}
-
-bool BloomFilter::MightContain(const string &element) const {
-    if (disabled) return true; // 禁用时强制缓存查找
-    auto hash_values = GetHashValues(element);
-    for (auto hash_val : hash_values) {
-        if (!bit_array[hash_val % bit_array.size()]) {
-            return false;
-        }
-    }
-    return true;
-}
-```
-
-#### 3.4.1.3 假阳性率控制
-
-系统提供GetFalsePositiveRate方法计算当前假阳性率，并支持Clear和Resize操作来维护过滤器性能。布隆过滤器支持禁用模式，当需要绕过过滤时，MightContain方法返回true，强制进行精确的缓存查找。
-
-```mermaid
-flowchart LR
-    subgraph "布隆过滤器层次结构"
-        subgraph "L1: 基础过滤层"
-            BF1["布隆过滤器1<br/>覆盖: 所有查询"]
-        end
-        
-        subgraph "L2: 热点过滤层"
-            BF2["布隆过滤器2<br/>覆盖: 热点查询"]
-        end
-        
-        subgraph "L3: 精确过滤层"
-            BF3["布隆过滤器3<br/>覆盖: 复杂查询"]
-        end
-    end
-    
-    Q[查询请求] --> BF1
-    BF1 -->|可能存在| BF2
-    BF1 -->|不存在| MISS[缓存未命中]
-    BF2 -->|可能存在| BF3
-    BF2 -->|不存在| MISS
-    BF3 -->|可能存在| EXACT[精确查找]
-    BF3 -->|不存在| MISS
-    
-    style BF1 fill:#ffebee
-    style BF2 fill:#e3f2fd
-    style BF3 fill:#e8f5e8
-    style EXACT fill:#fff3e0
-```
-
-**图3.4 分层布隆过滤器架构**
-
-
-### 3.4.2 基于SQL语句动态缓存技术
-
-基于SQL语句的动态缓存技术是系统的核心功能，通过QueryCache类实现高效的SQL查询结果缓存。
-
-#### 3.4.2.1 查询哈希和标准化
-
-系统通过查询哈希实现快速的查询匹配：
-
-```cpp
-// 查询标准化和哈希计算
-string NormalizeQuery(const string &query) {
-    // 移除多余的空白字符和注释
-    // 标准化关键字大小写
-    // 返回标准化的查询字符串
-}
-
-string query_hash = Hash(NormalizeQuery(query));
-```
-
-查询标准化处理包括空白字符规范化、关键字大小写统一等，确保语义相同的查询能够正确匹配。
-
-#### 3.4.2.2 缓存存储和访问
-
-基于实际代码实现的缓存存储结构：
-
-```cpp
-class QueryCache {
-private:
-    //! Bloom filter for fast negative lookups
-    BloomFilter bloom_filter;
-    //! Actual cache storage
-    unordered_map<string, unique_ptr<QueryCacheEntry>> cache;
-    //! Cache configuration
-    QueryCacheConfig config;
-
-public:
-    bool Get(const string &query, MaterializedQueryResult **result);
-    bool Put(const string &query, unique_ptr<MaterializedQueryResult> result);
-};
-```
-
-#### 3.4.2.3 TTL和淘汰策略
-
-系统实现了基于TTL的过期管理和LRU淘汰策略：
-
-```cpp
-bool QueryCache::IsExpired(const QueryCacheEntry &entry) const {
-    auto now = std::chrono::steady_clock::now();
-    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.created_at);
-    return age.count() > static_cast<int64_t>(config.ttl_seconds);
-}
-```
-
-当缓存条目超过配置的TTL时间时，系统会自动将其标记为过期并清理。
-
-#### 3.4.2.4 机器学习特征支持
-
-系统为每个缓存条目维护机器学习特征，用于缓存策略优化：
-
-```cpp
-struct MLCacheFeatures {
-    double query_complexity_score = 0.0;
-    double execution_time_ms = 0.0;
-    double result_size_bytes = 0.0;
-    double access_frequency = 0.0;
-    // 其他特征...
-};
-```
-
-### 3.4.3 基于CTE子语句的动态缓存技术
-
-基于CTE（Common Table Expression）子语句的动态缓存技术是系统细粒度缓存策略的重要实现，它通过缓存公共表表达式的执行结果，实现查询间的中间结果共享，显著提高复杂查询的执行效率。CTE缓存技术特别适用于包含多个CTE的复杂分析查询，以及递归查询、层次查询等特殊场景。该技术不仅能够缓存单个CTE的结果，还能够管理CTE之间的复杂依赖关系，确保缓存的正确性和一致性。
-
-#### 3.4.3.3 多阶段缓存支持
-
-CTECacheEntry支持四个阶段的缓存：
-
-1. **Parser阶段缓存**：缓存解析后的SelectStatement和CTE映射
-2. **Planner阶段缓存**：缓存逻辑计划和类型信息
-3. **Optimizer阶段缓存**：缓存优化后的计划
-4. **Executor阶段缓存**：缓存执行结果
-
-每个阶段都有对应的标志位（has_parsed_cache、has_logical_cache等）来跟踪缓存状态。
-
-#### 3.4.3.4 统计信息和性能监控
-
-系统维护详细的统计信息，包括各阶段的命中次数，用于性能分析和优化：
-
-```cpp
-// Statistics tracking
-idx_t parser_hits = 0;
-idx_t planner_hits = 0; 
-idx_t optimizer_hits = 0;
-idx_t executor_hits = 0;
-idx_t total_requests = 0;
-```
+| 缓存阶段 | 技术特点 | 适用场景 | 性能收益 |
+|----------|----------|----------|----------|
+| **Parser阶段** | 语法树和CTE映射缓存 | 语法复杂的重复查询 | 避免重复解析开销 |
+| **Planner阶段** | 逻辑计划和类型缓存 | 结构相似的查询变体 | 跳过逻辑规划过程 |
+| **Optimizer阶段** | 优化计划缓存 | 参数化查询模板 | 重用优化结果 |
+| **Executor阶段** | 执行结果缓存 | 完全相同的查询 | 直接返回结果 |
 
 
 ## 3.5 布隆过滤器对查询性能影响评估

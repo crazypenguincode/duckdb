@@ -1,0 +1,130 @@
+{
+  "timestamp": "2025-10-06T00:35:48.833297",
+  "duckdb_path": "./build/release/duckdb",
+  "test_summary": {
+    "cache_effectiveness_tested": true,
+    "multi_strategy_scenarios_tested": true,
+    "adaptive_fusion_tested": true
+  },
+  "results": {
+    "cache_effectiveness": {
+      "large_count": {
+        "description": "\u5927\u6570\u636e\u8ba1\u6570",
+        "first_execution": 0,
+        "cached_execution": 0,
+        "speedup": 0,
+        "improvement_percent": 0
+      },
+      "large_sum": {
+        "description": "\u5927\u6570\u636e\u6c42\u548c",
+        "first_execution": 0,
+        "cached_execution": 0,
+        "speedup": 0,
+        "improvement_percent": 0
+      },
+      "complex_aggregation": {
+        "description": "\u590d\u6742\u805a\u5408\u67e5\u8be2",
+        "first_execution": 0,
+        "cached_execution": 0,
+        "speedup": 0,
+        "improvement_percent": 0
+      },
+      "recursive_cte": {
+        "description": "\u9012\u5f52CTE\u67e5\u8be2",
+        "first_execution": 0,
+        "cached_execution": 0,
+        "speedup": 0,
+        "improvement_percent": 0
+      },
+      "window_analytics": {
+        "description": "\u7a97\u53e3\u51fd\u6570\u5206\u6790",
+        "first_execution": 0,
+        "cached_execution": 0,
+        "speedup": 0,
+        "improvement_percent": 0
+      }
+    },
+    "multi_strategy_scenarios": {
+      "small_frequent": {
+        "description": "\u5c0f\u6570\u636e\u9ad8\u9891\u8bbf\u95ee\uff08\u9002\u5408\u5185\u5b58\u7b56\u7565\uff09",
+        "expected_strategy": "memory_only",
+        "config_results": {
+          "memory_optimized": {
+            "avg_time": 0,
+            "times": []
+          },
+          "balanced": {
+            "avg_time": 0,
+            "times": []
+          },
+          "storage_optimized": {
+            "avg_time": 0,
+            "times": []
+          }
+        }
+      },
+      "medium_balanced": {
+        "description": "\u4e2d\u7b49\u6570\u636e\u5e73\u8861\u8bbf\u95ee\uff08\u9002\u5408WAL\u7b56\u7565\uff09",
+        "expected_strategy": "wal_format",
+        "config_results": {
+          "memory_optimized": {
+            "avg_time": 0,
+            "times": []
+          },
+          "balanced": {
+            "avg_time": 0,
+            "times": []
+          },
+          "storage_optimized": {
+            "avg_time": 0,
+            "times": []
+          }
+        }
+      },
+      "large_complex": {
+        "description": "\u5927\u6570\u636e\u590d\u6742\u67e5\u8be2\uff08\u9002\u5408\u7269\u5316\u89c6\u56fe\u7b56\u7565\uff09",
+        "expected_strategy": "materialized_view",
+        "config_results": {
+          "memory_optimized": {
+            "avg_time": 0,
+            "times": []
+          },
+          "balanced": {
+            "avg_time": 0,
+            "times": []
+          },
+          "storage_optimized": {
+            "avg_time": 0,
+            "times": []
+          }
+        }
+      }
+    },
+    "adaptive_fusion": {
+      "startup_phase": {
+        "description": "\u542f\u52a8\u9636\u6bb5\uff08\u51b7\u7f13\u5b58\uff09",
+        "avg_time": 0,
+        "hit_rate": 0,
+        "total_queries": 3,
+        "cache_hits": 0,
+        "times": []
+      },
+      "warm_up_phase": {
+        "description": "\u9884\u70ed\u9636\u6bb5\uff08\u7f13\u5b58\u5efa\u7acb\uff09",
+        "avg_time": 0,
+        "hit_rate": 0,
+        "total_queries": 5,
+        "cache_hits": 0,
+        "times": []
+      },
+      "steady_state_phase": {
+        "description": "\u7a33\u5b9a\u9636\u6bb5\uff08\u7f13\u5b58\u547d\u4e2d\uff09",
+        "avg_time": 0,
+        "hit_rate": 0,
+        "total_queries": 5,
+        "cache_hits": 0,
+        "times": []
+      }
+    }
+  }
+}

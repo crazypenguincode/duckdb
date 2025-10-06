@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-10-06T00:37:11.250741",
+  "test_summary": {
+    "total_queries": 100,
+    "strategies_tested": 6,
+    "best_single_strategy": "memory_only",
+    "intelligent_selection_improvement": -54.98610842133834
+  },
+  "results": {
+    "strategy_performance": {
+      "memory_only": {
+        "strategy_name": "Memory Only",
+        "avg_write_time": 0.6282789803196707,
+        "avg_read_time": 0.4743568622347412,
+        "avg_storage": 37.43568622347414,
+        "avg_memory": 68.7178431117371,
+        "hit_rate": 0.05,
+        "reliability": 0.2,
+        "performance_score": 114.0272630166963
+      },
+      "wal_format": {
+        "strategy_name": "WAL Format",
+        "avg_write_time": 6.282789803196701,
+        "avg_read_time": 9.487137244694829,
+        "avg_storage": 47.43568622347416,
+        "avg_memory": 38.71784311173707,
+        "hit_rate": 0.38,
+        "reliability": 0.8,
+        "performance_score": 20.158748599625145
+      },
+      "materialized_view": {
+        "strategy_name": "Materialized View",
+        "avg_write_time": 18.848369409590113,
+        "avg_read_time": 4.743568622347414,
+        "avg_storage": 62.43568622347413,
+        "avg_memory": 33.717843111737054,
+        "hit_rate": 0.41,
+        "reliability": 0.95,
+        "performance_score": 21.836331729331143
+      },
+      "ml_intelligent": {
+        "strategy_name": "ML Intelligent",
+        "avg_write_time": 3.769673881918022,
+        "avg_read_time": 3.7948548978779297,
+        "avg_storage": 49.43568622347416,
+        "avg_memory": 48.717843111737075,
+        "hit_rate": 0.42,
+        "reliability": 0.85,
+        "performance_score": 28.968254746675754
+      },
+      "hybrid": {
+        "strategy_name": "Hybrid",
+        "avg_write_time": 3.1413949015983507,
+        "avg_read_time": 2.846141173408449,
+        "avg_storage": 45.43568622347416,
+        "avg_memory": 43.717843111737054,
+        "hit_rate": 0.48,
+        "reliability": 0.9,
+        "performance_score": 34.33066782387493
+      },
+      "cross_process": {
+        "strategy_name": "Cross Process",
+        "avg_write_time": 10.05246368511473,
+        "avg_read_time": 14.23070586704224,
+        "avg_storage": 52.43568622347415,
+        "avg_memory": 53.71784311173708,
+        "hit_rate": 0.36,
+        "reliability": 0.75,
+        "performance_score": 16.573880160620398
+      }
+    },
+    "intelligent_selection": {
+      "strategy_selections": {
+        "memory_only": {
+          "count": 33,
+          "percentage": 33.0
+        },
+        "wal_format": {
+          "count": 0,
+          "percentage": 0.0
+        },
+        "materialized_view": {
+          "count": 52,
+          "percentage": 52.0
+        },
+        "ml_intelligent": {
+          "count": 10,
+          "percentage": 10.0
+        },
+        "hybrid": {
+          "count": 0,
+          "percentage": 0.0
+        },
+        "cross_process": {
+          "count": 5,
+          "percentage": 5.0
+        }
+      },
+      "performance_improvements": {},
+      "selection_accuracy": {},
+      "avg_performance": 51.32810854445103
+    },
+    "adaptive_behavior": {
+      "\u542f\u52a8\u9636\u6bb5": {
+        "avg_performance": 5.967760498823761,
+        "load_factor": 0.3,
+        "cache_warmup": 0.1
+      },
+      "\u9884\u70ed\u9636\u6bb5": {
+        "avg_performance": 34.50490939083075,
+        "load_factor": 0.6,
+        "cache_warmup": 0.5
+      },
+      "\u7a33\u5b9a\u9636\u6bb5": {
+        "avg_performance": 67.87399127860812,
+        "load_factor": 1.0,
+        "cache_warmup": 0.9
+      },
+      "\u9ad8\u5cf0\u9636\u6bb5": {
+        "avg_performance": 56.30739587690809,
+        "load_factor": 1.5,
+        "cache_warmup": 0.95
+      },
+      "\u7ef4\u62a4\u9636\u6bb5": {
+        "avg_performance": 89.97238873965371,
+        "load_factor": 0.4,
+        "cache_warmup": 0.7
+      }
+    },
+    "test_queries_count": 100
+  }
+}

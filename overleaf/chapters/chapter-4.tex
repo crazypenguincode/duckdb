@@ -17,6 +17,29 @@
 	\label{fig4_4_1}
 \end{figure}
 
+缓存插入算法负责将新的查询结果添加到缓存系统中，包括容量管理、淘汰策略和一致性维护等关键步骤。算法通过智能的容量管理和淘汰策略，确保缓存系统的高效运行。
+
+\textbf{算法3.2 缓存插入算法}
+``\texttt{
+输入: query_string, query_result
+输出: success (插入成功标志)
+
+1. if cache_table.Size() ≥ max_entries then      // 检查缓存容量是否已满
+2.     victim ← SelectLRUVictim()               // 选择最近最少使用的缓存条目作为淘汰对象
+3.     cache_table.Remove(victim.hash)          // 从缓存表中移除被淘汰的条目
+4. end if
+5.
+6. query_hash ← Hash(Normalize(query_string))   // 对查询字符串标准化并计算哈希值
+7. cache_entry ← CreateCacheEntry(query_result) // 创建新的缓存条目对象
+8. cache_entry.created_at ← CurrentTime()       // 设置缓存条目的创建时间戳
+9. cache_entry.access_count ← 1                 // 初始化访问计数为1
+10.
+11. cache_table.Insert(query_hash, cache_entry) // 将新缓存条目插入到缓存表中
+12. bloom_filter.Add(query_hash)                // 将查询哈希值添加到布隆过滤器中
+13. UpdateCacheStatistics()                     // 更新缓存系统的统计信息
+14. return true                                 // 返回插入成功标志
+}``
+
 \subsection{核心设计理念}
 
 多策略融合是系统设计的核心理念之一，它支持多种缓存替换策略的动态组合和协调工作。传统策略包括LRU、LFU、TTL等经典算法，这些策略经过长期的实践验证，在特定场景下具有良好的性能表现。智能策略基于机器学习的预测算法，能够根据历史访问模式和查询特征预测未来的访问概率，为缓存决策提供科学依据。混合策略则根据当前的工作负载特征和系统状态，动态选择最优的策略组合，实现性能的最大化。这种多策略融合的设计使得系统能够适应各种复杂的应用场景，在不同的工作负载下都能保持良好的性能表现。
@@ -34,7 +57,16 @@
 
 \subsection{缓存替换策略结构}
 
-缓存替换策略的数据结构基于QueryCacheConfig类实现，该类定义了缓存系统的核心配置参数和策略选择机制。基于DuckDB项目中QueryCacheConfig结构提供了完整的配置管理功能，支持多种策略类型的配置和动态切换。策略类型定义通过CacheEvictionStrategy枚举实现，包括TTL\_BASED（基于生存时间）、LRU\_BASED（基于最近最少使用）和ML\_BASED（基于机器学习）三种主要策略类型，每种策略都有其特定的配置参数和执行逻辑。
+缓存替换策略的数据结构基于QueryCacheConfig类实现，该类定义了缓存系统的核心配置参数和策略选择机制。基于DuckDB项目中query\_cache.cpp的实际实现，QueryCacheConfig结构提供了完整的配置管理功能，支持多种策略类型的配置和动态切换。策略类型定义通过CacheEvictionStrategy枚举实现，包括TTL\_BASED（基于生存时间）、LRU\_BASED（基于最近最少使用）和ML\_BASED（基于机器学习）三种主要策略类型，每种策略都有其特定的配置参数和执行逻辑。
+
+实际实现中，QueryCacheEntry结构包含了完整的缓存条目信息：
+\begin{itemize}
+\item 查询结果数据(result)
+\item 时间戳信息(created\_at, last\_accessed)
+\item 访问统计(access\_count)
+\item 机器学习特征(ml\_features, ml\_score)
+\item 淘汰优先级(eviction\_priority)
+\end{itemize}
 
 配置参数管理是策略结构设计的重要组成部分，QueryCacheConfig结构包含了缓存系统运行所需的各种参数。基础参数包括最大条目数(max\_entries)用于限制缓存中的条目总数，最大内存使用量(max\_memory\_bytes)用于控制缓存的内存占用，TTL时间(ttl\_seconds)用于设置缓存条目的默认生存时间。高级参数包括机器学习相关的学习率(ml\_learning\_rate)用于控制模型更新的速度，衰减因子(ml\_decay\_factor)用于防止模型过拟合，以及各种阈值参数用于触发不同的管理操作。这些参数的合理配置直接影响到缓存系统的性能表现和资源利用效率。
 
@@ -90,6 +122,24 @@
 	\label{fig4_4_4}
 \end{figure}
 
+系统集成机器学习技术，通过查询特征分析和访问模式预测，实现智能的缓存管理和优化。机器学习模块分析查询复杂度、执行时间、结果大小等多维特征，预测查询的缓存价值和访问概率。
+
+\begin{table}[!htb]
+    \caption{表4.1}
+    \label{table4_1}
+    \centering
+    \begin{tabular}{p{3cm}p{3cm}p{3cm}p{3cm}}
+        \hline
+        特征类别 & 特征指标 & 计算方法 & 应用场景 \\
+        \hline
+        \textbf{查询复杂度} & 语法树深度、操作符数量 & 静态分析 & 缓存价值评估 \\
+        \textbf{执行性能} & 执行时间、资源消耗 & 运行时监控 & 成本效益分析 \\
+        \textbf{数据特征} & 结果集大小、数据类型 & 结果分析 & 存储策略优化 \\
+        \textbf{访问模式} & 访问频率、时间分布 & 统计分析 & 淘汰策略调整 \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \section{智能缓存替换技术}
 
 \subsection{基于LRU的动态缓存管理技术}
@@ -106,7 +156,7 @@
 
 \subsection{基于时间策略的动态缓存管理技术}
 
-基于时间策略的动态缓存管理技术通过TTL（Time To Live）机制实现缓存条目的自动过期和清理，这种策略特别适用于具有明确时效性要求的数据缓存场景。本系统中的时间策略不仅实现了传统的固定TTL机制，还引入了动态TTL计算、分层TTL管理和自适应TTL调整等高级特性，使得时间策略能够适应复杂多变的数据访问模式。基于DuckDB项目中的实现，时间策略通过IsExpired()方法检查条目是否过期，通过EvictByTTL()方法执行基于时间的淘汰操作。
+基于时间策略的动态缓存管理技术通过TTL（Time To Live）机制实现缓存条目的自动过期和清理，这种策略特别适用于具有明确时效性要求的数据缓存场景。基于DuckDB项目中query\_cache.cpp的实际实现，时间策略通过IsExpired()方法检查条目是否过期，通过EvictByTTL()方法执行基于时间的淘汰操作。
 
 动态TTL计算是时间策略的核心创新，系统根据查询特征和历史访问模式动态计算每个缓存条目的TTL值，而不是使用固定的全局TTL设置。TTL计算算法考虑多个因素，包括查询的计算复杂度、结果集大小、历史访问频率、数据更新频率等。复杂查询和高价值查询获得更长的TTL，因为它们的重新计算成本更高，缓存价值更大。访问频率高的查询也会获得更长的TTL，因为它们被再次访问的概率更高。数据更新频率高的查询则会获得较短的TTL，以确保缓存数据的时效性。TTL计算公式为：$TTL = base_ttl \times complexity_factor \times frequency_factor \times freshness_factor$，其中各个因子根据具体的查询特征和系统配置进行计算。
 
@@ -130,7 +180,17 @@
 
 \subsection{基于机器学习策略的动态缓存管理技术}
 
-基于机器学习的动态缓存管理技术代表了缓存系统发展的前沿方向，它通过MLCachePredictor实现智能化的缓存决策，能够学习和适应复杂的访问模式，提供比传统策略更优秀的缓存性能。机器学习策略的核心优势在于其自适应能力和预测能力，能够从历史数据中学习访问模式的规律，预测未来的访问行为，从而做出更准确的缓存决策。基于DuckDB项目中MLCachePredictor实现，机器学习策略集成了特征工程、模型训练、预测评估和在线学习等完整的机器学习流程。
+基于机器学习的动态缓存管理技术代表了缓存系统发展的前沿方向，它通过MLCachePredictor实现智能化的缓存决策，能够学习和适应复杂的访问模式，提供比传统策略更优秀的缓存性能。基于DuckDB项目中query\_cache.cpp的实际实现，机器学习策略集成了特征工程、模型训练、预测评估和在线学习等完整的机器学习流程。
+
+实际实现中的ML策略核心组件：
+\begin{itemize}
+\item MLFeatureVector结构存储多维特征向量
+\item MLCachePredictor类实现线性回归模型
+\item RecordAccess()方法收集训练数据
+\item UpdateMLModel()方法进行在线学习
+\item EvictByML()方法基于ml\_score进行淘汰决策
+\item 支持temporal\_locality、access\_frequency等特征计算
+\end{itemize}
 
 特征工程是机器学习策略的基础环节，系统从查询语句、执行统计、访问模式、系统状态等多个维度提取特征，形成高维特征向量。查询语句特征包括语法结构特征，如查询长度、表数量、连接数量、聚合函数数量等，这些特征反映了查询的复杂度和计算成本。语义特征包括查询类型、数据访问模式、结果集特征等，这些特征反映了查询的业务含义和数据特征。执行统计特征包括执行时间、CPU使用率、内存消耗、I/O开销等，这些特征反映了查询的资源需求和性能特征。访问模式特征包括访问频率、访问间隔、访问时间分布、用户行为等，这些特征反映了查询的使用模式和重要性。系统状态特征包括当前负载、内存压力、缓存状态等，这些特征反映了系统的运行环境和资源状况。在实际测试中，执行时间特征的重要性最高，达到28\%。
 

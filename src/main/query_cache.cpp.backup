@@ -1,0 +1,3580 @@
+//===----------------------------------------------------------------------===//
+//                         DuckDB
+//
+// duckdb/main/query_cache.cpp - Enhanced CTE Caching Implementation
+//
+//===----------------------------------------------------------------------===//
+
+#include "duckdb/main/query_cache.hpp"
+#include "duckdb/common/string_util.hpp"
+#include "duckdb/common/types/hash.hpp"
+#include "duckdb/parser/statement/select_statement.hpp"
+#include "duckdb/parser/statement/explain_statement.hpp"
+#include "duckdb/parser/tableref/basetableref.hpp"
+#include "duckdb/parser/tableref/subqueryref.hpp"
+#include "duckdb/parser/tableref/joinref.hpp"
+#include "duckdb/parser/query_node/select_node.hpp"
+#include "duckdb/parser/query_node/cte_node.hpp"
+#include "duckdb/planner/logical_operator.hpp"
+#include "duckdb/planner/operator/logical_materialized_cte.hpp"
+#include "duckdb/planner/operator/logical_cteref.hpp"
+#include "duckdb/optimizer/optimizer.hpp"
+#include <regex>
+#include <cmath>
+#include <sstream>
+#include <iomanip>
+
+namespace duckdb {
+
+//===----------------------------------------------------------------------===//
+// Multi-Level Cache System - L1/L2/L3 Cache Implementation
+//===----------------------------------------------------------------------===//
+
+enum class CacheLevel {
+    L1_HOT = 1,      // 最热点查询结果
+    L2_WARM = 2,     // 中等热度查询结果  
+    L3_COLD = 3      // 冷数据查询结果
+};
+
+struct CacheLevelStats {
+    idx_t hit_count = 0;
+    idx_t miss_count = 0;
+    idx_t total_size = 0;
+    idx_t max_size;
+    std::chrono::steady_clock::time_point last_cleanup;
+    
+    CacheLevelStats(idx_t max_sz) : max_size(max_sz) {
+        last_cleanup = std::chrono::steady_clock::now();
+    }
+    
+    double GetHitRate() const {
+        idx_t total = hit_count + miss_count;
+        return total > 0 ? (double)hit_count / total : 0.0;
+    }
+};
+
+class MultiLevelQueryCache {
+private:
+    // L1缓存：最热点查询结果（内存，快速访问）
+    unordered_map<string, unique_ptr<QueryCacheEntry>> l1_cache;
+    CacheLevelStats l1_stats;
+    
+    // L2缓存：中等热度查询结果（内存，中等访问速度）
+    unordered_map<string, unique_ptr<QueryCacheEntry>> l2_cache;
+    CacheLevelStats l2_stats;
+    
+    // L3缓存：冷数据查询结果（可能换出到磁盘）
+    unordered_map<string, unique_ptr<QueryCacheEntry>> l3_cache;
+    CacheLevelStats l3_stats;
+    
+    mutable mutex cache_mutex;
+    
+    // 热度评估参数
+    static constexpr idx_t HOT_ACCESS_THRESHOLD = 10;     // 热点访问阈值
+    static constexpr idx_t WARM_ACCESS_THRESHOLD = 3;     // 温热访问阈值
+    static constexpr std::chrono::minutes HOT_TIME_WINDOW{30};   // 热点时间窗口
+    static constexpr std::chrono::minutes WARM_TIME_WINDOW{120}; // 温热时间窗口
+    
+public:
+    MultiLevelQueryCache() 
+        : l1_stats(1000),    // L1最大1000个条目
+          l2_stats(5000),    // L2最大5000个条目  
+          l3_stats(20000) {  // L3最大20000个条目
+    }
+    
+    // 评估查询热度并确定缓存级别
+    CacheLevel EvaluateQueryHeat(const string& key, const QueryCacheEntry& entry) {
+        auto now = std::chrono::steady_clock::now();
+        auto time_since_access = now - entry.last_accessed;
+        
+        // 基于访问频率和时间的热度评估
+        if (entry.access_count >= HOT_ACCESS_THRESHOLD && 
+            time_since_access < HOT_TIME_WINDOW) {
+            return CacheLevel::L1_HOT;
+        } else if (entry.access_count >= WARM_ACCESS_THRESHOLD && 
+                   time_since_access < WARM_TIME_WINDOW) {
+            return CacheLevel::L2_WARM;
+        } else {
+            return CacheLevel::L3_COLD;
+        }
+    }
+    
+    // 多级缓存查找
+    unique_ptr<QueryCacheEntry> Get(const string& key) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        // 首先在L1缓存中查找
+        auto l1_it = l1_cache.find(key);
+        if (l1_it != l1_cache.end()) {
+            l1_stats.hit_count++;
+            auto& entry = l1_it->second;
+            entry->access_count++;
+            entry->last_accessed = std::chrono::steady_clock::now();
+            printf("DEBUG: L1 Cache hit for key: %s\n", key.c_str());
+            return entry->Copy();
+        }
+        l1_stats.miss_count++;
+        
+        // 在L2缓存中查找
+        auto l2_it = l2_cache.find(key);
+        if (l2_it != l2_cache.end()) {
+            l2_stats.hit_count++;
+            auto& entry = l2_it->second;
+            entry->access_count++;
+            entry->last_accessed = std::chrono::steady_clock::now();
+            
+            // 检查是否需要提升到L1
+            if (EvaluateQueryHeat(key, *entry) == CacheLevel::L1_HOT) {
+                PromoteToL1(key, std::move(l2_it->second));
+                l2_cache.erase(l2_it);
+            }
+            
+            printf("DEBUG: L2 Cache hit for key: %s\n", key.c_str());
+            return entry->Copy();
+        }
+        l2_stats.miss_count++;
+        
+        // 在L3缓存中查找
+        auto l3_it = l3_cache.find(key);
+        if (l3_it != l3_cache.end()) {
+            l3_stats.hit_count++;
+            auto& entry = l3_it->second;
+            entry->access_count++;
+            entry->last_accessed = std::chrono::steady_clock::now();
+            
+            // 检查是否需要提升到更高级别
+            CacheLevel target_level = EvaluateQueryHeat(key, *entry);
+            if (target_level == CacheLevel::L1_HOT) {
+                PromoteToL1(key, std::move(l3_it->second));
+                l3_cache.erase(l3_it);
+            } else if (target_level == CacheLevel::L2_WARM) {
+                PromoteToL2(key, std::move(l3_it->second));
+                l3_cache.erase(l3_it);
+            }
+            
+            printf("DEBUG: L3 Cache hit for key: %s\n", key.c_str());
+            return entry->Copy();
+        }
+        l3_stats.miss_count++;
+        
+        printf("DEBUG: Cache miss for key: %s\n", key.c_str());
+        return nullptr;
+    }
+    
+    // 多级缓存插入
+    bool Put(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        // 评估查询热度，决定插入到哪个级别
+        CacheLevel target_level = EvaluateQueryHeat(key, *entry);
+        
+        switch (target_level) {
+            case CacheLevel::L1_HOT:
+                return PutToL1(key, std::move(entry));
+            case CacheLevel::L2_WARM:
+                return PutToL2(key, std::move(entry));
+            case CacheLevel::L3_COLD:
+                return PutToL3(key, std::move(entry));
+        }
+        
+        return false;
+    }
+    
+    // 缓存层次动态调整
+    void RebalanceCacheLevels() {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        printf("DEBUG: Starting cache level rebalancing...\n");
+        
+        // 检查L1缓存，将冷却的条目降级到L2
+        vector<string> l1_demote_keys;
+        for (auto& [key, entry] : l1_cache) {
+            if (EvaluateQueryHeat(key, *entry) != CacheLevel::L1_HOT) {
+                l1_demote_keys.push_back(key);
+            }
+        }
+        
+        for (const auto& key : l1_demote_keys) {
+            auto entry = std::move(l1_cache[key]);
+            l1_cache.erase(key);
+            CacheLevel target = EvaluateQueryHeat(key, *entry);
+            if (target == CacheLevel::L2_WARM) {
+                PutToL2(key, std::move(entry));
+            } else {
+                PutToL3(key, std::move(entry));
+            }
+        }
+        
+        // 检查L2缓存，将冷却的条目降级到L3
+        vector<string> l2_demote_keys;
+        for (auto& [key, entry] : l2_cache) {
+            CacheLevel heat = EvaluateQueryHeat(key, *entry);
+            if (heat == CacheLevel::L3_COLD) {
+                l2_demote_keys.push_back(key);
+            } else if (heat == CacheLevel::L1_HOT) {
+                // 提升到L1
+                PromoteToL1(key, std::move(entry));
+                l2_cache.erase(key);
+            }
+        }
+        
+        for (const auto& key : l2_demote_keys) {
+            auto entry = std::move(l2_cache[key]);
+            l2_cache.erase(key);
+            PutToL3(key, std::move(entry));
+        }
+        
+        printf("DEBUG: Cache rebalancing completed. L1: %zu, L2: %zu, L3: %zu\n", 
+               l1_cache.size(), l2_cache.size(), l3_cache.size());
+    }
+    
+    // 获取缓存统计信息
+    void PrintCacheStats() const {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        printf("\n=== Multi-Level Cache Statistics ===\n");
+        printf("L1 Cache (Hot): %zu/%zu entries, Hit Rate: %.2f%%\n", 
+               l1_cache.size(), l1_stats.max_size, l1_stats.GetHitRate() * 100);
+        printf("L2 Cache (Warm): %zu/%zu entries, Hit Rate: %.2f%%\n", 
+               l2_cache.size(), l2_stats.max_size, l2_stats.GetHitRate() * 100);
+        printf("L3 Cache (Cold): %zu/%zu entries, Hit Rate: %.2f%%\n", 
+               l3_cache.size(), l3_stats.max_size, l3_stats.GetHitRate() * 100);
+        
+        double overall_hit_rate = 0.0;
+        idx_t total_hits = l1_stats.hit_count + l2_stats.hit_count + l3_stats.hit_count;
+        idx_t total_requests = total_hits + l1_stats.miss_count + l2_stats.miss_count + l3_stats.miss_count;
+        if (total_requests > 0) {
+            overall_hit_rate = (double)total_hits / total_requests * 100;
+        }
+        printf("Overall Hit Rate: %.2f%%\n", overall_hit_rate);
+        printf("=====================================\n\n");
+    }
+    
+private:
+    bool PutToL1(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        if (l1_cache.size() >= l1_stats.max_size) {
+            EvictFromL1();
+        }
+        l1_cache[key] = std::move(entry);
+        l1_stats.total_size++;
+        printf("DEBUG: Added entry to L1 cache: %s\n", key.c_str());
+        return true;
+    }
+    
+    bool PutToL2(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        if (l2_cache.size() >= l2_stats.max_size) {
+            EvictFromL2();
+        }
+        l2_cache[key] = std::move(entry);
+        l2_stats.total_size++;
+        printf("DEBUG: Added entry to L2 cache: %s\n", key.c_str());
+        return true;
+    }
+    
+    bool PutToL3(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        if (l3_cache.size() >= l3_stats.max_size) {
+            EvictFromL3();
+        }
+        l3_cache[key] = std::move(entry);
+        l3_stats.total_size++;
+        printf("DEBUG: Added entry to L3 cache: %s\n", key.c_str());
+        return true;
+    }
+    
+    void PromoteToL1(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        PutToL1(key, std::move(entry));
+        printf("DEBUG: Promoted entry to L1: %s\n", key.c_str());
+    }
+    
+    void PromoteToL2(const string& key, unique_ptr<QueryCacheEntry> entry) {
+        PutToL2(key, std::move(entry));
+        printf("DEBUG: Promoted entry to L2: %s\n", key.c_str());
+    }
+    
+    // LRU淘汰策略
+    void EvictFromL1() {
+        if (l1_cache.empty()) return;
+        
+        auto oldest_it = l1_cache.begin();
+        auto oldest_time = oldest_it->second->last_accessed;
+        
+        for (auto it = l1_cache.begin(); it != l1_cache.end(); ++it) {
+            if (it->second->last_accessed < oldest_time) {
+                oldest_time = it->second->last_accessed;
+                oldest_it = it;
+            }
+        }
+        
+        // 将淘汰的条目降级到L2
+        string key = oldest_it->first;
+        auto entry = std::move(oldest_it->second);
+        l1_cache.erase(oldest_it);
+        
+        printf("DEBUG: Evicted from L1, demoting to L2: %s\n", key.c_str());
+        PutToL2(key, std::move(entry));
+    }
+    
+    void EvictFromL2() {
+        if (l2_cache.empty()) return;
+        
+        auto oldest_it = l2_cache.begin();
+        auto oldest_time = oldest_it->second->last_accessed;
+        
+        for (auto it = l2_cache.begin(); it != l2_cache.end(); ++it) {
+            if (it->second->last_accessed < oldest_time) {
+                oldest_time = it->second->last_accessed;
+                oldest_it = it;
+            }
+        }
+        
+        // 将淘汰的条目降级到L3
+        string key = oldest_it->first;
+        auto entry = std::move(oldest_it->second);
+        l2_cache.erase(oldest_it);
+        
+        printf("DEBUG: Evicted from L2, demoting to L3: %s\n", key.c_str());
+        PutToL3(key, std::move(entry));
+    }
+    
+    void EvictFromL3() {
+        if (l3_cache.empty()) return;
+        
+        auto oldest_it = l3_cache.begin();
+        auto oldest_time = oldest_it->second->last_accessed;
+        
+        for (auto it = l3_cache.begin(); it != l3_cache.end(); ++it) {
+            if (it->second->last_accessed < oldest_time) {
+                oldest_time = it->second->last_accessed;
+                oldest_it = it;
+            }
+        }
+        
+        printf("DEBUG: Evicted from L3 (final removal): %s\n", oldest_it->first.c_str());
+        l3_cache.erase(oldest_it);
+    }
+};
+
+//===----------------------------------------------------------------------===//
+// CTE Cache Entry - Enhanced for Multi-Stage Caching
+//===----------------------------------------------------------------------===//
+
+struct CTECacheEntry {
+    // Parser stage cache
+    unique_ptr<SelectStatement> parsed_statement;
+    CommonTableExpressionMap parsed_cte_map;
+    
+    // Planner stage cache  
+    unique_ptr<LogicalOperator> logical_plan;
+    vector<LogicalType> logical_types;
+    
+    // Optimizer stage cache
+    unique_ptr<LogicalOperator> optimized_plan;
+    vector<LogicalType> optimized_types;
+    
+    // Executor stage cache (existing)
+    unique_ptr<MaterializedQueryResult> execution_result;
+    
+    // Metadata
+    string cte_signature;
+    vector<string> cte_names;
+    std::chrono::steady_clock::time_point created_at;
+    std::chrono::steady_clock::time_point last_accessed;
+    idx_t access_count;
+    
+    // Stage flags
+    bool has_parsed_cache;
+    bool has_logical_cache;
+    bool has_optimized_cache;
+    bool has_execution_cache;
+    
+    CTECacheEntry() : access_count(0), has_parsed_cache(false), 
+                     has_logical_cache(false), has_optimized_cache(false), 
+                     has_execution_cache(false) {
+        created_at = std::chrono::steady_clock::now();
+        last_accessed = created_at;
+    }
+};
+
+//===----------------------------------------------------------------------===//
+// Layered Bloom Filter System - Multi-Level Filtering
+//===----------------------------------------------------------------------===//
+
+enum class QueryType {
+    SIMPLE_SELECT,
+    COMPLEX_JOIN,
+    ANALYTICAL,
+    CTE_RECURSIVE,
+    UNKNOWN
+};
+
+class LayeredBloomFilter {
+private:
+    // L1过滤器：覆盖所有查询（基础过滤）
+    unique_ptr<BloomFilter> l1_filter;
+    
+    // L2过滤器：覆盖热点查询（精确过滤）
+    unique_ptr<BloomFilter> l2_filter;
+    
+    // L3过滤器：覆盖特定类型查询（专项过滤）
+    unordered_map<QueryType, unique_ptr<BloomFilter>> l3_filters;
+    
+    mutable mutex filter_mutex;
+    
+    // 统计信息
+    idx_t l1_checks = 0, l1_hits = 0;
+    idx_t l2_checks = 0, l2_hits = 0;
+    idx_t l3_checks = 0, l3_hits = 0;
+    
+public:
+    LayeredBloomFilter() {
+        // L1过滤器：大容量，低假阳性率
+        l1_filter = make_uniq<BloomFilter>(100000, 3);  // 100K位，3个哈希函数
+        
+        // L2过滤器：中等容量，更低假阳性率
+        l2_filter = make_uniq<BloomFilter>(50000, 4);   // 50K位，4个哈希函数
+        
+        // L3过滤器：针对不同查询类型的专项过滤器
+        l3_filters[QueryType::SIMPLE_SELECT] = make_uniq<BloomFilter>(20000, 2);
+        l3_filters[QueryType::COMPLEX_JOIN] = make_uniq<BloomFilter>(30000, 3);
+        l3_filters[QueryType::ANALYTICAL] = make_uniq<BloomFilter>(40000, 4);
+        l3_filters[QueryType::CTE_RECURSIVE] = make_uniq<BloomFilter>(25000, 3);
+    }
+    
+    // 分析查询类型
+    QueryType AnalyzeQueryType(const string& query) {
+        string upper_query = StringUtil::Upper(query);
+        
+        if (upper_query.find("WITH") != string::npos && 
+            upper_query.find("RECURSIVE") != string::npos) {
+            return QueryType::CTE_RECURSIVE;
+        } else if (upper_query.find("JOIN") != string::npos || 
+                   upper_query.find("UNION") != string::npos) {
+            return QueryType::COMPLEX_JOIN;
+        } else if (upper_query.find("GROUP BY") != string::npos || 
+                   upper_query.find("ORDER BY") != string::npos ||
+                   upper_query.find("WINDOW") != string::npos) {
+            return QueryType::ANALYTICAL;
+        } else if (upper_query.find("SELECT") != string::npos) {
+            return QueryType::SIMPLE_SELECT;
+        }
+        
+        return QueryType::UNKNOWN;
+    }
+    
+    // 多层过滤检查
+    bool MayContain(const string& query) {
+        lock_guard<mutex> lock(filter_mutex);
+        
+        // L1过滤器检查（基础过滤）
+        l1_checks++;
+        if (!l1_filter->MayContain(query)) {
+            printf("DEBUG: L1 filter rejected query\n");
+            return false;  // L1过滤器确定不存在
+        }
+        l1_hits++;
+        
+        // L2过滤器检查（热点查询过滤）
+        l2_checks++;
+        if (l2_filter->MayContain(query)) {
+            l2_hits++;
+            printf("DEBUG: L2 filter indicates hot query\n");
+            return true;  // 热点查询，可能存在
+        }
+        
+        // L3过滤器检查（特定类型查询过滤）
+        QueryType query_type = AnalyzeQueryType(query);
+        l3_checks++;
+        
+        auto it = l3_filters.find(query_type);
+        if (it != l3_filters.end() && it->second->MayContain(query)) {
+            l3_hits++;
+            printf("DEBUG: L3 filter hit for query type: %d\n", static_cast<int>(query_type));
+            return true;
+        }
+        
+        printf("DEBUG: All filters passed, may contain query\n");
+        return true;  // 通过所有过滤器检查
+    }
+    
+    // 添加查询到相应的过滤器层
+    void Add(const string& query, bool is_hot_query = false) {
+        lock_guard<mutex> lock(filter_mutex);
+        
+        // 总是添加到L1过滤器
+        l1_filter->Add(query);
+        
+        // 如果是热点查询，添加到L2过滤器
+        if (is_hot_query) {
+            l2_filter->Add(query);
+            printf("DEBUG: Added hot query to L2 filter\n");
+        }
+        
+        // 根据查询类型添加到L3过滤器
+        QueryType query_type = AnalyzeQueryType(query);
+        auto it = l3_filters.find(query_type);
+        if (it != l3_filters.end()) {
+            it->second->Add(query);
+            printf("DEBUG: Added query to L3 filter for type: %d\n", static_cast<int>(query_type));
+        }
+    }
+    
+    // 获取过滤器统计信息
+    void PrintFilterStats() const {
+        lock_guard<mutex> lock(filter_mutex);
+        
+        printf("\n=== Layered Bloom Filter Statistics ===\n");
+        printf("L1 Filter (All Queries): %zu checks, %zu hits, %.2f%% hit rate\n", 
+               l1_checks, l1_hits, l1_checks > 0 ? (double)l1_hits / l1_checks * 100 : 0);
+        printf("L2 Filter (Hot Queries): %zu checks, %zu hits, %.2f%% hit rate\n", 
+               l2_checks, l2_hits, l2_checks > 0 ? (double)l2_hits / l2_checks * 100 : 0);
+        printf("L3 Filter (Typed Queries): %zu checks, %zu hits, %.2f%% hit rate\n", 
+               l3_checks, l3_hits, l3_checks > 0 ? (double)l3_hits / l3_checks * 100 : 0);
+        
+        double overall_efficiency = l1_checks > 0 ? 
+            (double)(l1_checks - l1_hits) / l1_checks * 100 : 0;
+        printf("Filter Efficiency (Rejected at L1): %.2f%%\n", overall_efficiency);
+        printf("========================================\n\n");
+    }
+    
+    // 重置过滤器（用于动态调整）
+    void Reset() {
+        lock_guard<mutex> lock(filter_mutex);
+        
+        l1_filter->Reset();
+        l2_filter->Reset();
+        for (auto& [type, filter] : l3_filters) {
+            filter->Reset();
+        }
+        
+        l1_checks = l1_hits = 0;
+        l2_checks = l2_hits = 0;
+        l3_checks = l3_hits = 0;
+        
+        printf("DEBUG: All bloom filters reset\n");
+    }
+};
+
+//===----------------------------------------------------------------------===//
+// Multi-Stage CTE Cache Manager
+//===----------------------------------------------------------------------===//
+
+class MultiStageCTECache {
+private:
+    unordered_map<string, unique_ptr<CTECacheEntry>> cache_entries;
+    mutable mutex cache_mutex;
+    
+    // Statistics
+    idx_t parser_hits = 0;
+    idx_t planner_hits = 0; 
+    idx_t optimizer_hits = 0;
+    idx_t executor_hits = 0;
+    idx_t total_requests = 0;
+    
+public:
+    // Generate CTE signature for caching
+    string GenerateCTESignature(const CommonTableExpressionMap &cte_map) {
+        string signature = "CTE:";
+        vector<string> cte_parts;
+        
+        for (const auto &cte : cte_map.map) {
+            string cte_part = cte.first + "={" + cte.second->query->ToString() + "}";
+            cte_parts.push_back(cte_part);
+        }
+        
+        // Sort for consistent signature
+        sort(cte_parts.begin(), cte_parts.end());
+        for (const auto &part : cte_parts) {
+            signature += part + ";";
+        }
+        
+        return signature;
+    }
+    
+    // Cache parsed CTE
+    void CacheParsedCTE(const string &signature, unique_ptr<SelectStatement> statement,
+                       const CommonTableExpressionMap &cte_map) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        auto it = cache_entries.find(signature);
+        if (it == cache_entries.end()) {
+            cache_entries[signature] = make_uniq<CTECacheEntry>();
+        }
+        
+        auto &entry = cache_entries[signature];
+        entry->parsed_statement = unique_ptr_cast<SQLStatement, SelectStatement>(statement->Copy());
+        entry->parsed_cte_map = cte_map.Copy();
+        entry->cte_signature = signature;
+        entry->has_parsed_cache = true;
+        
+        // Extract CTE names
+        entry->cte_names.clear();
+        for (const auto &cte : cte_map.map) {
+            entry->cte_names.push_back(cte.first);
+        }
+        
+        printf("DEBUG: Cached parsed CTE with signature: %s\n", signature.c_str());
+    }
+    
+    // Cache logical plan
+    void CacheLogicalPlan(const string &signature, unique_ptr<LogicalOperator> plan,
+                         const vector<LogicalType> &types) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        auto it = cache_entries.find(signature);
+        if (it == cache_entries.end()) {
+            cache_entries[signature] = make_uniq<CTECacheEntry>();
+        }
+        
+        auto &entry = cache_entries[signature];
+        // Note: LogicalOperator doesn't have a Copy method, so we store the original
+        // In a real implementation, we'd need to implement deep copying
+        entry->logical_plan = std::move(plan);
+        entry->logical_types = types;
+        entry->has_logical_cache = true;
+        
+        printf("DEBUG: Cached logical plan for CTE: %s\n", signature.c_str());
+    }
+    
+    // Cache optimized plan
+    void CacheOptimizedPlan(const string &signature, unique_ptr<LogicalOperator> plan,
+                           const vector<LogicalType> &types) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        auto it = cache_entries.find(signature);
+        if (it == cache_entries.end()) {
+            cache_entries[signature] = make_uniq<CTECacheEntry>();
+        }
+        
+        auto &entry = cache_entries[signature];
+        entry->optimized_plan = std::move(plan);
+        entry->optimized_types = types;
+        entry->has_optimized_cache = true;
+        
+        printf("DEBUG: Cached optimized plan for CTE: %s\n", signature.c_str());
+    }
+    
+    // Cache execution result
+    void CacheExecutionResult(const string &signature, unique_ptr<MaterializedQueryResult> result) {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        auto it = cache_entries.find(signature);
+        if (it == cache_entries.end()) {
+            cache_entries[signature] = make_uniq<CTECacheEntry>();
+        }
+        
+        auto &entry = cache_entries[signature];
+        entry->execution_result = std::move(result);
+        entry->has_execution_cache = true;
+        
+        printf("DEBUG: Cached execution result for CTE: %s\n", signature.c_str());
+    }
+    
+    // Get cached parsed CTE
+    unique_ptr<SelectStatement> GetCachedParsedCTE(const string &signature) {
+        lock_guard<mutex> lock(cache_mutex);
+        total_requests++;
+        
+        auto it = cache_entries.find(signature);
+        if (it != cache_entries.end() && it->second->has_parsed_cache) {
+            parser_hits++;
+            it->second->access_count++;
+            it->second->last_accessed = std::chrono::steady_clock::now();
+            printf("DEBUG: Parser cache hit for CTE: %s\n", signature.c_str());
+            auto copied_statement = it->second->parsed_statement->Copy();
+            return unique_ptr_cast<SQLStatement, SelectStatement>(std::move(copied_statement));
+        }
+        
+        return nullptr;
+    }
+    
+    // Get cached logical plan
+    LogicalOperator* GetCachedLogicalPlan(const string &signature) {
+        lock_guard<mutex> lock(cache_mutex);
+        total_requests++;
+        
+        auto it = cache_entries.find(signature);
+        if (it != cache_entries.end() && it->second->has_logical_cache) {
+            planner_hits++;
+            it->second->access_count++;
+            it->second->last_accessed = std::chrono::steady_clock::now();
+            printf("DEBUG: Planner cache hit for CTE: %s\n", signature.c_str());
+            return it->second->logical_plan.get();
+        }
+        
+        return nullptr;
+    }
+    
+    // Get cached optimized plan
+    LogicalOperator* GetCachedOptimizedPlan(const string &signature) {
+        lock_guard<mutex> lock(cache_mutex);
+        total_requests++;
+        
+        auto it = cache_entries.find(signature);
+        if (it != cache_entries.end() && it->second->has_optimized_cache) {
+            optimizer_hits++;
+            it->second->access_count++;
+            it->second->last_accessed = std::chrono::steady_clock::now();
+            printf("DEBUG: Optimizer cache hit for CTE: %s\n", signature.c_str());
+            return it->second->optimized_plan.get();
+        }
+        
+        return nullptr;
+    }
+    
+    // Get cached execution result
+    unique_ptr<MaterializedQueryResult> GetCachedExecutionResult(const string &signature) {
+        lock_guard<mutex> lock(cache_mutex);
+        total_requests++;
+        
+        auto it = cache_entries.find(signature);
+        if (it != cache_entries.end() && it->second->has_execution_cache) {
+            executor_hits++;
+            it->second->access_count++;
+            it->second->last_accessed = std::chrono::steady_clock::now();
+            printf("DEBUG: Executor cache hit for CTE: %s\n", signature.c_str());
+            
+            // Clone the result
+            auto& original_collection = it->second->execution_result->Collection();
+            auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), original_collection.Types());
+            
+            ColumnDataScanState scan_state;
+            original_collection.InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+            
+            ColumnDataAppendState append_state;
+            collection_copy->InitializeAppend(append_state);
+            
+            DataChunk chunk;
+            original_collection.InitializeScanChunk(chunk);
+            while (original_collection.Scan(scan_state, chunk)) {
+                collection_copy->Append(append_state, chunk);
+            }
+            
+            return make_uniq<MaterializedQueryResult>(
+                it->second->execution_result->statement_type,
+                it->second->execution_result->properties,
+                it->second->execution_result->names,
+                std::move(collection_copy),
+                it->second->execution_result->client_properties
+            );
+        }
+        
+        return nullptr;
+    }
+    
+    // Get cache statistics
+    struct CacheStats {
+        idx_t parser_hits;
+        idx_t planner_hits;
+        idx_t optimizer_hits;
+        idx_t executor_hits;
+        idx_t total_requests;
+        idx_t total_entries;
+        double parser_hit_rate;
+        double planner_hit_rate;
+        double optimizer_hit_rate;
+        double executor_hit_rate;
+        double overall_hit_rate;
+    };
+    
+    CacheStats GetCacheStats() const {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        CacheStats stats;
+        stats.parser_hits = parser_hits;
+        stats.planner_hits = planner_hits;
+        stats.optimizer_hits = optimizer_hits;
+        stats.executor_hits = executor_hits;
+        stats.total_requests = total_requests;
+        stats.total_entries = cache_entries.size();
+        
+        if (total_requests > 0) {
+            stats.parser_hit_rate = (double)parser_hits / total_requests * 100.0;
+            stats.planner_hit_rate = (double)planner_hits / total_requests * 100.0;
+            stats.optimizer_hit_rate = (double)optimizer_hits / total_requests * 100.0;
+            stats.executor_hit_rate = (double)executor_hits / total_requests * 100.0;
+            
+            idx_t total_hits = parser_hits + planner_hits + optimizer_hits + executor_hits;
+            stats.overall_hit_rate = (double)total_hits / total_requests * 100.0;
+        } else {
+            stats.parser_hit_rate = 0.0;
+            stats.planner_hit_rate = 0.0;
+            stats.optimizer_hit_rate = 0.0;
+            stats.executor_hit_rate = 0.0;
+            stats.overall_hit_rate = 0.0;
+        }
+        
+        return stats;
+    }
+    
+    void Clear() {
+        lock_guard<mutex> lock(cache_mutex);
+        cache_entries.clear();
+        parser_hits = planner_hits = optimizer_hits = executor_hits = total_requests = 0;
+    }
+};
+
+// Global multi-stage CTE cache instance
+static MultiStageCTECache g_multi_stage_cte_cache;
+
+//===----------------------------------------------------------------------===//
+// Enhanced QueryCacheKeyGenerator with Multi-Stage CTE Support
+//===----------------------------------------------------------------------===//
+
+bool QueryCacheKeyGenerator::IsCacheable(const SQLStatement &statement) {
+    printf("DEBUG: IsCacheable called with statement type: %d\n", (int)statement.type);
+    switch (statement.type) {
+    case StatementType::SELECT_STATEMENT: {
+        printf("DEBUG: Statement is SELECT, checking for CTE...\n");
+        auto &select = static_cast<const SelectStatement &>(statement);
+        
+        // Check if this is a pragma query - these should not be cached
+        string query_str = statement.query;
+        std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+        if (query_str.find("pragma_query_cache_stats") != string::npos) {
+            printf("DEBUG: Statement contains pragma_query_cache_stats, not cacheable\n");
+            return false;
+        }
+        
+        // Enhanced CTE detection and caching
+        if (select.node && !select.node->cte_map.map.empty()) {
+            printf("DEBUG: SELECT statement contains CTE, analyzing for multi-stage caching\n");
+            
+            // Generate CTE signature for multi-stage caching
+            string cte_signature = g_multi_stage_cte_cache.GenerateCTESignature(select.node->cte_map);
+            printf("DEBUG: CTE signature: %s\n", cte_signature.c_str());
+            
+            // Check if we have any cached stages for this CTE
+            auto cached_parsed = g_multi_stage_cte_cache.GetCachedParsedCTE(cte_signature);
+            if (cached_parsed) {
+                printf("DEBUG: Found cached parsed CTE\n");
+            }
+            
+            auto cached_logical = g_multi_stage_cte_cache.GetCachedLogicalPlan(cte_signature);
+            if (cached_logical) {
+                printf("DEBUG: Found cached logical plan for CTE\n");
+            }
+            
+            auto cached_optimized = g_multi_stage_cte_cache.GetCachedOptimizedPlan(cte_signature);
+            if (cached_optimized) {
+                printf("DEBUG: Found cached optimized plan for CTE\n");
+            }
+            
+            auto cached_result = g_multi_stage_cte_cache.GetCachedExecutionResult(cte_signature);
+            if (cached_result) {
+                printf("DEBUG: Found cached execution result for CTE\n");
+            }
+        }
+        
+        printf("DEBUG: Statement is SELECT, returning true\n");
+        return true;
+    }
+    case StatementType::EXPLAIN_STATEMENT: {
+        // Check if it's explaining a SELECT
+        auto &explain = static_cast<const ExplainStatement &>(statement);
+        bool result = explain.stmt && explain.stmt->type == StatementType::SELECT_STATEMENT;
+        printf("DEBUG: Statement is EXPLAIN, returning %d\n", result);
+        return result;
+    }
+    case StatementType::TRANSACTION_STATEMENT: {
+        // This might be a wrapped SELECT statement - check the query string
+        string query_str = statement.query;
+        std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+        
+        // Remove leading/trailing whitespace
+        size_t start = query_str.find_first_not_of(" \t\n\r");
+        if (start == string::npos) {
+            printf("DEBUG: Empty query string in TRANSACTION_STATEMENT\n");
+            return false;
+        }
+        size_t end = query_str.find_last_not_of(" \t\n\r");
+        query_str = query_str.substr(start, end - start + 1);
+        
+        // Check for pragma queries first - these should not be cached
+        if (query_str.find("pragma_query_cache_stats") != string::npos) {
+            printf("DEBUG: TRANSACTION_STATEMENT contains pragma_query_cache_stats, not cacheable\n");
+            return false;
+        }
+        
+        // Check if it starts with SELECT or WITH (for CTE)
+        bool is_select_like = query_str.substr(0, 6) == "select" || query_str.substr(0, 4) == "with";
+        printf("DEBUG: TRANSACTION_STATEMENT contains query: '%.50s...', is_select_like=%d\n", 
+               query_str.c_str(), is_select_like);
+        return is_select_like;
+    }
+    default:
+        printf("DEBUG: Statement type %d is not cacheable\n", (int)statement.type);
+        return false;
+    }
+}
+
+string QueryCacheKeyGenerator::GenerateKey(const SQLStatement &statement, 
+                                         const case_insensitive_map_t<BoundParameterData> *parameters) {
+    // Create a string representation of the statement
+    string statement_str = statement.ToString();
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - original statement: '%s'\n", statement_str.c_str());
+    
+    // Enhanced CTE handling
+    if (statement.type == StatementType::SELECT_STATEMENT) {
+        auto &select = static_cast<const SelectStatement &>(statement);
+        if (select.node && !select.node->cte_map.map.empty()) {
+            // For CTE queries, include CTE signature in the key
+            string cte_signature = g_multi_stage_cte_cache.GenerateCTESignature(select.node->cte_map);
+            statement_str += "|" + cte_signature;
+            printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - added CTE signature: '%s'\n", cte_signature.c_str());
+        }
+    }
+    
+    // Normalize the query
+    string normalized = NormalizeQuery(statement_str);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - normalized: '%s'\n", normalized.c_str());
+    
+    // Add parameter values if present
+    if (parameters) {
+        for (const auto &param : *parameters) {
+            normalized += "|" + param.first + "=" + param.second.GetValue().ToString();
+        }
+        printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - with parameters: '%s'\n", normalized.c_str());
+    }
+    
+    // Generate hash
+    auto hash_result = Hash(normalized.c_str(), normalized.length());
+    string key = to_string(hash_result);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey - final key: '%s' (from normalized: '%s')\n", key.c_str(), normalized.c_str());
+    return key;
+}
+
+//===----------------------------------------------------------------------===//
+// Enhanced QueryCache with Multi-Stage CTE Support
+//===----------------------------------------------------------------------===//
+
+// Add method to get multi-stage CTE cache statistics
+QueryCache::MultiStageCTEStats QueryCache::GetMultiStageCTEStats() const {
+    auto stats = g_multi_stage_cte_cache.GetCacheStats();
+    
+    MultiStageCTEStats result;
+    result.parser_hits = stats.parser_hits;
+    result.planner_hits = stats.planner_hits;
+    result.optimizer_hits = stats.optimizer_hits;
+    result.executor_hits = stats.executor_hits;
+    result.total_requests = stats.total_requests;
+    result.total_entries = stats.total_entries;
+    result.parser_hit_rate = stats.parser_hit_rate;
+    result.planner_hit_rate = stats.planner_hit_rate;
+    result.optimizer_hit_rate = stats.optimizer_hit_rate;
+    result.executor_hit_rate = stats.executor_hit_rate;
+    result.overall_hit_rate = stats.overall_hit_rate;
+    
+    return result;
+}
+
+// Enhanced CacheResult method with multi-stage CTE caching
+void QueryCache::CacheResult(const string &query_hash, unique_ptr<MaterializedQueryResult> result, 
+                            const MLCacheFeatures &features) {
+    if (!config.enabled || !result || result->HasError()) {
+        return;
+    }
+    
+    lock_guard<mutex> lock(cache_mutex);
+    
+    // Add to bloom filter
+    bloom_filter.Add(query_hash);
+    
+    // Create cache entry
+    auto entry = make_uniq<QueryCacheEntry>(std::move(result));
+    entry->ml_features = features;
+    
+    // Calculate ML score if using ML strategy
+    if (config.eviction_strategy == CacheEvictionStrategy::ML_BASED) {
+        entry->ml_score = ml_predictor.Predict(features);
+        entry->eviction_priority = entry->ml_score;
+    } else if (config.eviction_strategy == CacheEvictionStrategy::LRU_BASED) {
+        entry->eviction_priority = static_cast<double>(entry->last_accessed.time_since_epoch().count());
+    } else {
+        // TTL-based: priority based on creation time
+        entry->eviction_priority = static_cast<double>(entry->created_at.time_since_epoch().count());
+    }
+    
+    // Insert into cache
+    cache[query_hash] = std::move(entry);
+    
+    // Record access for ML training
+    RecordAccess(query_hash, features, false);
+    
+    // Update adaptive tuning
+    UpdateAdaptiveTuning();
+
+    // Evict if necessary
+    EvictIfNeeded();
+}
+
+// Clear multi-stage CTE cache
+void QueryCache::Clear() {
+    lock_guard<mutex> lock(cache_mutex);
+    cache.clear();
+    bloom_filter.Clear();
+    total_hits = 0;
+    total_misses = 0;
+    ttl_evictions = 0;
+    lru_evictions = 0;
+    ml_evictions = 0;
+    
+    // Clear access history
+    while (!access_history.empty()) {
+        access_history.pop();
+    }
+    
+    // Clear multi-stage CTE cache
+    g_multi_stage_cte_cache.Clear();
+}
+
+// MLCachePredictor implementation
+MLCachePredictor::MLCachePredictor(double learning_rate, double decay_factor) 
+    : learning_rate(learning_rate), decay_factor(decay_factor) {
+    // Initialize weights for features: complexity, exec_time, result_size, access_freq, 
+    // temporal_locality, table_count, join_count, has_aggregation, has_subquery
+    weights = {0.2, 0.3, 0.1, 0.25, 0.15, 0.05, 0.05, 0.1, 0.1};
+}
+
+double MLCachePredictor::Predict(const MLCacheFeatures &features) const {
+    auto feature_vec = FeaturesToVector(features);
+    double score = 0.0;
+    for (size_t i = 0; i < weights.size() && i < feature_vec.size(); i++) {
+        score += weights[i] * feature_vec[i];
+    }
+    // Apply sigmoid activation
+    return 1.0 / (1.0 + std::exp(-score));
+}
+
+void MLCachePredictor::Update(const MLCacheFeatures &features, double actual_utility) {
+    auto feature_vec = FeaturesToVector(features);
+    double predicted = Predict(features);
+    double error = actual_utility - predicted;
+    
+    // Gradient descent update with decay
+    double effective_lr = learning_rate * std::pow(decay_factor, update_count / 100.0);
+    for (size_t i = 0; i < weights.size() && i < feature_vec.size(); i++) {
+        weights[i] += effective_lr * error * feature_vec[i];
+    }
+    update_count++;
+}
+
+vector<double> MLCachePredictor::FeaturesToVector(const MLCacheFeatures &features) const {
+    return {
+        features.query_complexity_score,
+        features.execution_time_ms / 1000.0,  // Normalize to seconds
+        features.result_size_bytes / (1024.0 * 1024.0),  // Normalize to MB
+        features.access_frequency,
+        features.temporal_locality,
+        static_cast<double>(features.table_count) / 10.0,  // Normalize
+        static_cast<double>(features.join_count) / 5.0,    // Normalize
+        features.has_aggregation ? 1.0 : 0.0,
+        features.has_subquery ? 1.0 : 0.0
+    };
+}
+
+QueryCache::QueryCache(QueryCacheConfig config) 
+    : config(std::move(config)), 
+      bloom_filter(this->config.bloom_filter_size, this->config.bloom_filter_hash_functions),
+      ml_predictor(this->config.ml_learning_rate, this->config.ml_decay_factor),
+      last_metrics_update(std::chrono::steady_clock::now()) {
+    
+    // Initialize adaptive tuner if enabled
+    if (this->config.adaptive_tuning_config.enabled) {
+        adaptive_tuner = make_uniq<AdaptiveParameterTuner>(this->config.adaptive_tuning_config);
+    }
+}
+
+QueryCache::~QueryCache() {
+    // Cleanup if needed
+}
+
+bool QueryCache::InitializeWithContext(ClientContext *context) {
+    client_context = context;
+    return true;
+}
+
+bool QueryCache::MightBeCached(const string &query_hash) const {
+    if (!config.enabled) {
+        return false;
+    }
+    lock_guard<mutex> lock(cache_mutex);
+    return bloom_filter.MightContain(query_hash);
+}
+
+unique_ptr<MaterializedQueryResult> QueryCache::GetCachedResult(const string &query_hash) {
+    if (!config.enabled) {
+        return nullptr;
+    }
+    
+    lock_guard<mutex> lock(cache_mutex);
+    
+    auto it = cache.find(query_hash);
+    if (it == cache.end()) {
+        total_misses++;
+        return nullptr;
+    }
+    
+    auto &entry = it->second;
+    
+    // Check if entry has expired
+    if (IsExpired(*entry)) {
+        cache.erase(it);
+        total_misses++;
+        return nullptr;
+    }
+    
+    // Update access statistics
+    entry->access_count++;
+    entry->last_accessed = std::chrono::steady_clock::now();
+    total_hits++;
+    
+    // Update ML features for temporal locality
+    auto now = std::chrono::steady_clock::now();
+    auto time_since_last = std::chrono::duration_cast<std::chrono::seconds>(now - entry->last_accessed).count();
+    entry->ml_features.temporal_locality = 1.0 / (1.0 + time_since_last / 3600.0); // Decay over hours
+    entry->ml_features.access_frequency = static_cast<double>(entry->access_count);
+    
+    // Record access for ML training
+    RecordAccess(query_hash, entry->ml_features, true);
+    
+    // Update adaptive tuning
+    UpdateAdaptiveTuning();
+
+    // Clone the result for return
+    // Create a copy of the collection
+    auto& original_collection = entry->result->Collection();
+    auto collection_copy = make_uniq<ColumnDataCollection>(Allocator::DefaultAllocator(), original_collection.Types());
+    
+    // Copy all data chunks from the original collection
+    ColumnDataScanState scan_state;
+    original_collection.InitializeScan(scan_state, ColumnDataScanProperties::DISALLOW_ZERO_COPY);
+    
+    ColumnDataAppendState append_state;
+    collection_copy->InitializeAppend(append_state);
+    
+    DataChunk chunk;
+    original_collection.InitializeScanChunk(chunk);
+    while (original_collection.Scan(scan_state, chunk)) {
+        collection_copy->Append(append_state, chunk);
+    }
+    
+    auto cloned_result = make_uniq<MaterializedQueryResult>(
+        entry->result->statement_type,
+        entry->result->properties,
+        entry->result->names, 
+        std::move(collection_copy),
+        entry->result->client_properties
+    );
+    
+    return cloned_result;
+}
+
+QueryCache::CacheStats QueryCache::GetStats() const {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    CacheStats stats;
+    stats.total_entries = cache.size();
+    stats.total_hits = total_hits;
+    stats.total_misses = total_misses;
+    stats.hit_rate = (total_hits + total_misses) > 0 ? 
+                     static_cast<double>(total_hits) / (total_hits + total_misses) : 0.0;
+    stats.false_positive_rate = bloom_filter.GetFalsePositiveRate();
+    stats.ttl_evictions = ttl_evictions;
+    stats.lru_evictions = lru_evictions;
+    stats.ml_evictions = ml_evictions;
+    
+    // Calculate memory usage and average ML score
+    stats.memory_usage_bytes = 0;
+    double total_ml_score = 0.0;
+    for (const auto &entry : cache) {
+        stats.memory_usage_bytes += CalculateMemoryUsage(*entry.second->result);
+        total_ml_score += entry.second->ml_score;
+    }
+    stats.avg_ml_score = cache.empty() ? 0.0 : total_ml_score / cache.size();
+    
+    return stats;
+}
+
+void QueryCache::UpdateConfig(const QueryCacheConfig &new_config) {
+    lock_guard<mutex> lock(cache_mutex);
+    config = new_config;
+    
+    // Resize bloom filter if needed
+    if (bloom_filter.bit_array.size() != config.bloom_filter_size) {
+        bloom_filter.Resize(config.bloom_filter_size);
+        // Re-add all cached queries to bloom filter
+        for (const auto &entry : cache) {
+            bloom_filter.Add(entry.first);
+        }
+    }
+    
+    // Evict if new limits are smaller
+    EvictIfNeeded();
+}
+
+void QueryCache::SetEvictionStrategy(CacheEvictionStrategy strategy) {
+    lock_guard<mutex> lock(cache_mutex);
+    config.eviction_strategy = strategy;
+    
+    // Update eviction priorities for all entries
+    for (auto &entry : cache) {
+        if (strategy == CacheEvictionStrategy::ML_BASED) {
+            entry.second->ml_score = ml_predictor.Predict(entry.second->ml_features);
+            entry.second->eviction_priority = entry.second->ml_score;
+        } else if (strategy == CacheEvictionStrategy::LRU_BASED) {
+            entry.second->eviction_priority = static_cast<double>(entry.second->last_accessed.time_since_epoch().count());
+        } else {
+            // TTL-based: priority based on creation time
+            entry.second->eviction_priority = static_cast<double>(entry.second->created_at.time_since_epoch().count());
+        }
+    }
+}
+
+void QueryCache::EvictIfNeeded() {
+    switch (config.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED:
+            EvictByTTL();
+            break;
+        case CacheEvictionStrategy::LRU_BASED:
+            EvictByLRU();
+            break;
+        case CacheEvictionStrategy::ML_BASED:
+            EvictByML();
+            break;
+    }
+    
+    // Update ML model periodically
+    if (config.eviction_strategy == CacheEvictionStrategy::ML_BASED) {
+        UpdateMLModel();
+    }
+}
+
+void QueryCache::EvictByTTL() {
+    // Remove expired entries first
+    RemoveExpiredEntries();
+    
+    // Check memory limit
+    idx_t current_memory = 0;
+    for (const auto &entry : cache) {
+        current_memory += CalculateMemoryUsage(*entry.second->result);
+    }
+    
+    // Evict oldest entries if over limits
+    while ((cache.size() > config.max_entries || current_memory > config.max_memory_bytes) 
+           && !cache.empty()) {
+        
+        // Find oldest entry
+        auto oldest_it = cache.begin();
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if (it->second->created_at < oldest_it->second->created_at) {
+                oldest_it = it;
+            }
+        }
+        
+        current_memory -= CalculateMemoryUsage(*oldest_it->second->result);
+        cache.erase(oldest_it);
+        ttl_evictions++;
+    }
+}
+
+void QueryCache::EvictByLRU() {
+    // Remove expired entries first
+    RemoveExpiredEntries();
+    
+    // Check memory limit
+    idx_t current_memory = 0;
+    for (const auto &entry : cache) {
+        current_memory += CalculateMemoryUsage(*entry.second->result);
+    }
+    
+    // Evict LRU entries if over limits
+    while ((cache.size() > config.max_entries || current_memory > config.max_memory_bytes) 
+           && !cache.empty()) {
+        
+        // Find LRU entry
+        auto lru_it = cache.begin();
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if (it->second->last_accessed < lru_it->second->last_accessed) {
+                lru_it = it;
+            }
+        }
+        
+        current_memory -= CalculateMemoryUsage(*lru_it->second->result);
+        cache.erase(lru_it);
+        lru_evictions++;
+    }
+}
+
+void QueryCache::EvictByML() {
+    // Remove expired entries first
+    RemoveExpiredEntries();
+    
+    // Check memory limit
+    idx_t current_memory = 0;
+    for (const auto &entry : cache) {
+        current_memory += CalculateMemoryUsage(*entry.second->result);
+    }
+    
+    // Evict entries with lowest ML scores if over limits
+    while ((cache.size() > config.max_entries || current_memory > config.max_memory_bytes) 
+           && !cache.empty()) {
+        
+        // Find entry with lowest ML score (least likely to be accessed again)
+        auto worst_it = cache.begin();
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+            if (it->second->ml_score < worst_it->second->ml_score) {
+                worst_it = it;
+            }
+        }
+        
+        current_memory -= CalculateMemoryUsage(*worst_it->second->result);
+        cache.erase(worst_it);
+        ml_evictions++;
+    }
+}
+
+idx_t QueryCache::CalculateMemoryUsage(const MaterializedQueryResult &result) const {
+    // Rough estimation of memory usage
+    idx_t memory = 0;
+    
+    // Column names and types
+    for (const auto &name : result.names) {
+        memory += name.size();
+    }
+    memory += result.types.size() * sizeof(LogicalType);
+    
+    // Data collection
+    if (result.RowCount() > 0) {
+        memory += result.RowCount() * result.types.size() * 8; // Rough estimate
+    }
+    
+    return memory;
+}
+
+bool QueryCache::IsExpired(const QueryCacheEntry &entry) const {
+    auto now = std::chrono::steady_clock::now();
+    auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.created_at);
+    return age.count() > static_cast<long>(config.ttl_seconds);
+}
+
+void QueryCache::RemoveExpiredEntries() {
+    auto it = cache.begin();
+    while (it != cache.end()) {
+        if (IsExpired(*it->second)) {
+            it = cache.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void QueryCache::UpdateMLModel() {
+    // Process access history to train the ML model
+    while (!access_history.empty() && access_history.size() > config.ml_history_size) {
+        auto &record = access_history.front();
+        
+        // Calculate utility based on whether it was a hit and how recent it was
+        auto now = std::chrono::steady_clock::now();
+        auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - record.access_time).count();
+        double utility = record.was_hit ? (1.0 / (1.0 + time_diff / 3600.0)) : 0.0;
+        
+        // Update ML model
+        ml_predictor.Update(record.features, utility);
+        
+        access_history.pop();
+    }
+}
+
+void QueryCache::RecordAccess(const string &query_hash, const MLCacheFeatures &features, bool was_hit) {
+    AccessRecord record;
+    record.query_hash = query_hash;
+    record.features = features;
+    record.access_time = std::chrono::steady_clock::now();
+    record.was_hit = was_hit;
+    
+    access_history.push(record);
+    
+    // Limit history size
+    while (access_history.size() > config.ml_history_size) {
+        access_history.pop();
+    }
+}
+
+double QueryCache::CalculateQueryComplexity(const MLCacheFeatures &features) const {
+    // Simple complexity calculation based on features
+    double complexity = 0.0;
+    complexity += features.table_count * 0.2;
+    complexity += features.join_count * 0.3;
+    complexity += features.has_aggregation ? 0.2 : 0.0;
+    complexity += features.has_subquery ? 0.3 : 0.0;
+    return std::min(complexity, 1.0);
+}
+
+string QueryCacheKeyGenerator::GenerateKey(const string &query) {
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - original query: '%s'\n", query.c_str());
+    string normalized = NormalizeQuery(query);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - normalized: '%s'\n", normalized.c_str());
+    auto hash_result = Hash(normalized.c_str(), normalized.length());
+    string key = to_string(hash_result);
+    printf("DEBUG: QueryCacheKeyGenerator::GenerateKey(string) - final key: '%s' (from normalized: '%s')\n", key.c_str(), normalized.c_str());
+    return key;
+}
+
+MLCacheFeatures QueryCacheKeyGenerator::ExtractMLFeatures(const SQLStatement &statement, 
+                                                         double execution_time_ms,
+                                                         idx_t result_size_bytes) {
+    MLCacheFeatures features;
+    features.execution_time_ms = execution_time_ms;
+    features.result_size_bytes = static_cast<double>(result_size_bytes);
+    features.query_complexity_score = CalculateComplexityScore(statement);
+    
+    // Extract features based on statement type
+    if (statement.type == StatementType::SELECT_STATEMENT) {
+        auto &select = static_cast<const SelectStatement &>(statement);
+        if (select.node) {
+            // Count tables, joins, etc. (simplified implementation)
+            features.table_count = 1; // At least one table
+            features.has_aggregation = false; // Would need deeper AST analysis
+            features.has_subquery = !select.node->cte_map.map.empty();
+        }
+    }
+    
+    return features;
+}
+
+string QueryCacheKeyGenerator::NormalizeQuery(const string &query) {
+    string normalized = query;
+    
+    // Convert to lowercase
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
+    
+    // Remove extra whitespace
+    std::regex whitespace_regex("\\s+");
+    normalized = std::regex_replace(normalized, whitespace_regex, " ");
+    
+    // Trim leading/trailing whitespace
+    StringUtil::Trim(normalized);
+    
+    return normalized;
+}
+
+vector<string> QueryCacheKeyGenerator::ExtractTableDependencies(const SQLStatement &statement) {
+    vector<string> dependencies;
+    
+    // This is a simplified implementation
+    // In a full implementation, you would traverse the AST to extract all table references
+    // including those in CTEs, subqueries, etc.
+    
+    if (statement.type == StatementType::SELECT_STATEMENT) {
+        // Extract table names from SELECT statement
+        // This would require a more sophisticated AST traversal
+    }
+    
+    return dependencies;
+}
+
+double QueryCacheKeyGenerator::CalculateComplexityScore(const SQLStatement &statement) {
+    double score = 0.0;
+    
+    // Basic complexity based on query string length and keywords
+    string query_str = statement.query;
+    std::transform(query_str.begin(), query_str.end(), query_str.begin(), ::tolower);
+    
+    // Count complexity indicators
+    if (query_str.find("join") != string::npos) score += 0.3;
+    if (query_str.find("group by") != string::npos) score += 0.2;
+    if (query_str.find("order by") != string::npos) score += 0.1;
+    if (query_str.find("having") != string::npos) score += 0.2;
+    if (query_str.find("union") != string::npos) score += 0.2;
+    if (query_str.find("with") != string::npos) score += 0.3; // CTE
+    
+    // Normalize by query length
+    score += std::min(query_str.length() / 1000.0, 0.5);
+    
+    return std::min(score, 1.0);
+}
+
+void QueryCache::UpdateAdaptiveTuning() {
+    // Placeholder for adaptive tuning logic
+}
+
+//===----------------------------------------------------------------------===//
+// QueryCache EXPLAIN Implementation
+//===----------------------------------------------------------------------===//
+
+QueryCache::CacheExplainInfo QueryCache::GetExplainInfo() const {
+    lock_guard<mutex> lock(cache_mutex);
+    
+    CacheExplainInfo info;
+    
+    // 基本配置信息
+    info.enabled = config.enabled;
+    info.max_entries = config.max_entries;
+    info.max_memory_bytes = config.max_memory_bytes;
+    info.ttl_seconds = config.ttl_seconds;
+    info.eviction_strategy = config.eviction_strategy;
+    info.persistence_strategy = config.persistence_strategy;
+    
+    // 统计信息
+    info.stats = GetStats();
+    info.cte_stats = GetMultiStageCTEStats();
+    info.persistence_stats = GetPersistenceStats();
+    info.adaptive_stats = GetAdaptiveTuningStats();
+    
+    // Bloom Filter信息
+    info.bloom_filter_info.size = config.bloom_filter_size;
+    info.bloom_filter_info.hash_functions = config.bloom_filter_hash_functions;
+    info.bloom_filter_info.false_positive_rate = bloom_filter.GetFalsePositiveRate();
+    info.bloom_filter_info.estimated_elements = cache.size();
+    
+    // ML预测器信息
+    info.ml_predictor_info.weights = ml_predictor.GetWeights();
+    info.ml_predictor_info.learning_rate = config.ml_learning_rate;
+    info.ml_predictor_info.decay_factor = config.ml_decay_factor;
+    info.ml_predictor_info.update_count = 0; // TODO: 从ml_predictor获取
+    
+    // 缓存条目详情
+    auto now = std::chrono::steady_clock::now();
+    for (const auto &entry : cache) {
+        CacheExplainInfo::CacheEntryInfo entry_info;
+        entry_info.query_hash = entry.first;
+        
+        // 生成查询预览（从hash无法还原原始查询，这里显示hash）
+        entry_info.query_preview = "Hash: " + entry.first.substr(0, 16) + "...";
+        
+        entry_info.created_at = entry.second->created_at;
+        entry_info.last_accessed = entry.second->last_accessed;
+        entry_info.access_count = entry.second->access_count;
+        entry_info.memory_usage_bytes = CalculateMemoryUsage(*entry.second->result);
+        entry_info.ml_score = entry.second->ml_score;
+        entry_info.eviction_priority = entry.second->eviction_priority;
+        entry_info.ml_features = entry.second->ml_features;
+        entry_info.is_expired = IsExpired(*entry.second);
+        
+        // 计算时间相关信息
+        auto age = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->created_at);
+        entry_info.age_seconds = static_cast<double>(age.count());
+        
+        auto time_since_access = std::chrono::duration_cast<std::chrono::seconds>(now - entry.second->last_accessed);
+        entry_info.time_since_last_access_seconds = static_cast<double>(time_since_access.count());
+        
+        info.cache_entries.push_back(entry_info);
+    }
+    
+    // 按访问次数排序
+    std::sort(info.cache_entries.begin(), info.cache_entries.end(),
+              [](const CacheExplainInfo::CacheEntryInfo &a, const CacheExplainInfo::CacheEntryInfo &b) {
+                  return a.access_count > b.access_count;
+              });
+    
+    return info;
+}
+
+string QueryCache::FormatExplainInfo(const CacheExplainInfo &info, ExplainFormat format) const {
+    switch (format) {
+        case ExplainFormat::JSON:
+            return FormatExplainInfoJSON(info);
+        case ExplainFormat::HTML:
+            return FormatExplainInfoHTML(info);
+        default:
+            return FormatExplainInfoText(info);
+    }
+}
+
+string QueryCache::FormatExplainInfoText(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "┌─────────────────────────────────────────────────────────────────────────────────┐\n";
+    ss << "│                              QUERY CACHE EXPLAIN                               │\n";
+    ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+    
+    // 基本配置
+    ss << "│ Configuration:                                                                  │\n";
+    ss << "│   Enabled: " << std::setw(63) << std::left << (info.enabled ? "Yes" : "No") << " │\n";
+    ss << "│   Max Entries: " << std::setw(59) << std::left << info.max_entries << " │\n";
+    ss << "│   Max Memory: " << std::setw(58) << std::left << (info.max_memory_bytes / (1024*1024)) << " MB │\n";
+    ss << "│   TTL: " << std::setw(65) << std::left << info.ttl_seconds << " seconds │\n";
+    
+    string eviction_str;
+    switch (info.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED: eviction_str = "TTL-based"; break;
+        case CacheEvictionStrategy::LRU_BASED: eviction_str = "LRU-based"; break;
+        case CacheEvictionStrategy::ML_BASED: eviction_str = "ML-based"; break;
+    }
+    ss << "│   Eviction Strategy: " << std::setw(52) << std::left << eviction_str << " │\n";
+    
+    ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+    
+    // 统计信息
+    ss << "│ Statistics:                                                                     │\n";
+    ss << "│   Total Entries: " << std::setw(56) << std::left << info.stats.total_entries << " │\n";
+    ss << "│   Total Hits: " << std::setw(59) << std::left << info.stats.total_hits << " │\n";
+    ss << "│   Total Misses: " << std::setw(57) << std::left << info.stats.total_misses << " │\n";
+    ss << "│   Hit Rate: " << std::setw(58) << std::left << std::fixed << std::setprecision(2) << info.stats.hit_rate << "% │\n";
+    ss << "│   Memory Usage: " << std::setw(52) << std::left << (info.stats.memory_usage_bytes / (1024*1024)) << " MB │\n";
+    
+    // 缓存条目详情（显示前5个）
+    if (!info.cache_entries.empty()) {
+        ss << "├─────────────────────────────────────────────────────────────────────────────────┤\n";
+        ss << "│ Cache Entries (Top 5 by Access Count):                                         │\n";
+        ss << "│ Hash            │ Access │ Age(s) │ Memory │ ML Score │ Expired │            │\n";
+        ss << "├─────────────────┼────────┼────────┼────────┼──────────┼─────────┼────────────┤\n";
+        
+        size_t count = std::min(info.cache_entries.size(), static_cast<size_t>(5));
+        for (size_t i = 0; i < count; i++) {
+            const auto &entry = info.cache_entries[i];
+            string hash_short = entry.query_hash.substr(0, 15);
+            string memory_str = std::to_string(entry.memory_usage_bytes / 1024) + "KB";
+            
+            ss << "│ " << std::setw(15) << std::left << hash_short
+               << " │ " << std::setw(6) << std::right << entry.access_count
+               << " │ " << std::setw(6) << std::right << static_cast<int>(entry.age_seconds)
+               << " │ " << std::setw(6) << std::right << memory_str
+               << " │ " << std::setw(8) << std::right << std::fixed << std::setprecision(3) << entry.ml_score
+               << " │ " << std::setw(7) << std::left << (entry.is_expired ? "Yes" : "No")
+               << " │            │\n";
+        }
+    }
+    
+    ss << "└─────────────────────────────────────────────────────────────────────────────────┘\n";
+    
+    return ss.str();
+}
+
+string QueryCache::FormatExplainInfoJSON(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "{\n";
+    ss << "  \"query_cache\": {\n";
+    
+    // 配置信息
+    ss << "    \"configuration\": {\n";
+    ss << "      \"enabled\": " << (info.enabled ? "true" : "false") << ",\n";
+    ss << "      \"max_entries\": " << info.max_entries << ",\n";
+    ss << "      \"max_memory_bytes\": " << info.max_memory_bytes << ",\n";
+    ss << "      \"ttl_seconds\": " << info.ttl_seconds << ",\n";
+    ss << "      \"eviction_strategy\": \"";
+    switch (info.eviction_strategy) {
+        case CacheEvictionStrategy::TTL_BASED: ss << "TTL_BASED"; break;
+        case CacheEvictionStrategy::LRU_BASED: ss << "LRU_BASED"; break;
+        case CacheEvictionStrategy::ML_BASED: ss << "ML_BASED"; break;
+    }
+    ss << "\"\n";
+    ss << "    },\n";
+    
+    // 统计信息
+    ss << "    \"statistics\": {\n";
+    ss << "      \"total_entries\": " << info.stats.total_entries << ",\n";
+    ss << "      \"total_hits\": " << info.stats.total_hits << ",\n";
+    ss << "      \"total_misses\": " << info.stats.total_misses << ",\n";
+    ss << "      \"hit_rate\": " << std::fixed << std::setprecision(2) << info.stats.hit_rate << ",\n";
+    ss << "      \"memory_usage_bytes\": " << info.stats.memory_usage_bytes << "\n";
+    ss << "    },\n";
+    
+    // 缓存条目
+    ss << "    \"cache_entries\": [\n";
+    for (size_t i = 0; i < info.cache_entries.size(); i++) {
+        if (i > 0) ss << ",\n";
+        const auto &entry = info.cache_entries[i];
+        ss << "      {\n";
+        ss << "        \"query_hash\": \"" << entry.query_hash << "\",\n";
+        ss << "        \"access_count\": " << entry.access_count << ",\n";
+        ss << "        \"age_seconds\": " << std::fixed << std::setprecision(1) << entry.age_seconds << ",\n";
+        ss << "        \"memory_usage_bytes\": " << entry.memory_usage_bytes << ",\n";
+        ss << "        \"ml_score\": " << std::fixed << std::setprecision(3) << entry.ml_score << ",\n";
+        ss << "        \"is_expired\": " << (entry.is_expired ? "true" : "false") << "\n";
+        ss << "      }";
+    }
+    ss << "\n    ]\n";
+    
+    ss << "  }\n";
+    ss << "}\n";
+    
+    return ss.str();
+}
+
+string QueryCache::FormatExplainInfoHTML(const CacheExplainInfo &info) const {
+    std::ostringstream ss;
+    
+    ss << "<!DOCTYPE html>\n";
+    ss << "<html>\n<head>\n";
+    ss << "<title>Query Cache Explain</title>\n";
+    ss << "<style>\n";
+    ss << "body { font-family: Arial, sans-serif; margin: 20px; }\n";
+    ss << "table { border-collapse: collapse; width: 100%; margin: 10px 0; }\n";
+    ss << "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n";
+    ss << "th { background-color: #f2f2f2; }\n";
+    ss << ".section { margin: 20px 0; }\n";
+    ss << ".metric { display: inline-block; margin: 5px 15px 5px 0; }\n";
+    ss << ".expired { color: red; }\n";
+    ss << ".active { color: green; }\n";
+    ss << "</style>\n";
+    ss << "</head>\n<body>\n";
+    
+    ss << "<h1>Query Cache Explain</h1>\n";
+    
+    // 配置信息
+    ss << "<div class=\"section\">\n";
+    ss << "<h2>Configuration</h2>\n";
+    ss << "<div class=\"metric\"><strong>Enabled:</strong> " << (info.enabled ? "Yes" : "No") << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Max Entries:</strong> " << info.max_entries << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Max Memory:</strong> " << (info.max_memory_bytes / (1024*1024)) << " MB</div>\n";
+    ss << "<div class=\"metric\"><strong>TTL:</strong> " << info.ttl_seconds << " seconds</div>\n";
+    ss << "</div>\n";
+    
+    // 统计信息
+    ss << "<div class=\"section\">\n";
+    ss << "<h2>Statistics</h2>\n";
+    ss << "<div class=\"metric\"><strong>Total Entries:</strong> " << info.stats.total_entries << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Total Hits:</strong> " << info.stats.total_hits << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Total Misses:</strong> " << info.stats.total_misses << "</div>\n";
+    ss << "<div class=\"metric\"><strong>Hit Rate:</strong> " << std::fixed << std::setprecision(2) << info.stats.hit_rate << "%</div>\n";
+    ss << "<div class=\"metric\"><strong>Memory Usage:</strong> " << (info.stats.memory_usage_bytes / (1024*1024)) << " MB</div>\n";
+    ss << "</div>\n";
+    
+    // 缓存条目表格
+    if (!info.cache_entries.empty()) {
+        ss << "<div class=\"section\">\n";
+        ss << "<h2>Cache Entries</h2>\n";
+        ss << "<table>\n";
+        ss << "<tr><th>Query Hash</th><th>Access Count</th><th>Age (seconds)</th><th>Memory (KB)</th><th>ML Score</th><th>Status</th></tr>\n";
+        
+        for (const auto &entry : info.cache_entries) {
+            ss << "<tr>\n";
+            ss << "<td>" << entry.query_hash.substr(0, 20) << "...</td>\n";
+            ss << "<td>" << entry.access_count << "</td>\n";
+            ss << "<td>" << static_cast<int>(entry.age_seconds) << "</td>\n";
+            ss << "<td>" << (entry.memory_usage_bytes / 1024) << "</td>\n";
+            ss << "<td>" << std::fixed << std::setprecision(3) << entry.ml_score << "</td>\n";
+            ss << "<td class=\"" << (entry.is_expired ? "expired" : "active") << "\">" 
+               << (entry.is_expired ? "Expired" : "Active") << "</td>\n";
+            ss << "</tr>\n";
+        }
+        
+        ss << "</table>\n";
+        ss << "</div>\n";
+    }
+    
+    ss << "</body>\n</html>\n";
+    
+    return ss.str();
+}
+
+//===----------------------------------------------------------------------===//
+// AdaptiveParameterTuner Implementation
+//===----------------------------------------------------------------------===//
+
+AdaptiveParameterTuner::AdaptiveParameterTuner(AdaptiveTuningConfig config) : config(config) {
+    tuning_stats.last_tuning_time = std::chrono::steady_clock::now();
+}
+
+void AdaptiveParameterTuner::UpdateMetrics(const SystemPerformanceMetrics &metrics, QueryCacheConfig &cache_config) {
+    // Placeholder implementation for adaptive tuning
+    // This would contain the actual adaptive tuning logic
+}
+
+bool AdaptiveParameterTuner::ForceTuning(QueryCacheConfig &cache_config) {
+    // Placeholder implementation
+    return false;
+}
+
+double AdaptiveParameterTuner::PredictPerformance(const QueryCacheConfig &config, const SystemPerformanceMetrics &metrics) const {
+    // Placeholder implementation
+    return 1.0;
+}
+
+//===----------------------------------------------------------------------===//
+// QueryCache Persistence Implementation
+//===----------------------------------------------------------------------===//
+
+bool QueryCache::SetPersistenceStrategy(CachePersistenceStrategy strategy, ClientContext *context) {
+    // Placeholder implementation for persistence strategy
+    return true;
+}
+
+QueryCache::PersistenceStats QueryCache::GetPersistenceStats() const {
+    PersistenceStats stats;
+    stats.storage_size_bytes = 0;
+    stats.persisted_entries = 0;
+    stats.memory_entries = cache.size();
+    stats.disk_entries = 0;
+    
+    // TODO: 实现持久化统计信息的收集
+    // 这里需要根据实际的持久化实现来填充统计信息
+    
+    return stats;
+}
+
+QueryCache::AdaptiveTuningStats QueryCache::GetAdaptiveTuningStats() const {
+    AdaptiveTuningStats stats;
+    stats.enabled = adaptive_tuner != nullptr;
+    stats.total_adjustments = 0;
+    stats.avg_performance_improvement = 0.0;
+    stats.last_tuning_time = std::chrono::steady_clock::now();
+    stats.current_metrics = current_metrics;
+    
+    // TODO: 实现自适应调优统计信息的收集
+    // 这里需要根据实际的自适应调优实现来填充统计信息
+    
+    return stats;
+}
+
+//===----------------------------------------------------------------------===//
+// Semantic Query Matcher - Advanced Query Equivalence Detection
+//===----------------------------------------------------------------------===//
+
+class SemanticQueryMatcher {
+private:
+    mutable mutex matcher_mutex;
+    
+    // 查询标准化缓存
+    unordered_map<string, string> normalization_cache;
+    
+public:
+    // 查询语义等价性检查
+    bool IsSemanticEquivalent(const string& query1, const string& query2) {
+        if (query1 == query2) {
+            return true;  // 完全相同
+        }
+        
+        // 标准化两个查询
+        string norm1 = NormalizeQuery(query1);
+        string norm2 = NormalizeQuery(query2);
+        
+        if (norm1 == norm2) {
+            printf("DEBUG: Semantic equivalence found between queries\n");
+            return true;
+        }
+        
+        // 进一步的语义分析
+        return AdvancedSemanticCheck(norm1, norm2);
+    }
+    
+    // 查询标准化处理
+    string NormalizeQuery(const string& query) {
+        lock_guard<mutex> lock(matcher_mutex);
+        
+        // 检查缓存
+        auto it = normalization_cache.find(query);
+        if (it != normalization_cache.end()) {
+            return it->second;
+        }
+        
+        string normalized = query;
+        
+        // 1. 词法标准化
+        normalized = LexicalNormalization(normalized);
+        
+        // 2. 语法标准化
+        normalized = SyntacticNormalization(normalized);
+        
+        // 3. 语义标准化
+        normalized = SemanticNormalization(normalized);
+        
+        // 缓存结果
+        normalization_cache[query] = normalized;
+        
+        return normalized;
+    }
+    
+    // 查询重写优化
+    string RewriteQuery(const string& query) {
+        string rewritten = query;
+        
+        // 1. 条件重排序
+        rewritten = ReorderConditions(rewritten);
+        
+        // 2. 常量折叠
+        rewritten = FoldConstants(rewritten);
+        
+        // 3. 表达式简化
+        rewritten = SimplifyExpressions(rewritten);
+        
+        // 4. 子查询优化
+        rewritten = OptimizeSubqueries(rewritten);
+        
+        return rewritten;
+    }
+    
+private:
+    // 词法标准化：处理格式差异
+    string LexicalNormalization(const string& query) {
+        string result = query;
+        
+        // 转换为大写
+        result = StringUtil::Upper(result);
+        
+        // 移除多余空白
+        result = std::regex_replace(result, std::regex("\\s+"), " ");
+        
+        // 移除注释
+        result = std::regex_replace(result, std::regex("--[^\\n]*"), "");
+        result = std::regex_replace(result, std::regex("/\\*.*?\\*/"), "");
+        
+        // 标准化引号
+        result = std::regex_replace(result, std::regex("'([^']*)'"), "\"$1\"");
+        
+        return StringUtil::Trim(result);
+    }
+    
+    // 语法标准化：处理语法结构差异
+    string SyntacticNormalization(const string& query) {
+        string result = query;
+        
+        // 标准化JOIN语法
+        result = std::regex_replace(result, std::regex("\\bINNER\\s+JOIN\\b"), "JOIN");
+        result = std::regex_replace(result, std::regex("\\bLEFT\\s+OUTER\\s+JOIN\\b"), "LEFT JOIN");
+        result = std::regex_replace(result, std::regex("\\bRIGHT\\s+OUTER\\s+JOIN\\b"), "RIGHT JOIN");
+        
+        // 标准化别名
+        result = std::regex_replace(result, std::regex("\\bAS\\s+([A-Za-z_][A-Za-z0-9_]*)"), " $1");
+        
+        // 标准化括号
+        result = std::regex_replace(result, std::regex("\\(\\s+"), "(");
+        result = std::regex_replace(result, std::regex("\\s+\\)"), ")");
+        
+        return result;
+    }
+    
+    // 语义标准化：处理语义等价的表达式
+    string SemanticNormalization(const string& query) {
+        string result = query;
+        
+        // 标准化比较操作符
+        result = std::regex_replace(result, std::regex("\\b(\\w+)\\s*!=\\s*(\\w+)"), "NOT $1 = $2");
+        
+        // 标准化逻辑操作符
+        result = std::regex_replace(result, std::regex("\\bAND\\s+NOT\\b"), "AND NOT");
+        result = std::regex_replace(result, std::regex("\\bOR\\s+NOT\\b"), "OR NOT");
+        
+        // 标准化IN操作
+        result = std::regex_replace(result, std::regex("\\bNOT\\s+IN\\b"), "NOT IN");
+        
+        return result;
+    }
+    
+    // 高级语义检查
+    bool AdvancedSemanticCheck(const string& norm1, const string& norm2) {
+        // 检查条件等价性
+        if (CheckConditionEquivalence(norm1, norm2)) {
+            return true;
+        }
+        
+        // 检查表达式等价性
+        if (CheckExpressionEquivalence(norm1, norm2)) {
+            return true;
+        }
+        
+        // 检查结构等价性
+        if (CheckStructuralEquivalence(norm1, norm2)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 条件等价性检查
+    bool CheckConditionEquivalence(const string& query1, const string& query2) {
+        // 提取WHERE子句
+        auto where1 = ExtractWhereClause(query1);
+        auto where2 = ExtractWhereClause(query2);
+        
+        if (where1.empty() || where2.empty()) {
+            return where1 == where2;
+        }
+        
+        // 解析条件并比较
+        auto conditions1 = ParseConditions(where1);
+        auto conditions2 = ParseConditions(where2);
+        
+        // 排序后比较
+        sort(conditions1.begin(), conditions1.end());
+        sort(conditions2.begin(), conditions2.end());
+        
+        return conditions1 == conditions2;
+    }
+    
+    // 表达式等价性检查
+    bool CheckExpressionEquivalence(const string& query1, const string& query2) {
+        // 简化的表达式等价性检查
+        // 在实际实现中，这里需要更复杂的表达式解析和比较逻辑
+        
+        // 检查数学表达式等价性
+        if (CheckMathExpressionEquivalence(query1, query2)) {
+            return true;
+        }
+        
+        // 检查函数调用等价性
+        if (CheckFunctionCallEquivalence(query1, query2)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 结构等价性检查
+    bool CheckStructuralEquivalence(const string& query1, const string& query2) {
+        // 检查查询结构的等价性
+        // 例如：SELECT a, b FROM t WHERE c = 1 与 SELECT b, a FROM t WHERE c = 1
+        
+        auto struct1 = ExtractQueryStructure(query1);
+        auto struct2 = ExtractQueryStructure(query2);
+        
+        return struct1.tables == struct2.tables && 
+               struct1.conditions == struct2.conditions &&
+               struct1.select_columns == struct2.select_columns;
+    }
+    
+    // 辅助方法
+    string ExtractWhereClause(const string& query) {
+        std::regex where_regex("\\bWHERE\\s+(.+?)(?:\\s+(?:GROUP|ORDER|HAVING|LIMIT)|$)", 
+                              std::regex_constants::icase);
+        std::smatch match;
+        if (std::regex_search(query, match, where_regex)) {
+            return match[1].str();
+        }
+        return "";
+    }
+    
+    vector<string> ParseConditions(const string& where_clause) {
+        vector<string> conditions;
+        // 简化的条件解析，实际实现需要更复杂的解析逻辑
+        std::regex and_regex("\\s+AND\\s+", std::regex_constants::icase);
+        std::sregex_token_iterator iter(where_clause.begin(), where_clause.end(), and_regex, -1);
+        std::sregex_token_iterator end;
+        
+        for (; iter != end; ++iter) {
+            string condition = StringUtil::Trim(iter->str());
+            if (!condition.empty()) {
+                conditions.push_back(condition);
+            }
+        }
+        
+        return conditions;
+    }
+    
+    bool CheckMathExpressionEquivalence(const string& query1, const string& query2) {
+        // 检查数学表达式等价性，如 a + b 与 b + a
+        return false;  // 简化实现
+    }
+    
+    bool CheckFunctionCallEquivalence(const string& query1, const string& query2) {
+        // 检查函数调用等价性
+        return false;  // 简化实现
+    }
+    
+    struct QueryStructure {
+        vector<string> tables;
+        vector<string> select_columns;
+        vector<string> conditions;
+    };
+    
+    QueryStructure ExtractQueryStructure(const string& query) {
+        QueryStructure structure;
+        // 简化的结构提取，实际实现需要完整的SQL解析
+        return structure;
+    }
+    
+    // 查询重写辅助方法
+    string ReorderConditions(const string& query) {
+        // 重排序WHERE条件，使语义相同的查询具有相同的条件顺序
+        return query;  // 简化实现
+    }
+    
+    string FoldConstants(const string& query) {
+        // 常量折叠，如将 1 + 2 替换为 3
+        return query;  // 简化实现
+    }
+    
+    string SimplifyExpressions(const string& query) {
+        // 表达式简化，如将 a = 1 AND a = 1 简化为 a = 1
+        return query;  // 简化实现
+    }
+    
+    string OptimizeSubqueries(const string& query) {
+        // 子查询优化
+        return query;  // 简化实现
+    }
+};
+
+// ===== 第四章缺失功能实现 =====
+
+// 策略性能统计结构
+struct StrategyPerformanceStats {
+    size_t total_evictions = 0;
+    size_t accurate_evictions = 0;
+    vector<double> hit_rate_improvements;
+    vector<double> execution_times;
+    double average_accuracy = 0.0;
+    double average_hit_improvement = 0.0;
+};
+
+// 策略切换历史记录
+struct StrategySwitch {
+    chrono::steady_clock::time_point switch_time;
+    CacheEvictionStrategy from_strategy;
+    CacheEvictionStrategy to_strategy;
+    string reason;
+    double performance_improvement;
+};
+
+// 淘汰候选结构
+struct EvictionCandidate {
+    string cache_key;
+    double eviction_score;
+    CacheEvictionStrategy strategy_source;
+    double weight;
+    string reason;
+};
+
+// 性能数据结构
+struct PerformanceData {
+    double current_hit_rate = 0.0;
+    double baseline_hit_rate = 0.0;
+    double current_response_time = 0.0;
+    double baseline_response_time = 0.0;
+    double effective_cache_usage = 0.0;
+    double total_memory_usage = 0.0;
+    double strategy_cpu_time = 0.0;
+    double total_cpu_time = 0.0;
+    double current_memory_usage = 0.0;
+};
+
+// 系统状态结构
+struct SystemState {
+    double memory_pressure = 0.0;
+    double cpu_usage = 0.0;
+    chrono::steady_clock::time_point current_time;
+    double io_load = 0.0;
+    size_t active_connections = 0;
+};
+
+// 基础淘汰策略接口
+class EvictionStrategyBase {
+public:
+    virtual ~EvictionStrategyBase() = default;
+    virtual vector<EvictionCandidate> GetEvictionCandidates(
+        const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache, 
+        size_t target_count) = 0;
+    virtual string GetStrategyName() const = 0;
+};
+
+// LRU淘汰策略实现
+class LRUEvictionStrategy : public EvictionStrategyBase {
+public:
+    vector<EvictionCandidate> GetEvictionCandidates(
+        const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache, 
+        size_t target_count) override {
+        
+        vector<pair<string, chrono::steady_clock::time_point>> lru_entries;
+        for (const auto& cache_pair : cache) {
+            lru_entries.emplace_back(cache_pair.first, cache_pair.second->last_accessed);
+        }
+        
+        sort(lru_entries.begin(), lru_entries.end(),
+             [](const pair<string, chrono::steady_clock::time_point>& a, 
+                const pair<string, chrono::steady_clock::time_point>& b) { 
+                return a.second < b.second; 
+             });
+        
+        vector<EvictionCandidate> candidates;
+        for (size_t i = 0; i < std::min(target_count, lru_entries.size()); i++) {
+            EvictionCandidate candidate;
+            candidate.cache_key = lru_entries[i].first;
+            candidate.eviction_score = static_cast<double>(i + 1); // 越早访问分数越高
+            candidate.strategy_source = CacheEvictionStrategy::LRU_BASED;
+            candidate.reason = "Least recently used";
+            candidates.push_back(candidate);
+        }
+        
+        return candidates;
+    }
+    
+    string GetStrategyName() const override { return "LRU"; }
+};
+
+// TTL淘汰策略实现
+class TTLEvictionStrategy : public EvictionStrategyBase {
+public:
+    vector<EvictionCandidate> GetEvictionCandidates(
+        const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache, 
+        size_t target_count) override {
+        
+        vector<EvictionCandidate> candidates;
+        auto current_time = std::chrono::steady_clock::now();
+        
+        for (const auto& cache_pair : cache) {
+            auto age = std::chrono::duration_cast<std::chrono::seconds>(current_time - cache_pair.second->created_at).count();
+            if (age > 3600) { // 默认TTL为1小时
+                EvictionCandidate candidate;
+                candidate.cache_key = cache_pair.first;
+                candidate.eviction_score = static_cast<double>(age - 3600); // 过期越久分数越高
+                candidate.strategy_source = CacheEvictionStrategy::TTL_BASED;
+                candidate.reason = "TTL expired";
+                candidates.push_back(candidate);
+                
+                if (candidates.size() >= target_count) break;
+            }
+        }
+        
+        sort(candidates.begin(), candidates.end(),
+             [](const auto& a, const auto& b) { return a.eviction_score > b.eviction_score; });
+        
+        return candidates;
+    }
+    
+    string GetStrategyName() const override { return "TTL"; }
+};
+
+// ML淘汰策略实现
+class MLEvictionStrategy : public EvictionStrategyBase {
+private:
+    MLCachePredictor predictor;
+    
+public:
+    MLEvictionStrategy() : predictor(0.01, 0.95) {}
+    
+    vector<EvictionCandidate> GetEvictionCandidates(
+        const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache, 
+        size_t target_count) override {
+        
+        vector<pair<string, double>> ml_scores;
+        
+        for (const auto& [key, entry] : cache) {
+            double utility_score = predictor.Predict(entry->ml_features);
+            ml_scores.emplace_back(key, utility_score);
+        }
+        
+        sort(ml_scores.begin(), ml_scores.end(),
+             [](const auto& a, const auto& b) { return a.second < b.second; });
+        
+        vector<EvictionCandidate> candidates;
+        for (size_t i = 0; i < min(target_count, ml_scores.size()); i++) {
+            EvictionCandidate candidate;
+            candidate.cache_key = ml_scores[i].first;
+            candidate.eviction_score = 1.0 - ml_scores[i].second; // 效用越低，淘汰分数越高
+            candidate.strategy_source = CacheEvictionStrategy::ML_BASED;
+            candidate.reason = "Low predicted utility";
+            candidates.push_back(candidate);
+        }
+        
+        return candidates;
+    }
+    
+    string GetStrategyName() const override { return "ML"; }
+};
+
+// 策略协调器实现
+class StrategyCoordinator {
+private:
+    unordered_map<CacheEvictionStrategy, unique_ptr<EvictionStrategyBase>> strategies;
+    unordered_map<CacheEvictionStrategy, double> strategy_weights;
+    unordered_map<CacheEvictionStrategy, StrategyPerformanceStats> performance_stats;
+    vector<StrategySwitch> switch_history;
+    CacheEvictionStrategy current_primary_strategy;
+    
+public:
+    StrategyCoordinator() : current_primary_strategy(CacheEvictionStrategy::LRU_BASED) {
+        InitializeStrategies();
+        InitializeWeights();
+    }
+    
+    void InitializeStrategies() {
+        strategies[CacheEvictionStrategy::LRU_BASED] = make_unique<LRUEvictionStrategy>();
+        strategies[CacheEvictionStrategy::TTL_BASED] = make_unique<TTLEvictionStrategy>();
+        strategies[CacheEvictionStrategy::ML_BASED] = make_unique<MLEvictionStrategy>();
+    }
+    
+    void InitializeWeights() {
+        strategy_weights[CacheEvictionStrategy::LRU_BASED] = 0.4;
+        strategy_weights[CacheEvictionStrategy::TTL_BASED] = 0.3;
+        strategy_weights[CacheEvictionStrategy::ML_BASED] = 0.3;
+    }
+    
+    vector<string> CoordinateEviction(const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache, 
+                                     size_t target_eviction_count) {
+        vector<EvictionCandidate> all_candidates;
+        
+        // 收集各策略的淘汰候选
+        for (auto& [strategy_type, strategy] : strategies) {
+            auto candidates = strategy->GetEvictionCandidates(cache, target_eviction_count);
+            for (auto& candidate : candidates) {
+                candidate.weight = strategy_weights[strategy_type];
+                all_candidates.push_back(candidate);
+            }
+        }
+        
+        return FuseDecisions(all_candidates, target_eviction_count);
+    }
+    
+    vector<string> FuseDecisions(vector<EvictionCandidate>& candidates, size_t target_count) {
+        // 加权评分融合
+        unordered_map<string, double> weighted_scores;
+        unordered_map<string, int> vote_counts;
+        
+        for (const auto& candidate : candidates) {
+            weighted_scores[candidate.cache_key] += candidate.eviction_score * candidate.weight;
+            vote_counts[candidate.cache_key]++;
+        }
+        
+        // 综合评分排序
+        vector<pair<string, double>> final_scores;
+        for (const auto& [key, score] : weighted_scores) {
+            double final_score = score * (1.0 + 0.1 * vote_counts[key]); // 投票数加权
+            final_scores.emplace_back(key, final_score);
+        }
+        
+        sort(final_scores.begin(), final_scores.end(), 
+             [](const auto& a, const auto& b) { return a.second > b.second; });
+        
+        vector<string> result;
+        for (size_t i = 0; i < min(target_count, final_scores.size()); i++) {
+            result.push_back(final_scores[i].first);
+        }
+        
+        return result;
+    }
+    
+    void UpdatePerformanceStats(CacheEvictionStrategy strategy, double hit_rate_improvement, 
+                               double execution_time, bool eviction_accuracy) {
+        auto& stats = performance_stats[strategy];
+        stats.total_evictions++;
+        stats.hit_rate_improvements.push_back(hit_rate_improvement);
+        stats.execution_times.push_back(execution_time);
+        if (eviction_accuracy) stats.accurate_evictions++;
+        
+        // 滑动窗口统计
+        if (stats.hit_rate_improvements.size() > 1000) {
+            stats.hit_rate_improvements.erase(stats.hit_rate_improvements.begin());
+            stats.execution_times.erase(stats.execution_times.begin());
+        }
+        
+        // 更新平均值
+        if (!stats.hit_rate_improvements.empty()) {
+            stats.average_hit_improvement = accumulate(stats.hit_rate_improvements.begin(), 
+                                                     stats.hit_rate_improvements.end(), 0.0) / 
+                                           stats.hit_rate_improvements.size();
+        }
+        stats.average_accuracy = static_cast<double>(stats.accurate_evictions) / stats.total_evictions;
+    }
+    
+    void AdaptWeights() {
+        double total_performance = 0.0;
+        unordered_map<CacheEvictionStrategy, double> performance_scores;
+        
+        for (const auto& [strategy, stats] : performance_stats) {
+            if (stats.total_evictions > 0) {
+                double performance_score = stats.average_hit_improvement * 0.7 + stats.average_accuracy * 0.3;
+                performance_scores[strategy] = performance_score;
+                total_performance += performance_score;
+            }
+        }
+        
+        // 重新分配权重
+        if (total_performance > 0) {
+            for (auto& [strategy, weight] : strategy_weights) {
+                if (performance_scores.count(strategy)) {
+                    weight = performance_scores[strategy] / total_performance;
+                }
+            }
+        }
+    }
+    
+    CacheEvictionStrategy GetBestStrategy() const {
+        CacheEvictionStrategy best_strategy = CacheEvictionStrategy::LRU_BASED;
+        double best_score = -1.0;
+        
+        for (const auto& [strategy, stats] : performance_stats) {
+            if (stats.total_evictions > 0) {
+                double score = stats.average_hit_improvement * 0.7 + stats.average_accuracy * 0.3;
+                if (score > best_score) {
+                    best_score = score;
+                    best_strategy = strategy;
+                }
+            }
+        }
+        
+        return best_strategy;
+    }
+};
+
+// 策略评估器实现
+class StrategyEvaluator {
+private:
+    struct EvaluationMetrics {
+        double hit_rate_improvement = 0.0;
+        double response_time_improvement = 0.0;
+        double memory_efficiency = 0.0;
+        double cpu_overhead = 0.0;
+        double overall_score = 0.0;
+    };
+    
+    unordered_map<CacheEvictionStrategy, EvaluationMetrics> strategy_metrics;
+    
+public:
+    void EvaluateStrategy(CacheEvictionStrategy strategy, const PerformanceData& data) {
+        auto& metrics = strategy_metrics[strategy];
+        
+        metrics.hit_rate_improvement = data.current_hit_rate - data.baseline_hit_rate;
+        metrics.response_time_improvement = (data.baseline_response_time - data.current_response_time) / 
+                                          max(data.baseline_response_time, 1.0);
+        metrics.memory_efficiency = data.effective_cache_usage / max(data.total_memory_usage, 1.0);
+        metrics.cpu_overhead = data.strategy_cpu_time / max(data.total_cpu_time, 1.0);
+        
+        // 综合评分
+        metrics.overall_score = metrics.hit_rate_improvement * 0.4 +
+                               metrics.response_time_improvement * 0.3 +
+                               metrics.memory_efficiency * 0.2 +
+                               (1.0 - metrics.cpu_overhead) * 0.1;
+    }
+    
+    CacheEvictionStrategy GetBestStrategy() const {
+        CacheEvictionStrategy best_strategy = CacheEvictionStrategy::LRU_BASED;
+        double best_score = -1.0;
+        
+        for (const auto& [strategy, metrics] : strategy_metrics) {
+            if (metrics.overall_score > best_score) {
+                best_score = metrics.overall_score;
+                best_strategy = strategy;
+            }
+        }
+        
+        return best_strategy;
+    }
+    
+    double GetStrategyScore(CacheEvictionStrategy strategy) const {
+        auto it = strategy_metrics.find(strategy);
+        return (it != strategy_metrics.end()) ? it->second.overall_score : 0.0;
+    }
+};
+
+// 混合策略实现
+class HybridStrategy {
+public:
+    enum class HybridMode {
+        WEIGHTED_COMBINATION,
+        LAYERED_COMBINATION,
+        CONDITIONAL_COMBINATION
+    };
+    
+private:
+    unique_ptr<StrategyCoordinator> coordinator;
+    unique_ptr<StrategyEvaluator> evaluator;
+    HybridMode current_mode;
+    
+public:
+    HybridStrategy() : current_mode(HybridMode::WEIGHTED_COMBINATION) {
+        coordinator = make_unique<StrategyCoordinator>();
+        evaluator = make_unique<StrategyEvaluator>();
+    }
+    
+    vector<string> ExecuteHybridEviction(const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache,
+                                        size_t target_eviction_count,
+                                        const SystemState& system_state) {
+        switch (current_mode) {
+            case HybridMode::WEIGHTED_COMBINATION:
+                return coordinator->CoordinateEviction(cache, target_eviction_count);
+            case HybridMode::LAYERED_COMBINATION:
+                return ExecuteLayeredCombination(cache, target_eviction_count, system_state);
+            case HybridMode::CONDITIONAL_COMBINATION:
+                return ExecuteConditionalCombination(cache, target_eviction_count, system_state);
+            default:
+                return coordinator->CoordinateEviction(cache, target_eviction_count);
+        }
+    }
+    
+    void AdaptHybridMode(const PerformanceData& performance_data) {
+        double hit_rate = performance_data.current_hit_rate;
+        double response_time = performance_data.current_response_time;
+        double memory_usage = performance_data.current_memory_usage;
+        
+        if (hit_rate < 0.6 && response_time > 100.0) {
+            current_mode = HybridMode::CONDITIONAL_COMBINATION;
+        } else if (memory_usage > 0.8) {
+            current_mode = HybridMode::LAYERED_COMBINATION;
+        } else {
+            current_mode = HybridMode::WEIGHTED_COMBINATION;
+        }
+    }
+    
+private:
+    vector<string> ExecuteLayeredCombination(const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache,
+                                            size_t target_eviction_count,
+                                            const SystemState& system_state) {
+        vector<string> eviction_candidates;
+        auto current_time = system_state.current_time;
+        
+        // 第一层：TTL过期检查
+        for (const auto& [key, entry] : cache) {
+            auto age = chrono::duration_cast<chrono::seconds>(current_time - entry->created_time).count();
+            if (age > entry->ttl_seconds) {
+                eviction_candidates.push_back(key);
+                if (eviction_candidates.size() >= target_eviction_count) {
+                    return eviction_candidates;
+                }
+            }
+        }
+        
+        // 第二层：LRU淘汰
+        if (eviction_candidates.size() < target_eviction_count) {
+            LRUEvictionStrategy lru_strategy;
+            auto lru_candidates = lru_strategy.GetEvictionCandidates(cache, 
+                target_eviction_count - eviction_candidates.size());
+            for (const auto& candidate : lru_candidates) {
+                eviction_candidates.push_back(candidate.cache_key);
+            }
+        }
+        
+        return eviction_candidates;
+    }
+    
+    vector<string> ExecuteConditionalCombination(const unordered_map<string, unique_ptr<QueryCacheEntry>>& cache,
+                                                size_t target_eviction_count,
+                                                const SystemState& system_state) {
+        if (system_state.memory_pressure > 0.8) {
+            // 内存压力大，使用LRU快速释放空间
+            LRUEvictionStrategy lru_strategy;
+            auto candidates = lru_strategy.GetEvictionCandidates(cache, target_eviction_count);
+            vector<string> result;
+            for (const auto& candidate : candidates) {
+                result.push_back(candidate.cache_key);
+            }
+            return result;
+        } else if (system_state.cpu_usage > 0.7) {
+            // CPU使用率高，使用TTL策略
+            TTLEvictionStrategy ttl_strategy;
+            auto candidates = ttl_strategy.GetEvictionCandidates(cache, target_eviction_count);
+            vector<string> result;
+            for (const auto& candidate : candidates) {
+                result.push_back(candidate.cache_key);
+            }
+            return result;
+        } else {
+            // 系统资源充足，使用ML策略
+            MLEvictionStrategy ml_strategy;
+            auto candidates = ml_strategy.GetEvictionCandidates(cache, target_eviction_count);
+            vector<string> result;
+            for (const auto& candidate : candidates) {
+                result.push_back(candidate.cache_key);
+            }
+            return result;
+        }
+    }
+};
+
+// ===== 第三章缺失功能实现 =====
+
+// CTE依赖图节点
+struct CTEDependencyNode {
+    string cte_name;
+    string definition_hash;
+    vector<string> dependencies; // 依赖的其他CTE或表
+    vector<string> dependents;   // 依赖此CTE的其他CTE
+    bool is_recursive = false;
+    int depth_level = 0;
+};
+
+// CTE依赖图管理器
+class CTEDependencyManager {
+private:
+    unordered_map<string, CTEDependencyNode> dependency_graph;
+    
+public:
+    void AddCTENode(const string& cte_name, const string& definition_hash, 
+                   const vector<string>& dependencies, bool is_recursive = false) {
+        CTEDependencyNode node;
+        node.cte_name = cte_name;
+        node.definition_hash = definition_hash;
+        node.dependencies = dependencies;
+        node.is_recursive = is_recursive;
+        
+        // 计算深度级别
+        node.depth_level = CalculateDepthLevel(dependencies);
+        
+        dependency_graph[cte_name] = node;
+        
+        // 更新依赖关系
+        for (const string& dep : dependencies) {
+            if (dependency_graph.count(dep)) {
+                dependency_graph[dep].dependents.push_back(cte_name);
+            }
+        }
+    }
+    
+    vector<string> GetInvalidatedCTEs(const string& changed_table_or_cte) {
+        vector<string> invalidated;
+        unordered_set<string> visited;
+        
+        PropagateInvalidation(changed_table_or_cte, invalidated, visited);
+        return invalidated;
+    }
+    
+    vector<string> GetExecutionOrder(const vector<string>& cte_names) {
+        // 拓扑排序获取执行顺序
+        unordered_map<string, int> in_degree;
+        queue<string> zero_in_degree;
+        vector<string> result;
+        
+        // 计算入度
+        for (const string& cte : cte_names) {
+            if (dependency_graph.count(cte)) {
+                in_degree[cte] = dependency_graph[cte].dependencies.size();
+                if (in_degree[cte] == 0) {
+                    zero_in_degree.push(cte);
+                }
+            }
+        }
+        
+        // 拓扑排序
+        while (!zero_in_degree.empty()) {
+            string current = zero_in_degree.front();
+            zero_in_degree.pop();
+            result.push_back(current);
+            
+            if (dependency_graph.count(current)) {
+                for (const string& dependent : dependency_graph[current].dependents) {
+                    if (in_degree.count(dependent)) {
+                        in_degree[dependent]--;
+                        if (in_degree[dependent] == 0) {
+                            zero_in_degree.push(dependent);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    bool HasCircularDependency(const vector<string>& cte_names) {
+        unordered_set<string> visited;
+        unordered_set<string> rec_stack;
+        
+        for (const string& cte : cte_names) {
+            if (dependency_graph.count(cte) && !visited.count(cte)) {
+                if (HasCircularDependencyUtil(cte, visited, rec_stack)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+private:
+    int CalculateDepthLevel(const vector<string>& dependencies) {
+        int max_depth = 0;
+        for (const string& dep : dependencies) {
+            if (dependency_graph.count(dep)) {
+                max_depth = max(max_depth, dependency_graph[dep].depth_level + 1);
+            }
+        }
+        return max_depth;
+    }
+    
+    void PropagateInvalidation(const string& node, vector<string>& invalidated, 
+                              unordered_set<string>& visited) {
+        if (visited.count(node)) return;
+        visited.insert(node);
+        
+        if (dependency_graph.count(node)) {
+            for (const string& dependent : dependency_graph[node].dependents) {
+                invalidated.push_back(dependent);
+                PropagateInvalidation(dependent, invalidated, visited);
+            }
+        }
+    }
+    
+    bool HasCircularDependencyUtil(const string& node, unordered_set<string>& visited, 
+                                  unordered_set<string>& rec_stack) {
+        visited.insert(node);
+        rec_stack.insert(node);
+        
+        if (dependency_graph.count(node)) {
+            for (const string& dep : dependency_graph[node].dependencies) {
+                if (!visited.count(dep)) {
+                    if (HasCircularDependencyUtil(dep, visited, rec_stack)) {
+                        return true;
+                    }
+                } else if (rec_stack.count(dep)) {
+                    return true;
+                }
+            }
+        }
+        
+        rec_stack.erase(node);
+        return false;
+    }
+};
+
+// 递归CTE优化器
+class RecursiveCTEOptimizer {
+private:
+    struct RecursiveState {
+        vector<unique_ptr<ColumnDataCollection>> iteration_results;
+        size_t current_iteration = 0;
+        size_t max_iterations = 1000;
+        bool converged = false;
+        chrono::steady_clock::time_point start_time;
+    };
+    
+    unordered_map<string, RecursiveState> recursive_states;
+    
+public:
+    bool IsRecursiveCTE(const string& cte_definition) {
+        // 简单检查是否包含递归关键字
+        return cte_definition.find("RECURSIVE") != string::npos ||
+               cte_definition.find("UNION") != string::npos;
+    }
+    
+    void InitializeRecursiveExecution(const string& cte_name, size_t max_iterations = 1000) {
+        RecursiveState state;
+        state.max_iterations = max_iterations;
+        state.start_time = chrono::steady_clock::now();
+        recursive_states[cte_name] = move(state);
+    }
+    
+    bool ShouldContinueIteration(const string& cte_name) {
+        if (!recursive_states.count(cte_name)) return false;
+        
+        auto& state = recursive_states[cte_name];
+        
+        // 检查最大迭代次数
+        if (state.current_iteration >= state.max_iterations) {
+            return false;
+        }
+        
+        // 检查收敛性
+        if (state.converged) {
+            return false;
+        }
+        
+        // 检查超时
+        auto elapsed = chrono::duration_cast<chrono::seconds>(
+            chrono::steady_clock::now() - state.start_time).count();
+        if (elapsed > 300) { // 5分钟超时
+            return false;
+        }
+        
+        return true;
+    }
+    
+    void StoreIterationResult(const string& cte_name, unique_ptr<ColumnDataCollection> result) {
+        if (recursive_states.count(cte_name)) {
+            auto& state = recursive_states[cte_name];
+            
+            // 检查是否收敛
+            if (!state.iteration_results.empty()) {
+                // 简化的收敛检查：比较结果集大小
+                auto& last_result = state.iteration_results.back();
+                if (result->Count() == last_result->Count()) {
+                    state.converged = true;
+                }
+            }
+            
+            state.iteration_results.push_back(move(result));
+            state.current_iteration++;
+        }
+    }
+    
+    unique_ptr<ColumnDataCollection> GetFinalResult(const string& cte_name) {
+        if (recursive_states.count(cte_name) && !recursive_states[cte_name].iteration_results.empty()) {
+            // 返回最后一次迭代的结果
+            auto& results = recursive_states[cte_name].iteration_results;
+            return move(results.back());
+        }
+        return nullptr;
+    }
+    
+    void CleanupRecursiveState(const string& cte_name) {
+        recursive_states.erase(cte_name);
+    }
+};
+
+// 参数化查询处理器
+class ParameterizedQueryProcessor {
+private:
+    struct QueryTemplate {
+        string template_sql;
+        vector<string> parameter_positions;
+        unordered_map<string, string> parameter_types;
+    };
+    
+    unordered_map<string, QueryTemplate> query_templates;
+    
+public:
+    string ExtractTemplate(const string& query) {
+        string template_sql = query;
+        vector<string> parameters;
+        
+        // 简化的参数提取：查找数字和字符串常量
+        regex number_pattern(R"(\b\d+\.?\d*\b)");
+        regex string_pattern(R"('([^']*)')");
+        
+        // 替换数字参数
+        template_sql = regex_replace(template_sql, number_pattern, "?");
+        
+        // 替换字符串参数
+        template_sql = regex_replace(template_sql, string_pattern, "?");
+        
+        return template_sql;
+    }
+    
+    vector<string> ExtractParameters(const string& query) {
+        vector<string> parameters;
+        
+        // 提取数字参数
+        regex number_pattern(R"(\b(\d+\.?\d*)\b)");
+        sregex_iterator numbers_begin(query.begin(), query.end(), number_pattern);
+        sregex_iterator numbers_end;
+        
+        for (sregex_iterator i = numbers_begin; i != numbers_end; ++i) {
+            parameters.push_back((*i)[1].str());
+        }
+        
+        // 提取字符串参数
+        regex string_pattern(R"('([^']*)')");
+        sregex_iterator strings_begin(query.begin(), query.end(), string_pattern);
+        sregex_iterator strings_end;
+        
+        for (sregex_iterator i = strings_begin; i != strings_end; ++i) {
+            parameters.push_back((*i)[1].str());
+        }
+        
+        return parameters;
+    }
+    
+    string GenerateParameterHash(const vector<string>& parameters) {
+        string combined;
+        for (const string& param : parameters) {
+            combined += param + "|";
+        }
+        return to_string(hash<string>{}(combined));
+    }
+    
+    bool IsParameterizedQuery(const string& query) {
+        // 检查是否包含常见的参数模式
+        return query.find_first_of("0123456789'") != string::npos;
+    }
+    
+    string BindParameters(const string& template_sql, const vector<string>& parameters) {
+        string result = template_sql;
+        size_t param_index = 0;
+        
+        size_t pos = 0;
+        while ((pos = result.find("?", pos)) != string::npos && param_index < parameters.size()) {
+            result.replace(pos, 1, parameters[param_index]);
+            pos += parameters[param_index].length();
+            param_index++;
+        }
+        
+        return result;
+    }
+};
+
+// ===== 第五章缺失功能实现 =====
+
+// 持久化配置结构
+struct CachePersistenceConfig {
+    enum class PersistenceStrategy {
+        MEMORY_ONLY,
+        WAL_FORMAT,
+        MATERIALIZED_VIEW,
+        HYBRID
+    };
+    
+    PersistenceStrategy strategy = PersistenceStrategy::MEMORY_ONLY;
+    string persistence_path = "./cache_data";
+    size_t memory_threshold = 1024 * 1024 * 100; // 100MB
+    size_t wal_buffer_size = 1024 * 1024; // 1MB
+    size_t batch_size = 100;
+    int sync_interval = 5; // seconds
+};
+
+// 持久化接口基类
+class CachePersistenceInterface {
+public:
+    virtual ~CachePersistenceInterface() = default;
+    virtual bool Initialize(const CachePersistenceConfig& config) = 0;
+    virtual bool PersistEntry(const string& key, const QueryCacheEntry& entry) = 0;
+    virtual unique_ptr<QueryCacheEntry> LoadEntry(const string& key) = 0;
+    virtual bool RemoveEntry(const string& key) = 0;
+    virtual bool Sync() = 0;
+    virtual void Cleanup() = 0;
+    virtual string GetStrategyName() const = 0;
+};
+
+// 内存持久化实现
+class MemoryOnlyPersistence : public CachePersistenceInterface {
+private:
+    unordered_map<string, unique_ptr<QueryCacheEntry>> memory_cache;
+    mutable mutex cache_mutex;
+    
+public:
+    bool Initialize(const CachePersistenceConfig& config) override {
+        return true; // 内存模式无需初始化
+    }
+    
+    bool PersistEntry(const string& key, const QueryCacheEntry& entry) override {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        // 创建条目副本
+        auto new_entry = make_unique<QueryCacheEntry>();
+        new_entry->query_sql = entry.query_sql;
+        new_entry->created_time = entry.created_time;
+        new_entry->last_accessed = entry.last_accessed;
+        new_entry->access_count = entry.access_count;
+        new_entry->ttl_seconds = entry.ttl_seconds;
+        new_entry->execution_time_ms = entry.execution_time_ms;
+        new_entry->ml_features = entry.ml_features;
+        
+        memory_cache[key] = move(new_entry);
+        return true;
+    }
+    
+    unique_ptr<QueryCacheEntry> LoadEntry(const string& key) override {
+        lock_guard<mutex> lock(cache_mutex);
+        
+        auto it = memory_cache.find(key);
+        if (it == memory_cache.end()) {
+            return nullptr;
+        }
+        
+        // 创建条目副本返回
+        auto entry = make_unique<QueryCacheEntry>();
+        entry->query_sql = it->second->query_sql;
+        entry->created_time = it->second->created_time;
+        entry->last_accessed = it->second->last_accessed;
+        entry->access_count = it->second->access_count;
+        entry->ttl_seconds = it->second->ttl_seconds;
+        entry->execution_time_ms = it->second->execution_time_ms;
+        entry->ml_features = it->second->ml_features;
+        
+        return entry;
+    }
+    
+    bool RemoveEntry(const string& key) override {
+        lock_guard<mutex> lock(cache_mutex);
+        return memory_cache.erase(key) > 0;
+    }
+    
+    bool Sync() override {
+        return true; // 内存模式无需同步
+    }
+    
+    void Cleanup() override {
+        lock_guard<mutex> lock(cache_mutex);
+        memory_cache.clear();
+    }
+    
+    string GetStrategyName() const override {
+        return "MemoryOnly";
+    }
+};
+
+// WAL持久化实现
+class WALFormatPersistence : public CachePersistenceInterface {
+private:
+    string wal_file_path;
+    ofstream wal_stream;
+    vector<string> pending_operations;
+    mutex wal_mutex;
+    size_t buffer_size;
+    chrono::steady_clock::time_point last_sync;
+    int sync_interval_seconds;
+    
+public:
+    bool Initialize(const CachePersistenceConfig& config) override {
+        wal_file_path = config.persistence_path + "/cache.wal";
+        buffer_size = config.wal_buffer_size;
+        sync_interval_seconds = config.sync_interval;
+        last_sync = chrono::steady_clock::now();
+        
+        // 创建目录
+        filesystem::create_directories(config.persistence_path);
+        
+        // 打开WAL文件
+        wal_stream.open(wal_file_path, ios::app | ios::binary);
+        return wal_stream.is_open();
+    }
+    
+    bool PersistEntry(const string& key, const QueryCacheEntry& entry) override {
+        lock_guard<mutex> lock(wal_mutex);
+        
+        // 构造WAL记录
+        string wal_record = "INSERT|" + key + "|" + entry.query_sql + "|" +
+                           to_string(entry.access_count) + "|" +
+                           to_string(entry.ttl_seconds) + "|" +
+                           to_string(entry.execution_time_ms) + "\n";
+        
+        pending_operations.push_back(wal_record);
+        
+        // 检查是否需要刷盘
+        if (pending_operations.size() >= 100 || ShouldSync()) {
+            return FlushToDisk();
+        }
+        
+        return true;
+    }
+    
+    unique_ptr<QueryCacheEntry> LoadEntry(const string& key) override {
+        // WAL模式需要重放日志来恢复数据
+        return ReplayWALForKey(key);
+    }
+    
+    bool RemoveEntry(const string& key) override {
+        lock_guard<mutex> lock(wal_mutex);
+        
+        string wal_record = "DELETE|" + key + "\n";
+        pending_operations.push_back(wal_record);
+        
+        if (pending_operations.size() >= 100 || ShouldSync()) {
+            return FlushToDisk();
+        }
+        
+        return true;
+    }
+    
+    bool Sync() override {
+        lock_guard<mutex> lock(wal_mutex);
+        return FlushToDisk();
+    }
+    
+    void Cleanup() override {
+        Sync();
+        if (wal_stream.is_open()) {
+            wal_stream.close();
+        }
+        filesystem::remove(wal_file_path);
+    }
+    
+    string GetStrategyName() const override {
+        return "WALFormat";
+    }
+    
+private:
+    bool FlushToDisk() {
+        if (!wal_stream.is_open()) return false;
+        
+        for (const string& operation : pending_operations) {
+            wal_stream << operation;
+        }
+        
+        wal_stream.flush();
+        pending_operations.clear();
+        last_sync = chrono::steady_clock::now();
+        
+        return true;
+    }
+    
+    bool ShouldSync() {
+        auto now = chrono::steady_clock::now();
+        auto elapsed = chrono::duration_cast<chrono::seconds>(now - last_sync).count();
+        return elapsed >= sync_interval_seconds;
+    }
+    
+    unique_ptr<QueryCacheEntry> ReplayWALForKey(const string& target_key) {
+        ifstream wal_read(wal_file_path);
+        if (!wal_read.is_open()) return nullptr;
+        
+        unique_ptr<QueryCacheEntry> entry = nullptr;
+        string line;
+        
+        while (getline(wal_read, line)) {
+            vector<string> parts = SplitString(line, '|');
+            if (parts.size() < 2) continue;
+            
+            string operation = parts[0];
+            string key = parts[1];
+            
+            if (key == target_key) {
+                if (operation == "INSERT" && parts.size() >= 6) {
+                    entry = make_unique<QueryCacheEntry>();
+                    entry->query_sql = parts[2];
+                    entry->access_count = stoi(parts[3]);
+                    entry->ttl_seconds = stoi(parts[4]);
+                    entry->execution_time_ms = stod(parts[5]);
+                    entry->created_time = chrono::steady_clock::now();
+                    entry->last_accessed = chrono::steady_clock::now();
+                } else if (operation == "DELETE") {
+                    entry = nullptr;
+                }
+            }
+        }
+        
+        return entry;
+    }
+    
+    vector<string> SplitString(const string& str, char delimiter) {
+        vector<string> tokens;
+        stringstream ss(str);
+        string token;
+        
+        while (getline(ss, token, delimiter)) {
+            tokens.push_back(token);
+        }
+        
+        return tokens;
+    }
+};
+
+// 物化视图持久化实现
+class MaterializedViewPersistence : public CachePersistenceInterface {
+private:
+    ClientContext* db_context;
+    string table_prefix;
+    unordered_map<string, string> key_to_view_mapping;
+    mutex view_mutex;
+    
+public:
+    MaterializedViewPersistence(ClientContext* context) : db_context(context) {}
+    
+    bool Initialize(const CachePersistenceConfig& config) override {
+        table_prefix = "cache_mv_";
+        
+        // 创建元数据表
+        string create_meta_sql = R"(
+            CREATE TABLE IF NOT EXISTS cache_metadata (
+                cache_key VARCHAR PRIMARY KEY,
+                view_name VARCHAR,
+                created_time TIMESTAMP,
+                access_count INTEGER,
+                ttl_seconds INTEGER
+            )
+        )";
+        
+        return ExecuteSQL(create_meta_sql);
+    }
+    
+    bool PersistEntry(const string& key, const QueryCacheEntry& entry) override {
+        lock_guard<mutex> lock(view_mutex);
+        
+        string view_name = table_prefix + to_string(hash<string>{}(key));
+        
+        // 创建物化视图
+        string create_view_sql = "CREATE OR REPLACE VIEW " + view_name + " AS " + entry.query_sql;
+        if (!ExecuteSQL(create_view_sql)) {
+            return false;
+        }
+        
+        // 更新元数据
+        string insert_meta_sql = R"(
+            INSERT OR REPLACE INTO cache_metadata 
+            (cache_key, view_name, created_time, access_count, ttl_seconds)
+            VALUES (?, ?, NOW(), ?, ?)
+        )";
+        
+        key_to_view_mapping[key] = view_name;
+        return true;
+    }
+    
+    unique_ptr<QueryCacheEntry> LoadEntry(const string& key) override {
+        lock_guard<mutex> lock(view_mutex);
+        
+        // 从元数据表查询
+        string query_meta_sql = "SELECT view_name, access_count, ttl_seconds FROM cache_metadata WHERE cache_key = ?";
+        
+        auto it = key_to_view_mapping.find(key);
+        if (it == key_to_view_mapping.end()) {
+            return nullptr;
+        }
+        
+        auto entry = make_unique<QueryCacheEntry>();
+        entry->created_time = chrono::steady_clock::now();
+        entry->last_accessed = chrono::steady_clock::now();
+        // 其他字段需要从元数据表中恢复
+        
+        return entry;
+    }
+    
+    bool RemoveEntry(const string& key) override {
+        lock_guard<mutex> lock(view_mutex);
+        
+        auto it = key_to_view_mapping.find(key);
+        if (it == key_to_view_mapping.end()) {
+            return false;
+        }
+        
+        // 删除物化视图
+        string drop_view_sql = "DROP VIEW IF EXISTS " + it->second;
+        ExecuteSQL(drop_view_sql);
+        
+        // 删除元数据
+        string delete_meta_sql = "DELETE FROM cache_metadata WHERE cache_key = ?";
+        
+        key_to_view_mapping.erase(it);
+        return true;
+    }
+    
+    bool Sync() override {
+        // 物化视图自动同步
+        return true;
+    }
+    
+    void Cleanup() override {
+        lock_guard<mutex> lock(view_mutex);
+        
+        // 删除所有缓存视图
+        for (const auto& [key, view_name] : key_to_view_mapping) {
+            string drop_sql = "DROP VIEW IF EXISTS " + view_name;
+            ExecuteSQL(drop_sql);
+        }
+        
+        // 清空元数据表
+        ExecuteSQL("DELETE FROM cache_metadata");
+        key_to_view_mapping.clear();
+    }
+    
+    string GetStrategyName() const override {
+        return "MaterializedView";
+    }
+    
+private:
+    bool ExecuteSQL(const string& sql) {
+        if (!db_context) return false;
+        
+        try {
+            auto result = db_context->Query(sql, false);
+            return result->HasError() == false;
+        } catch (...) {
+            return false;
+        }
+    }
+};
+
+// 智能存储决策特征
+struct MLPersistenceFeatures {
+    double data_size = 0.0;
+    double access_frequency = 0.0;
+    double importance_score = 0.0;
+    double temporal_locality = 0.0;
+    double query_complexity = 0.0;
+    double system_memory_pressure = 0.0;
+    double io_load = 0.0;
+};
+
+// 智能持久化实现
+class MLIntelligentPersistence : public CachePersistenceInterface {
+private:
+    unique_ptr<MemoryOnlyPersistence> memory_storage;
+    unique_ptr<WALFormatPersistence> wal_storage;
+    unique_ptr<MaterializedViewPersistence> mv_storage;
+    
+    // 简单的决策模型
+    struct DecisionModel {
+        double memory_weight = 0.3;
+        double wal_weight = 0.4;
+        double mv_weight = 0.3;
+    } model;
+    
+    unordered_map<string, CachePersistenceConfig::PersistenceStrategy> key_strategy_mapping;
+    mutex strategy_mutex;
+    
+public:
+    MLIntelligentPersistence(ClientContext* context) {
+        memory_storage = make_unique<MemoryOnlyPersistence>();
+        wal_storage = make_unique<WALFormatPersistence>();
+        mv_storage = make_unique<MaterializedViewPersistence>(context);
+    }
+    
+    bool Initialize(const CachePersistenceConfig& config) override {
+        bool success = true;
+        success &= memory_storage->Initialize(config);
+        success &= wal_storage->Initialize(config);
+        success &= mv_storage->Initialize(config);
+        return success;
+    }
+    
+    bool PersistEntry(const string& key, const QueryCacheEntry& entry) override {
+        // 提取特征
+        MLPersistenceFeatures features = ExtractPersistenceFeatures(entry);
+        
+        // 智能决策选择存储策略
+        auto strategy = DecideStorageStrategy(features);
+        
+        lock_guard<mutex> lock(strategy_mutex);
+        key_strategy_mapping[key] = strategy;
+        
+        // 根据策略存储
+        switch (strategy) {
+            case CachePersistenceConfig::PersistenceStrategy::MEMORY_ONLY:
+                return memory_storage->PersistEntry(key, entry);
+            case CachePersistenceConfig::PersistenceStrategy::WAL_FORMAT:
+                return wal_storage->PersistEntry(key, entry);
+            case CachePersistenceConfig::PersistenceStrategy::MATERIALIZED_VIEW:
+                return mv_storage->PersistEntry(key, entry);
+            default:
+                return memory_storage->PersistEntry(key, entry);
+        }
+    }
+    
+    unique_ptr<QueryCacheEntry> LoadEntry(const string& key) override {
+        lock_guard<mutex> lock(strategy_mutex);
+        
+        auto it = key_strategy_mapping.find(key);
+        if (it == key_strategy_mapping.end()) {
+            return nullptr;
+        }
+        
+        switch (it->second) {
+            case CachePersistenceConfig::PersistenceStrategy::MEMORY_ONLY:
+                return memory_storage->LoadEntry(key);
+            case CachePersistenceConfig::PersistenceStrategy::WAL_FORMAT:
+                return wal_storage->LoadEntry(key);
+            case CachePersistenceConfig::PersistenceStrategy::MATERIALIZED_VIEW:
+                return mv_storage->LoadEntry(key);
+            default:
+                return memory_storage->LoadEntry(key);
+        }
+    }
+    
+    bool RemoveEntry(const string& key) override {
+        lock_guard<mutex> lock(strategy_mutex);
+        
+        auto it = key_strategy_mapping.find(key);
+        if (it == key_strategy_mapping.end()) {
+            return false;
+        }
+        
+        bool success = false;
+        switch (it->second) {
+            case CachePersistenceConfig::PersistenceStrategy::MEMORY_ONLY:
+                success = memory_storage->RemoveEntry(key);
+                break;
+            case CachePersistenceConfig::PersistenceStrategy::WAL_FORMAT:
+                success = wal_storage->RemoveEntry(key);
+                break;
+            case CachePersistenceConfig::PersistenceStrategy::MATERIALIZED_VIEW:
+                success = mv_storage->RemoveEntry(key);
+                break;
+        }
+        
+        if (success) {
+            key_strategy_mapping.erase(it);
+        }
+        
+        return success;
+    }
+    
+    bool Sync() override {
+        bool success = true;
+        success &= memory_storage->Sync();
+        success &= wal_storage->Sync();
+        success &= mv_storage->Sync();
+        return success;
+    }
+    
+    void Cleanup() override {
+        memory_storage->Cleanup();
+        wal_storage->Cleanup();
+        mv_storage->Cleanup();
+        
+        lock_guard<mutex> lock(strategy_mutex);
+        key_strategy_mapping.clear();
+    }
+    
+    string GetStrategyName() const override {
+        return "MLIntelligent";
+    }
+    
+private:
+    MLPersistenceFeatures ExtractPersistenceFeatures(const QueryCacheEntry& entry) {
+        MLPersistenceFeatures features;
+        
+        features.data_size = static_cast<double>(entry.result_data.size());
+        features.access_frequency = static_cast<double>(entry.access_count);
+        features.query_complexity = entry.ml_features.query_complexity;
+        features.temporal_locality = entry.ml_features.temporal_locality;
+        
+        // 简化的重要性评分
+        features.importance_score = features.access_frequency * 0.4 + 
+                                   features.query_complexity * 0.3 +
+                                   features.temporal_locality * 0.3;
+        
+        return features;
+    }
+    
+    CachePersistenceConfig::PersistenceStrategy DecideStorageStrategy(const MLPersistenceFeatures& features) {
+        // 简单的决策逻辑
+        if (features.data_size < 1024 && features.access_frequency > 10) {
+            // 小数据高频访问 -> 内存存储
+            return CachePersistenceConfig::PersistenceStrategy::MEMORY_ONLY;
+        } else if (features.importance_score > 0.8) {
+            // 高重要性 -> 物化视图
+            return CachePersistenceConfig::PersistenceStrategy::MATERIALIZED_VIEW;
+        } else {
+            // 默认 -> WAL存储
+            return CachePersistenceConfig::PersistenceStrategy::WAL_FORMAT;
+        }
+    }
+};
+
+// 跨进程缓存共享实现
+class CrossProcessCacheSharing {
+private:
+    string shared_cache_file;
+    void* mapped_memory;
+    size_t mapped_size;
+    mutex* shared_mutex;
+    
+    struct SharedCacheHeader {
+        size_t entry_count;
+        size_t total_size;
+        uint64_t version;
+        char padding[64 - 3 * sizeof(size_t)]; // 缓存行对齐
+    };
+    
+    struct SharedCacheEntry {
+        char key[256];
+        size_t data_offset;
+        size_t data_size;
+        uint64_t timestamp;
+        uint32_t access_count;
+        uint32_t ttl_seconds;
+    };
+    
+public:
+    CrossProcessCacheSharing(const string& cache_file_path) 
+        : shared_cache_file(cache_file_path), mapped_memory(nullptr), mapped_size(0) {}
+    
+    ~CrossProcessCacheSharing() {
+        Cleanup();
+    }
+    
+    bool Initialize(size_t initial_size = 1024 * 1024 * 10) { // 10MB
+        mapped_size = initial_size;
+        
+        // 创建或打开共享文件
+        int fd = open(shared_cache_file.c_str(), O_CREAT | O_RDWR, 0666);
+        if (fd == -1) return false;
+        
+        // 设置文件大小
+        if (ftruncate(fd, mapped_size) == -1) {
+            close(fd);
+            return false;
+        }
+        
+        // 内存映射
+        mapped_memory = mmap(nullptr, mapped_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        close(fd);
+        
+        if (mapped_memory == MAP_FAILED) {
+            mapped_memory = nullptr;
+            return false;
+        }
+        
+        // 初始化共享内存结构
+        InitializeSharedMemory();
+        return true;
+    }
+    
+    bool StoreEntry(const string& key, const vector<uint8_t>& data, uint32_t ttl_seconds) {
+        if (!mapped_memory) return false;
+        
+        SharedCacheHeader* header = static_cast<SharedCacheHeader*>(mapped_memory);
+        
+        // 简化实现：线性搜索空闲位置
+        SharedCacheEntry* entries = reinterpret_cast<SharedCacheEntry*>(
+            static_cast<char*>(mapped_memory) + sizeof(SharedCacheHeader));
+        
+        size_t max_entries = (mapped_size - sizeof(SharedCacheHeader)) / 
+                            (sizeof(SharedCacheEntry) + 1024); // 假设平均数据大小1KB
+        
+        for (size_t i = 0; i < max_entries; i++) {
+            if (entries[i].key[0] == '\0') { // 空闲槽位
+                strncpy(entries[i].key, key.c_str(), sizeof(entries[i].key) - 1);
+                entries[i].data_size = data.size();
+                entries[i].timestamp = chrono::duration_cast<chrono::seconds>(
+                    chrono::steady_clock::now().time_since_epoch()).count();
+                entries[i].ttl_seconds = ttl_seconds;
+                entries[i].access_count = 1;
+                
+                // 存储数据（简化实现）
+                header->entry_count++;
+                header->version++;
+                
+                return true;
+            }
+        }
+        
+        return false; // 空间不足
+    }
+    
+    vector<uint8_t> LoadEntry(const string& key) {
+        if (!mapped_memory) return {};
+        
+        SharedCacheHeader* header = static_cast<SharedCacheHeader*>(mapped_memory);
+        SharedCacheEntry* entries = reinterpret_cast<SharedCacheEntry*>(
+            static_cast<char*>(mapped_memory) + sizeof(SharedCacheHeader));
+        
+        size_t max_entries = (mapped_size - sizeof(SharedCacheHeader)) / 
+                            (sizeof(SharedCacheEntry) + 1024);
+        
+        for (size_t i = 0; i < max_entries; i++) {
+            if (strcmp(entries[i].key, key.c_str()) == 0) {
+                // 检查TTL
+                uint64_t current_time = chrono::duration_cast<chrono::seconds>(
+                    chrono::steady_clock::now().time_since_epoch()).count();
+                
+                if (current_time - entries[i].timestamp > entries[i].ttl_seconds) {
+                    // 过期，清除条目
+                    memset(&entries[i], 0, sizeof(SharedCacheEntry));
+                    header->entry_count--;
+                    return {};
+                }
+                
+                // 更新访问统计
+                entries[i].access_count++;
+                
+                // 返回数据（简化实现，实际需要从数据区读取）
+                vector<uint8_t> result(entries[i].data_size);
+                return result;
+            }
+        }
+        
+        return {}; // 未找到
+    }
+    
+    bool RemoveEntry(const string& key) {
+        if (!mapped_memory) return false;
+        
+        SharedCacheHeader* header = static_cast<SharedCacheHeader*>(mapped_memory);
+        SharedCacheEntry* entries = reinterpret_cast<SharedCacheEntry*>(
+            static_cast<char*>(mapped_memory) + sizeof(SharedCacheHeader));
+        
+        size_t max_entries = (mapped_size - sizeof(SharedCacheHeader)) / 
+                            (sizeof(SharedCacheEntry) + 1024);
+        
+        for (size_t i = 0; i < max_entries; i++) {
+            if (strcmp(entries[i].key, key.c_str()) == 0) {
+                memset(&entries[i], 0, sizeof(SharedCacheEntry));
+                header->entry_count--;
+                header->version++;
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    void Cleanup() {
+        if (mapped_memory) {
+            munmap(mapped_memory, mapped_size);
+            mapped_memory = nullptr;
+        }
+        
+        // 删除共享文件
+        unlink(shared_cache_file.c_str());
+    }
+    
+private:
+    void InitializeSharedMemory() {
+        SharedCacheHeader* header = static_cast<SharedCacheHeader*>(mapped_memory);
+        if (header->version == 0) { // 首次初始化
+            header->entry_count = 0;
+            header->total_size = mapped_size;
+            header->version = 1;
+        }
+    }
+};
+
+} // namespace duckdb

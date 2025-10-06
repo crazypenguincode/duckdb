@@ -1,0 +1,89 @@
+{
+  "strategy_comparison": {
+    "strategies": [
+      "Memory Only",
+      "WAL Format",
+      "Materialized View",
+      "ML Intelligent",
+      "Hybrid",
+      "Cross Process"
+    ],
+    "write_times": [
+      0.6282789803196707,
+      6.282789803196701,
+      18.848369409590113,
+      3.769673881918022,
+      3.1413949015983507,
+      10.05246368511473
+    ],
+    "read_times": [
+      0.4743568622347412,
+      9.487137244694829,
+      4.743568622347414,
+      3.7948548978779297,
+      2.846141173408449,
+      14.23070586704224
+    ],
+    "performance_scores": [
+      114.0272630166963,
+      20.158748599625145,
+      21.836331729331143,
+      28.968254746675754,
+      34.33066782387493,
+      16.573880160620398
+    ]
+  },
+  "strategy_selection_distribution": {
+    "memory_only": {
+      "count": 33,
+      "percentage": 33.0
+    },
+    "wal_format": {
+      "count": 0,
+      "percentage": 0.0
+    },
+    "materialized_view": {
+      "count": 52,
+      "percentage": 52.0
+    },
+    "ml_intelligent": {
+      "count": 10,
+      "percentage": 10.0
+    },
+    "hybrid": {
+      "count": 0,
+      "percentage": 0.0
+    },
+    "cross_process": {
+      "count": 5,
+      "percentage": 5.0
+    }
+  },
+  "adaptive_performance": {
+    "\u542f\u52a8\u9636\u6bb5": {
+      "avg_performance": 5.967760498823761,
+      "load_factor": 0.3,
+      "cache_warmup": 0.1
+    },
+    "\u9884\u70ed\u9636\u6bb5": {
+      "avg_performance": 34.50490939083075,
+      "load_factor": 0.6,
+      "cache_warmup": 0.5
+    },
+    "\u7a33\u5b9a\u9636\u6bb5": {
+      "avg_performance": 67.87399127860812,
+      "load_factor": 1.0,
+      "cache_warmup": 0.9
+    },
+    "\u9ad8\u5cf0\u9636\u6bb5": {
+      "avg_performance": 56.30739587690809,
+      "load_factor": 1.5,
+      "cache_warmup": 0.95
+    },
+    "\u7ef4\u62a4\u9636\u6bb5": {
+      "avg_performance": 89.97238873965371,
+      "load_factor": 0.4,
+      "cache_warmup": 0.7
+    }
+  }
+}

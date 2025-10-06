@@ -733,8 +733,8 @@ class MarkdownToLatexConverter:
 """
             return latex_table
         
-        # 使用v2版本的简单表格匹配正则表达式
-        table_pattern = r'(?:^\|.*\|[ \t]*$\n){2,}'
+        # 修复表格匹配正则表达式，支持完整的表格结构
+        table_pattern = r'(?:^\|.*\|.*$\n)+'
         content = re.sub(table_pattern, replace_table, content, flags=re.MULTILINE)
         
         return content

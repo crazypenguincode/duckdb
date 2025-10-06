@@ -89,27 +89,26 @@ CTE（Common Table Expression）缓存采用多阶段缓存架构，支持解析
 \begin{algorithm}[htbp]
 \caption{缓存查找算法}
 \label{alg3_3_1}
-\begin{algorithmic}[1]
 \Require {query\_string (查询字符串)}
 \Ensure {query\_result (查询结果)}
-
-\State query\_hash $\leftarrow$ Hash(Normalize(query\_string)) \Comment{对查询字符串进行标准化并计算哈希值}
-\If{NOT bloom_filter.MightContain(query_hash)} \Comment{布隆过滤器预筛选检查}
-\State \Return {ExecuteQuery(query\_string)} \Comment{布隆过滤器确定不存在，直接执行查询}
-\EndIf
-\State 
-\State cache\_entry $\leftarrow$ cache\_table.Find(query\_hash) \Comment{在缓存表中查找对应的缓存条目}
-\If{cache_entry = NULL} \Comment{缓存条目不存在（假阳性情况）}
-\State \Return {ExecuteQuery(query\_string)} \Comment{执行原始查询并返回结果}
-\EndIf
-\State 
-\If{IsExpired(cache_entry)} \Comment{检查缓存条目是否已过期}
-\State cache\_table.Remove(query\_hash) \Comment{移除过期的缓存条目}
-\State \Return {ExecuteQuery(query\_string)} \Comment{重新执行查询}
-\EndIf
-\State 
-\State UpdateAccessStats(cache\_entry) \Comment{更新缓存条目的访问统计信息}
-\State \Return {cache\_entry.result} \Comment{返回缓存的查询结果}
+\begin{algorithmic}[1]
+\STATE query\_hash $\leftarrow$ Hash(Normalize(query\_string)) \Comment{对查询字符串进行标准化并计算哈希值}
+\STATE if NOT bloom\_filter.MightContain(query\_hash) then \Comment{布隆过滤器预筛选检查}
+\STATE return ExecuteQuery(query\_string) \Comment{布隆过滤器确定不存在，直接执行查询}
+\STATE end if
+\STATE 
+\STATE cache\_entry $\leftarrow$ cache\_table.Find(query\_hash) \Comment{在缓存表中查找对应的缓存条目}
+\STATE if cache\_entry = NULL then \Comment{缓存条目不存在（假阳性情况）}
+\STATE return ExecuteQuery(query\_string) \Comment{执行原始查询并返回结果}
+\STATE end if
+\STATE 
+\STATE if IsExpired(cache\_entry) then \Comment{检查缓存条目是否已过期}
+\STATE cache\_table.Remove(query\_hash) \Comment{移除过期的缓存条目}
+\STATE return ExecuteQuery(query\_string) \Comment{重新执行查询}
+\STATE end if
+\STATE 
+\STATE UpdateAccessStats(cache\_entry) \Comment{更新缓存条目的访问统计信息}
+\STATE return cache\_entry.result \Comment{返回缓存的查询结果}
 \end{algorithmic}
 \end{algorithm}
 
@@ -142,19 +141,18 @@ CTE多阶段缓存算法专门处理公共表表达式的缓存操作，支持�
 \begin{algorithm}[htbp]
 \caption{布隆过滤器存在性检测算法}
 \label{alg3_3_5}
-\begin{algorithmic}[1]
 \Require {element (待检测元素)}
 \Ensure {might\_exist (可能存在标志)}
-
-\If{disabled} \Comment{如果布隆过滤器被禁用，返回true（不过滤）}
-\State hash\_values $\leftarrow$ GetHashValues(element) \Comment{使用多个哈希函数计算元素的哈希值数组}
-\For{each hash_val in hash_values} \Comment{遍历所有哈希值}
-\State bit\_index $\leftarrow$ hash\_val mod bit\_array.size() \Comment{计算在位数组中的索引位置}
-\If{bit_array[bit_index] = false} \Comment{如果任何一个对应位为0}
-\State \Return {false} \Comment{确定元素不存在，返回false}
-\EndIf
-\EndFor \Comment{所有对应位都为1}
-\State \Return {true} \Comment{元素可能存在，返回true（可能有假阳性）}
+\begin{algorithmic}[1]
+\STATE if disabled then return true \Comment{如果布隆过滤器被禁用，返回true（不过滤）}
+\STATE hash\_values $\leftarrow$ GetHashValues(element) \Comment{使用多个哈希函数计算元素的哈希值数组}
+\STATE for each hash\_val in hash\_values do \Comment{遍历所有哈希值}
+\STATE bit\_index $\leftarrow$ hash\_val mod bit\_array.size() \Comment{计算在位数组中的索引位置}
+\STATE if bit\_array[bit\_index] = false then \Comment{如果任何一个对应位为0}
+\STATE return false \Comment{确定元素不存在，返回false}
+\STATE end if
+\STATE end for \Comment{所有对应位都为1}
+\STATE return true \Comment{元素可能存在，返回true（可能有假阳性）}
 \end{algorithmic}
 \end{algorithm}
 
@@ -182,16 +180,15 @@ SQL语句动态缓存技术通过查询标准化、哈希索引和智能淘汰�
 \begin{algorithm}[htbp]
 \caption{查询标准化算法}
 \label{alg3_3_6}
-\begin{algorithmic}[1]
 \Require {raw\_query (原始查询字符串)}
 \Ensure {normalized\_query (标准化查询)}
-
-\State query $\leftarrow$ RemoveComments(raw\_query) \Comment{移除SQL注释（单行和多行注释）}
-\State query $\leftarrow$ NormalizeWhitespace(query) \Comment{标准化空白字符（空格、制表符、换行符）}
-\State query $\leftarrow$ StandardizeKeywords(query) \Comment{将SQL关键字转换为统一大小写格式}
-\State query $\leftarrow$ SortClauseElements(query) \Comment{对子句元素进行排序（如WHERE条件、SELECT列表）}
-\State query $\leftarrow$ RemoveRedundantParentheses(query) \Comment{移除冗余的括号}
-\State \Return {query} \Comment{返回标准化后的查询字符串}
+\begin{algorithmic}[1]
+\STATE query $\leftarrow$ RemoveComments(raw\_query) \Comment{移除SQL注释（单行和多行注释）}
+\STATE query $\leftarrow$ NormalizeWhitespace(query) \Comment{标准化空白字符（空格、制表符、换行符）}
+\STATE query $\leftarrow$ StandardizeKeywords(query) \Comment{将SQL关键字转换为统一大小写格式}
+\STATE query $\leftarrow$ SortClauseElements(query) \Comment{对子句元素进行排序（如WHERE条件、SELECT列表）}
+\STATE query $\leftarrow$ RemoveRedundantParentheses(query) \Comment{移除冗余的括号}
+\STATE return query \Comment{返回标准化后的查询字符串}
 \end{algorithmic}
 \end{algorithm}
 
@@ -229,11 +226,11 @@ CTE细粒度缓存技术通过多阶段缓存架构实现公共表表达式的�
         \hline
         配置名称 & 过滤器大小(位) & 哈希函数数 & 应用场景 & 预期效果 \\
         \hline
-        禁用布隆过滤器 & 0 & 0 & 基准测试 & 直接缓存查找 \\
-        小型布隆过滤器 & 10,000 & 2 & 轻量级应用 & 低内存占用 \\
-        标准布隆过滤器 & 100,000 & 3 & 一般应用 & 平衡性能和内存 \\
-        大型布隆过滤器 & 1,000,000 & 4 & 高性能应用 & 低假阳性率 \\
-        超大布隆过滤器 & 10,000,000 & 5 & 企业级应用 & 极低假阳性率 \\
+        禁用 & 0 & 0 & 基准测试 & 直接缓存查找 \\
+        小型 & 10,000 & 2 & 轻量级应用 & 低内存占用 \\
+        标准 & 100,000 & 3 & 一般应用 & 平衡性能和内存 \\
+        大型 & 1,000,000 & 4 & 高性能应用 & 低假阳性率 \\
+        超大型 & 10,000,000 & 5 & 企业级应用 & 极低假阳性率 \\
         \hline
     \end{tabular}
 \end{table}
@@ -255,23 +252,14 @@ CTE细粒度缓存技术通过多阶段缓存架构实现公共表表达式的�
         \hline
         配置名称 & 平均查询时间(ms) & 总执行时间(s) & 相对基准提升(\%) \\
         \hline
-        禁用布隆过滤器 & 6.16 & 6.158 & 基准 \\
-        小型布隆过滤器 & 5.59 & 5.589 & 9.3\% \\
-        标准布隆过滤器 & 5.71 & 5.706 & 7.3\% \\
-        超大布隆过滤器 & 5.73 & 5.726 & 7.0\% \\
-        大型布隆过滤器 & 6.22 & 6.216 & -1.0\% \\
+        禁用 & 6.16 & 6.158 & 基准 \\
+        小型 & 5.59 & 5.589 & 9.3\% \\
+        标准 & 5.71 & 5.706 & 7.3\% \\
+        超大型 & 5.73 & 5.726 & 7.0\% \\
+        大型 & 6.22 & 6.216 & -1.0\% \\
         \hline
     \end{tabular}
 \end{table}
-
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.95\textwidth]{images/3-图3.15 TPC-H查询不同布隆过滤器配置性能对比.png}
-	\caption{TPC-H查询不同布隆过滤器配置性能对比}
-	\label{fig3_3_15}
-\end{figure}
-
-\subsubsection{TPC-H测试关键发现}
 
 基于TPC-H SF=1标准数据集的1000次测试结果显示，布隆过滤器在小规模数据库环境下呈现出独特的性能特征。测试结果表明，小型布隆过滤器（10K位，2哈希函数）表现最佳，平均查询时间5.59ms，相比禁用状态提升9.3\%，这一发现与传统认知存在显著差异。
 
@@ -310,11 +298,11 @@ CTE查询集专门针对公共表表达式的缓存优化进行设计，包含20
         \hline
         配置名称 & 平均查询时间(ms) & 总执行时间(s) & 相对基准提升(\%) \\
         \hline
-        标准布隆过滤器 & 0.25 & 2.463 & 3.0\% \\
-        大型布隆过滤器 & 0.25 & 2.486 & 2.1\% \\
-        超大布隆过滤器 & 0.25 & 2.503 & 1.4\% \\
-        小型布隆过滤器 & 0.25 & 2.506 & 1.3\% \\
-        禁用布隆过滤器 & 0.25 & 2.538 & 基准 \\
+        标准 & 0.25 & 2.463 & 3.0\% \\
+        大型 & 0.25 & 2.486 & 2.1\% \\
+        超大型 & 0.25 & 2.503 & 1.4\% \\
+        小型 & 0.25 & 2.506 & 1.3\% \\
+        禁用 & 0.25 & 2.538 & 基准 \\
         \hline
     \end{tabular}
 \end{table}

@@ -383,37 +383,9 @@ class MarkdownToLatexConverter:
                 """处理单个算法语句，返回相应的LaTeX命令"""
                 step_content = step_content.strip()
                 
-                # 处理控制结构
-                if step_content.lower().startswith('if ') and ' then' in step_content.lower():
-                    # 提取条件部分
-                    condition_part = step_content.split(' then')[0]
-                    condition = re.sub(r'^if\s+', '', condition_part, flags=re.IGNORECASE).strip()
-                    condition = escape_latex_in_algorithm(condition)
-                    return f"\\If{{{condition}}}"
-                elif step_content.lower().strip() in ['end if', 'endif']:
-                    return "\\EndIf"
-                elif step_content.lower().startswith('for ') and ' do' in step_content.lower():
-                    loop_part = step_content.split(' do')[0]
-                    loop_condition = re.sub(r'^for\s+', '', loop_part, flags=re.IGNORECASE).strip()
-                    loop_condition = escape_latex_in_algorithm(loop_condition)
-                    return f"\\For{{{loop_condition}}}"
-                elif step_content.lower().strip() in ['end for', 'endfor']:
-                    return "\\EndFor"
-                elif step_content.lower().startswith('while ') and ' do' in step_content.lower():
-                    while_part = step_content.split(' do')[0]
-                    while_condition = re.sub(r'^while\s+', '', while_part, flags=re.IGNORECASE).strip()
-                    while_condition = escape_latex_in_algorithm(while_condition)
-                    return f"\\While{{{while_condition}}}"
-                elif step_content.lower().strip() in ['end while', 'endwhile']:
-                    return "\\EndWhile"
-                elif step_content.lower().startswith('return '):
-                    return_value = step_content[7:].strip()  # 移除 'return '
-                    return_value = escape_latex_in_algorithm(return_value)
-                    return f"\\State \\Return {{{return_value}}}"
-                else:
-                    # 普通语句，需要转义LaTeX特殊字符
-                    escaped_content = escape_latex_in_algorithm(step_content)
-                    return f"\\State {escaped_content}"
+                # 保持原始格式，只转义特殊字符，不转换控制结构
+                escaped_content = escape_latex_in_algorithm(step_content)
+                return f"\\STATE {escaped_content}"
             
             algorithm_content = match.group(1).strip()
             algorithm_pos = match.start()
@@ -453,7 +425,9 @@ class MarkdownToLatexConverter:
             
             # 处理算法内容，转换为algorithmic格式
             lines = algorithm_content.split('\n')
-            algorithmic_lines = []
+            require_lines = []  # 存储输入要求
+            ensure_lines = []   # 存储输出保证
+            algorithmic_lines = []  # 存储算法步骤
             
             for line in lines:
                 original_line = line
@@ -466,10 +440,10 @@ class MarkdownToLatexConverter:
                 # 处理输入输出
                 if line.startswith('输入:') or line.startswith('输入：'):
                     input_text = line.split(':', 1)[1].strip() if ':' in line else line.split('：', 1)[1].strip()
-                    algorithmic_lines.append(f"\\Require {{{input_text}}}")
+                    require_lines.append(f"\\Require {{{input_text}}}")
                 elif line.startswith('输出:') or line.startswith('输出：'):
                     output_text = line.split(':', 1)[1].strip() if ':' in line else line.split('：', 1)[1].strip()
-                    algorithmic_lines.append(f"\\Ensure {{{output_text}}}")
+                    ensure_lines.append(f"\\Ensure {{{output_text}}}")
                 # 处理步骤编号
                 elif re.match(r'^\d+\.', line):
                     # 移除步骤编号，保留内容
@@ -482,27 +456,29 @@ class MarkdownToLatexConverter:
                         code_part = parts[0].strip()
                         comment_part = parts[1].strip()
                         
-                        # 处理代码部分
+                        # 处理代码部分，并在同一行添加注释
                         if code_part:
                             code_line = process_algorithm_statement(code_part)
                             if comment_part:
+                                # 注释跟在代码后面，不需要 \STATE 前缀
                                 algorithmic_lines.append(f"{code_line} \\Comment{{{comment_part}}}")
                             else:
                                 algorithmic_lines.append(code_line)
                         elif comment_part:
-                            algorithmic_lines.append(f"\\Comment{{{comment_part}}}")
+                            # 只有注释的情况（这种情况下注释是单独一行，需要 \STATE）
+                            algorithmic_lines.append(f"\\STATE \\Comment{{{comment_part}}}")
                     else:
                         # 没有注释的普通语句
                         algorithmic_lines.append(process_algorithm_statement(step_content))
                         
-                # 处理注释（以//开头的行）
+                # 处理注释（以//开头的行），也需要 \STATE 前缀
                 elif line.startswith('//'):
                     comment = line[2:].strip()
                     algorithmic_lines.append(f"\\Comment{{{comment}}}")
                 else:
                     # 其他内容作为普通语句
                     escaped_line = escape_latex_in_algorithm(line)
-                    algorithmic_lines.append(f"\\State {escaped_line}")
+                    algorithmic_lines.append(f"\\STATE {escaped_line}")
             
             # 过滤掉连续的空行，只保留单个空行作为分隔
             filtered_lines = []
@@ -527,16 +503,37 @@ class MarkdownToLatexConverter:
             # 生成LaTeX算法代码
             label = f"alg{chapter_num}_{alg_num.replace('.', '_')}"
             
-            latex_algorithm = f"""
-\\begin{{algorithm}}[htbp]
-\\caption{{{clean_title}}}
-\\label{{{label}}}
-\\begin{{algorithmic}}[ALGORITHM_ONE]
-{chr(10).join(algorithmic_lines)}
-\\end{{algorithmic}}
-\\end{{algorithm}}
-
-"""
+            # 确保每行都有正确的换行，并添加适当的缩进
+            formatted_lines = []
+            for line in algorithmic_lines:
+                if line.strip() == "":
+                    formatted_lines.append("")  # 保留空行
+                else:
+                    formatted_lines.append(f"{line}")
+            
+            # 将所有行连接，确保每行都有换行符
+            algorithmic_content = '\n'.join(formatted_lines)
+            
+            # 构建完整的算法LaTeX代码
+            algorithm_parts = []
+            algorithm_parts.append(f"\\begin{{algorithm}}[htbp]")
+            algorithm_parts.append(f"\\caption{{{clean_title}}}")
+            algorithm_parts.append(f"\\label{{{label}}}")
+            
+            # 添加 Require 和 Ensure（在 algorithmic 环境之前）
+            for req_line in require_lines:
+                algorithm_parts.append(req_line)
+            for ens_line in ensure_lines:
+                algorithm_parts.append(ens_line)
+            
+            algorithm_parts.append("\\begin{algorithmic}[1]")
+            if algorithmic_content.strip():
+                algorithm_parts.append(algorithmic_content)
+            algorithm_parts.append("\\end{algorithmic}")
+            algorithm_parts.append("\\end{algorithm}")
+            algorithm_parts.append("")  # 空行
+            
+            latex_algorithm = '\n'.join(algorithm_parts)
             return latex_algorithm
 
         
@@ -744,9 +741,18 @@ class MarkdownToLatexConverter:
     
     def convert_references(self, content: str) -> str:
         """转换参考文献引用格式，支持单个引用和范围引用"""
-        # 先处理单个引用
+        # 先处理单个引用，但要避免替换算法环境中的[1]
         for md_ref, latex_ref in self.reference_mapping.items():
-            content = content.replace(md_ref, latex_ref)
+            # 使用更精确的正则表达式，避免替换算法环境中的[1]
+            if md_ref == "[1]":
+                # 对于[1]，只在不是algorithmic环境中的时候替换
+                # 使用负向后查找，确保前面不是\begin{algorithmic}
+                pattern = r'(?<!\\begin\{algorithmic\})\[1\]'
+                # 需要转义latex_ref中的反斜杠
+                escaped_latex_ref = latex_ref.replace('\\', '\\\\')
+                content = re.sub(pattern, escaped_latex_ref, content)
+            else:
+                content = content.replace(md_ref, latex_ref)
         
         # 处理范围引用格式，如 [2-4] -> \cite{c2,c3,c4}
         def expand_range_reference(match):
@@ -773,8 +779,7 @@ class MarkdownToLatexConverter:
         # 使用正则表达式匹配范围引用格式
         content = re.sub(r'\[(\d+\s*-\s*\d+)\]', expand_range_reference, content)
         
-        # 还原算法环境中的特殊标记
-        content = content.replace('[ALGORITHM_ONE]', '[1]')
+        # 算法环境中的[1]标记已经在生成时直接使用，无需还原
         
         return content
     

@@ -1,10 +1,5 @@
 graph TD
     subgraph "传统数据库查询处理瓶颈分析"
-        A[查询请求] --> B[解析阶段]
-        B --> C[规划阶段]
-        C --> D[优化阶段]
-        D --> E[执行阶段]
-        E --> F[结果返回]
         
         G[重复查询识别困难] --> H[缓存利用率低]
         I[复杂查询结构处理不足] --> J[CTE等高级特性优化缺失]
@@ -16,7 +11,3 @@ graph TD
         
         M --> N[查询响应时间长<br/>系统吞吐量低]
     end
-    
-    style A fill:#e3f2fd
-    style M fill:#ffcdd2
-    style N fill:#ffebee

@@ -6,7 +6,7 @@
 
 \subsection{系统架构设计}
 
-持久化存储系统基于 CachePersistenceInterface 接口进行方案设计与原型探索：支持多种持久化策略的切换和协调工作。持久化系统采用异步与批量的设计思路，兼顾可靠性与性能；通过统一接口与灵活配置，保证可扩展性与可维护性。
+持久化存储系统基于 CachePersistenceInterface 接口进行方案设计与原型探索，支持多种持久化策略的切换和协调工作。持久化系统采用异步与批量的设计思路，兼顾可靠性与性能；通过统一接口与灵活配置，保证可扩展性与可维护性。
 CachePersistenceConfig结构定义了持久化相关的各种参数。基础配置包括持久化策略类型(strategy)用于选择具体的持久化实现，存储路径(persistence\_path)用于指定数据存储位置，内存阈值(memory\_threshold)用于触发持久化操作。高级配置包括WAL缓冲区大小(wal\_buffer\_size)用于优化WAL模式的性能，批量写入大小(batch\_size)用于提高I/O效率，同步间隔(sync\_interval)用于控制数据同步频率。这些配置参数的灵活组合使得系统能够适应不同的应用场景和性能要求。
 
 \begin{figure}[htbp]

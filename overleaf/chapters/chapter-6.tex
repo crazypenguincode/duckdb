@@ -145,7 +145,7 @@ TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{images-man/图6.5 不同测试次数下执行时间标准差变化趋势.png}
-	\caption{四种数据集类型的缓存性能提升对比}
+	\caption{不同测试次数下执行时间标准差变化趋势}
 \end{figure}
 
 \begin{table}[!htb]
@@ -221,7 +221,7 @@ TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{images-man/图6.13 多次TPC-DS查询缓存对比.png}
-	\caption{四种数据集类型的缓存性能提升对比}
+	\caption{多次TPC-DS查询缓存对比}
 \end{figure}
 
 测试结果显示整体性能表现优秀，平均性能提升达到54.2\%（标准差22.2\%），所有8项测试均成功完成，覆盖率100\%，其中TPC-DS在100次查询测试中实现了70.5\%的最佳性能提升，充分验证了缓存技术的有效性。
@@ -273,7 +273,7 @@ TPC-DS基准数据集相比TPC-H具有更高的复杂度和更广泛的查询模
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=0.8\textwidth]{images-man/图6.17 TTL设置对缓存命中率的影响.png}
-	\caption{四种数据集类型的缓存性能提升对比}
+	\caption{TTL设置对缓存命中率的影响}
 \end{figure}
 
 测试结果表明，TTL设置与缓存命中率呈显著正相关关系，3600秒的TTL设置能够实现80.0\%的最高命中率，但实际应用中需要根据数据更新频率动态调整TTL值以平衡数据新鲜度需求，建议结合业务场景特点灵活配置。

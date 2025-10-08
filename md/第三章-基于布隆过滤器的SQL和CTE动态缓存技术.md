@@ -14,7 +14,7 @@
 
 
 ```mermaid
-flowchart LR
+flowchart TB
     A[SQL查询请求] --> B[布隆过滤器预筛选]
     B --> C{命中检测}
     C -->|No| D[直接执行查询]

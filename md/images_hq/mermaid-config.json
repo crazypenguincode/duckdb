@@ -3,19 +3,22 @@
   "themeVariables": {
     "primaryColor": "#ffffff",
     "primaryTextColor": "#000000",
-    "primaryBorderColor": "#333333",
+    "primaryBorderColor": "transparent",
     "lineColor": "#333333",
     "secondaryColor": "#f8f8f8",
     "tertiaryColor": "#f0f0f0",
-    "background": "#ffffff",
+    "background": "transparent",
     "mainBkg": "#ffffff",
     "secondBkg": "#f8f8f8",
-    "tertiaryBkg": "#f0f0f0"
+    "tertiaryBkg": "#f0f0f0",
+    "clusterBkg": "transparent",
+    "clusterBorder": "transparent",
+    "edgeLabelBackground": "transparent"
   },
   "flowchart": {
     "htmlLabels": true,
     "curve": "basis",
-    "padding": 20
+    "padding": 0
   },
   "sequence": {
     "diagramMarginX": 50,

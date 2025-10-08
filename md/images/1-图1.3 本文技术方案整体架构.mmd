@@ -1,4 +1,4 @@
-graph TD
+graph LR
         subgraph "核心技术层"
             A1[第三章<br>基于布隆过滤器的SQL和CTE<br>动态缓存技术]
             A2[第四章<br>基于机器学习的多策略融合<br>缓存替换技术]
@@ -7,8 +7,8 @@ graph TD
         
         subgraph "系统架构层"
             B1[查询解析与标准化<br />多层过滤架构<br/>支持复杂查询<br/>CTE细粒度缓存]
-            B2[智能缓存策略]
-            B3[持久化存储管理]
+            B2[LRU<br>时间策略<br>机器学习混合策略]
+            B3[WAL<br>物化视图<br>混合策略]
         end
         
         subgraph "应用效果层"

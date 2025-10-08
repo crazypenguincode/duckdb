@@ -1,9 +1,8 @@
-graph TB
-    subgraph "本文技术方案整体架构"
+graph TD
         subgraph "核心技术层"
-            A1[布隆过滤器优化技术]
-            A2[动态缓存管理]
-            A3[持久化存储]
+            A1[第三章<br>基于布隆过滤器的SQL和CTE<br>动态缓存技术]
+            A2[第四章<br>基于机器学习的多策略融合<br>缓存替换技术]
+            A3[第五章<br>多策略融合的持久化<br>存储技术]
         end
         
         subgraph "系统架构层"
@@ -35,4 +34,3 @@ graph TB
         A1 -.-> D1
         A2 -.-> D2
         A3 -.-> D3
-    end

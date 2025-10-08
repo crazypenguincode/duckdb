@@ -58,6 +58,18 @@ class MarkdownToLatexConverter:
         # 表格标题存储 - 使用v2版本的简单方式
         self.table_titles = {}
         
+        # 需要固定位置的图片数组 - 使用[H]参数
+        self.fixed_position_figures = [
+            "本文技术方案整体架构",
+            "论文章节组织结构图",
+            "计算机系统缓存层次结构",
+            "缓存数据结构关系图",
+            "智能缓存替换策略系统架构",
+            "缓存淘汰流程详细设计",
+            "持久化存储系统架构",
+            "持久化策略实现特征分布"
+        ]
+        
     def extract_and_convert_images(self, force_regenerate=False):
         """提取并转换Mermaid图片为PNG - 使用v5版本的优化实现"""
         print("正在提取和转换图片...")
@@ -279,11 +291,17 @@ class MarkdownToLatexConverter:
                 width = "1\\textwidth"
             elif "对比" in clean_title or "比较" in clean_title:
                 width = "0.95\\textwidth"
+            elif "分布" in clean_title or "饼图" in clean_title or "pie" in clean_title.lower():
+                width = "0.7\\textwidth"
             else:
                 width = "0.95\\textwidth"
             
             # 选择合适的浮动参数
-            float_params = "htbp"
+            # 检查是否是需要固定位置的图片
+            if clean_title in self.fixed_position_figures:
+                float_params = "H"  # 使用[H]参数强制固定位置
+            else:
+                float_params = "htbp"
             # if needs_here:
             #     # 需要就近显示，使用htbp参数，优先here，然后top，bottom，最后page
             #     float_params = "htbp"

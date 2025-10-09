@@ -62,6 +62,7 @@ class MarkdownToLatexConverter:
         self.fixed_position_figures = [
             "本文技术方案整体架构",
             "论文章节组织结构图",
+            "数据库查询处理流水线架构",
             "计算机系统缓存层次结构",
             "缓存数据结构关系图",
             "智能缓存替换策略系统架构",

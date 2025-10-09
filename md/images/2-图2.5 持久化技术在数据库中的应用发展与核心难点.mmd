@@ -1,0 +1,32 @@
+graph LR
+    
+    subgraph "技术应用领域"
+        B1[内存数据库<br/>SAP HANA, Redis<br/>极致性能]
+        B2[NewSQL数据库<br/>CockroachDB, TiDB<br/>分布式+ACID]
+        B3[NoSQL数据库<br/>MongoDB, Cassandra<br/>放宽一致性]
+        B4[LSM-Tree引擎<br/>随机写→顺序写<br/>适配SSD特性]
+    end
+    
+    subgraph "核心技术难点"
+        C1[数据一致性与性能平衡<br/> ACID vs 高性能<br/> 锁机制开销<br/> 同步写入延迟]
+        C2[存储介质异构化管理<br/> 内存+SSD+机械盘<br/> 不同故障模式<br/> 数据迁移复杂性]
+        C3[大规模数据持久化效率<br/> TB/PB级数据处理<br/> 序列化开销<br/> I/O瓶颈]
+        C4[分布式环境一致性<br/> CAP定理约束<br/> 网络分区处理<br/> 节点故障恢复]
+    end
+    
+    subgraph "技术发展趋势"
+        D1[持久化内存技术<br/>Intel Optane<br/>低延迟+非易失性]
+        D2[云原生架构<br/>容器化+微服务<br/>弹性伸缩]
+        D3[智能存储管理<br/>机器学习优化<br/>自适应策略]
+    end
+    
+    
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    B4 --> C4
+    
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+    C4 --> D1

@@ -1,13 +1,10 @@
 graph TD
-    A[CPU处理器<br/>寄存器+缓存] --> E[主内存]
-    E --> F[SSD缓存]
-    F --> G[机械硬盘]
+    A[CPU处理器<br/>寄存器+缓存] 
+    E[主内存]
+    F[SSD盘]
+    G[机械硬盘]
     
     A --> A1[访问时间: 1-10ns<br/>容量: KB-32MB级]
     E --> E1[访问时间: 约100ns<br/>容量: GB-TB级]
     F --> F1[访问时间: 约100μs<br/>容量: TB级]
     G --> G1[访问时间: 约10ms<br/>容量: TB-PB级]
-    
-    style A fill:#ffebee
-    style E fill:#e8f5e8
-    style G fill:#e3f2fd

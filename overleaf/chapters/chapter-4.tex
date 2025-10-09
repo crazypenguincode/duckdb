@@ -19,11 +19,11 @@
 
 \subsection{核心设计理念}
 
-容量检查基于当前缓存条目数量与估算的内存占用：当 cache.Size() 超过配置的 max\_entries 或 CalculateMemoryUsage() 超过 max\_memory\_bytes 时触发淘汰。配置上限为触发条件，保证简单可靠的容量控制。
+容量检查基于当前缓存条目数量与估算的内存占用：当缓存大小(cache.Size())超过配置的最大条目数(max\_entries)或内存使用量(CalculateMemoryUsage())超过最大内存字节数(max\_memory\_bytes)时触发淘汰。配置上限为触发条件，保证简单可靠的容量控制。
 
-策略执行为“策略驱动”的线性流程：系统依据当前配置的 eviction\_strategy 选择 TTL\_BASED、LRU\_BASED 或 ML\_BASED 之一进行淘汰；TTL 通过全局 TTL 的过期清理与“最早创建”排序进行淘汰；LRU 通过“最近访问时间”选择最久未访问条目；ML 通过线性权重 + sigmoid 的评分选择低价值条目。 通过策略切换与全局TTL渐进式调优调整替换算法。并设置时间窗抑制频繁切换，以维持稳定性。
+策略执行为"策略驱动"的线性流程：系统依据当前配置的淘汰策略(eviction\_strategy)选择基于TTL的策略(TTL\_BASED)、基于LRU的策略(LRU\_BASED)或基于机器学习的策略(ML\_BASED)之一进行淘汰；TTL策略通过全局生存时间(global\_TTL)的过期清理与"最早创建"排序进行淘汰；LRU策略通过最近访问时间(last\_accessed)选择最久未访问条目；ML策略通过线性权重加sigmoid的评分选择低价值条目。通过策略切换与全局TTL渐进式调优调整替换算法，并设置时间窗(time\_window)抑制频繁切换，以维持稳定性。
 
-批量淘汰执行是淘汰流程的最后阶段，为了提高效率和减少系统开销，系统采用批量淘汰策略，一次性处理多个条目。批量大小根据当前的内存压力和系统负载动态调整，在资源紧张时增加批量大小以快速释放空间，在资源充足时减少批量大小以保持缓存的稳定性。批量淘汰过程中，系统会暂时锁定相关的缓存区域，避免并发访问导致的数据不一致问题。淘汰完成后，系统更新相应的统计计数器，包括各策略的淘汰次数、释放的内存空间、淘汰的条目数量等，为性能监控和策略优化提供数据支持。
+批量淘汰执行是淘汰流程的最后阶段，为了提高效率和减少系统开销，系统采用批量淘汰策略，一次性处理多个条目。批量大小(batch\_size)根据当前的内存压力(memory\_pressure)和系统负载(system\_load)动态调整，在资源紧张时增加批量大小以快速释放空间，在资源充足时减少批量大小以保持缓存的稳定性。批量淘汰过程中，系统会暂时锁定相关的缓存区域，避免并发访问导致的数据不一致问题。淘汰完成后，系统更新相应的统计计数器，包括各策略的淘汰次数(eviction\_count)、释放的内存空间(freed\_memory)、淘汰的条目数量(evicted\_entries)等，为性能监控和策略优化提供数据支持。
 
 \begin{figure}[H]
 	\centering
@@ -40,8 +40,8 @@
 \Require {query\_string}
 \Ensure {result, was\_hit}
 \begin{algorithmic}[1]
-\STATE key $\leftarrow$ Hash(Normalize(query\_string)) \Comment{规范化并生成键，保证语义等价查询映射一致}
-\STATE entry $\leftarrow$ cache.Find(key) \Comment{从缓存查找是否命中，避免重复计算}
+\STATE key $\leftarrow$ Hash(Normalize(query\_string)) \Comment{规范化并生成键值(key)，保证语义等价查询映射一致}
+\STATE entry $\leftarrow$ cache.Find(key) \Comment{从缓存查找缓存条目(cache_entry)是否命中，避免重复计算}
 \STATE if entry = NULL then
 \STATE result $\leftarrow$ ExecuteQuery(query\_string) \Comment{未命中则执行查询以获取最新结果}
 \STATE features $\leftarrow$ ExtractMLFeatures(query\_string, result) \Comment{提取特征用于评分与后续在线学习}
@@ -52,7 +52,7 @@
 \STATE case LRU\_BASED:
 \STATE new\_entry.eviction\_priority $\leftarrow$ now.time\_since\_epoch() \Comment{以最近访问时间体现LRU优先级}
 \STATE case TTL\_BASED:
-\STATE new\_entry.eviction\_priority $\leftarrow$ new\_entry.created\_at.time\_since\_epoch()
+\STATE new\_entry.eviction\_priority $\leftarrow$ new\_entry.created\_at.time\_since\_epoch() \Comment{以创建时间设置淘汰优先级}
 \STATE end switch
 \STATE cache.Put(key, new\_entry) \Comment{写入缓存以供后续命中}
 \STATE bloom\_filter.Add(key) \Comment{更新布隆过滤器降低查找成本}
@@ -88,17 +88,17 @@
 \STATE oldest $\leftarrow$ argmin(created\_at) \Comment{以创建时间排序，优先释放最早条目}
 \STATE current\_memory -= Memory(oldest) \Comment{删除后及时扣减内存估算}
 \STATE cache.Remove(oldest) \Comment{执行删除以释放空间}
-\STATE stats.ttl\_evictions++ \Comment{记录TTL策略的淘汰次数}
+\STATE stats.ttl\_evictions++ \Comment{记录TTL策略的淘汰次数(ttl_evictions)}
 \STATE case LRU\_BASED:
-\STATE lru $\leftarrow$ argmin(last\_accessed) \Comment{以最近访问时间排序，淘汰最久未访问条目}
-\STATE current\_memory -= Memory(lru)
-\STATE cache.Remove(lru)
-\STATE stats.lru\_evictions++
+\STATE lru $\leftarrow$ argmin(last\_accessed) \Comment{以最近访问时间(last_accessed)排序，淘汰最久未访问条目}
+\STATE current\_memory -= Memory(lru) \Comment{扣减LRU条目的内存占用}
+\STATE cache.Remove(lru) \Comment{移除LRU条目}
+\STATE stats.lru\_evictions++ \Comment{记录LRU策略的淘汰次数(lru_evictions)}
 \STATE case ML\_BASED:
-\STATE worst $\leftarrow$ argmin(ml\_score) \Comment{以ML评分排序，优先移除低价值条目}
-\STATE current\_memory -= Memory(worst)
-\STATE cache.Remove(worst)
-\STATE stats.ml\_evictions++
+\STATE worst $\leftarrow$ argmin(ml\_score) \Comment{以机器学习评分(ml_score)排序，优先移除低价值条目}
+\STATE current\_memory -= Memory(worst) \Comment{扣减低价值条目的内存占用}
+\STATE cache.Remove(worst) \Comment{移除低价值条目}
+\STATE stats.ml\_evictions++ \Comment{记录ML策略的淘汰次数(ml_evictions)}
 \STATE end switch
 \STATE end while
 \STATE if config.eviction\_strategy = ML\_BASED then
@@ -119,7 +119,7 @@
 
 \subsection{基于时间策略的动态缓存管理技术}
 
-基于时间策略的动态缓存管理以全局TTL为时效控制基线：在访问路径进行被动过期检测，在淘汰入口进行机会式清理，无需后台线程即可保持缓存洁净；当容量或内存超限时，通过批量扫描有效回收长期未访问的失效条目。TTL参数依据命中率、查询耗时趋势与内存压力进行渐进式调优，以在稳定性与空间回收效率之间取得平衡。
+基于时间策略的动态缓存管理以全局生存时间(global\_TTL)为时效控制基线：在访问路径进行被动过期检测，在淘汰入口进行机会式清理，无需后台线程即可保持缓存洁净；当容量或内存超限时，通过批量扫描有效回收长期未访问的失效条目。TTL参数依据命中率(hit\_rate)、查询耗时趋势(query\_latency\_trend)与内存压力(memory\_pressure)进行渐进式调优，以在稳定性与空间回收效率之间取得平衡。
 
 \subsection{基于机器学习策略的动态缓存管理技术}
 
@@ -154,14 +154,14 @@
     \end{tabular}
 \end{table}
 
-特征工程是机器学习策略的基础环节，系统从查询语句、执行统计、访问模式、系统状态等多个维度提取特征，形成高维特征向量。查询语句特征包括语法结构特征，如查询长度、表数量、连接数量、聚合函数数量等，这些特征反映了查询的复杂度和计算成本。语义特征包括查询类型、数据访问模式、结果集特征等，这些特征反映了查询的业务含义和数据特征。执行统计特征包括执行时间、CPU使用率、内存消耗、I/O开销等，这些特征反映了查询的资源需求和性能特征。访问模式特征包括访问频率、访问间隔、访问时间分布、用户行为等，这些特征反映了查询的使用模式和重要性。系统状态特征包括当前负载、内存压力、缓存状态等，这些特征反映了系统的运行环境和资源状况。
+特征工程是机器学习策略的基础环节，系统从查询语句、执行统计、访问模式、系统状态等多个维度提取特征，形成高维特征向量。查询语句特征包括语法结构特征，如查询长度(query\_length)、表数量(table\_count)、连接数量(join\_count)、聚合函数数量(aggregate\_count)等，这些特征反映了查询的复杂度和计算成本。语义特征包括查询类型(query\_type)、数据访问模式(access\_pattern)、结果集特征(result\_features)等，这些特征反映了查询的业务含义和数据特征。执行统计特征包括执行时间(execution\_time)、CPU使用率(cpu\_usage)、内存消耗(memory\_consumption)、I/O开销(io\_cost)等，这些特征反映了查询的资源需求和性能特征。访问模式特征包括访问频率(access\_frequency)、访问间隔(access\_interval)、访问时间分布(access\_time\_distribution)、用户行为(user\_behavior)等，这些特征反映了查询的使用模式和重要性。系统状态特征包括当前负载(current\_load)、内存压力(memory\_pressure)、缓存状态(cache\_status)等，这些特征反映了系统的运行环境和资源状况。
 
-模型训练采用在线学习：RecordAccess 记录访问样本，UpdateMLModel 基于队列样本计算效用并调用 MLCachePredictor::Update(features, actual\_utility)。Predictor 通过线性权重与 sigmoid 评分，使用简单的梯度下降并带学习率衰减；
+模型训练采用在线学习：访问记录函数(RecordAccess)记录访问样本，模型更新函数(UpdateMLModel)基于队列样本计算效用并调用机器学习缓存预测器更新方法(MLCachePredictor::Update(features, actual\_utility))。预测器通过线性权重与sigmoid评分，使用简单的梯度下降并带学习率衰减(learning\_rate\_decay)；
 
-预测决策是机器学习策略的核心应用，系统根据模型预测结果计算缓存条目的价值评分，指导缓存插入和淘汰决策。预测过程首先提取查询的特征向量，然后通过训练好的模型计算缓存价值评分。评分结果表示查询结果被缓存的预期收益，包括未来访问概率、计算成本节省、资源利用效率等因素。预测决策不仅考虑单个查询的价值，还考虑缓存空间的整体利用效率，通过优化算法选择最优的缓存条目组合。预测结果还包括置信度估计，帮助系统判断预测的可靠性，在置信度较低时可以结合其他策略进行决策。
+预测决策是机器学习策略的核心应用，系统根据模型预测结果计算缓存条目的价值评分(value\_score)，指导缓存插入和淘汰决策。预测过程首先提取查询的特征向量(feature\_vector)，然后通过训练好的模型计算缓存价值评分。评分结果表示查询结果被缓存的预期收益(expected\_benefit)，包括未来访问概率(future\_access\_probability)、计算成本节省(computation\_cost\_saving)、资源利用效率(resource\_utilization\_efficiency)等因素。预测决策不仅考虑单个查询的价值，还考虑缓存空间的整体利用效率，通过优化算法选择最优的缓存条目组合。预测结果还包括置信度估计(confidence\_estimation)，帮助系统判断预测的可靠性，在置信度较低时可以结合其他策略进行决策。
 
 \section{本章小结}
 
 本章详细介绍了智能缓存替换策略的设计与实现，作为第三章动态缓存管理系统的重要组成部分。通过基于策略模式的多策略协调框架，系统实现了LRU、TTL、混合策略和机器学习四种核心替换技术的无缝切换和协调工作，包括高精度访问时间跟踪、动态TTL计算、智能权重管理和在线学习等关键技术实现。
 
-系统采用“策略驱动 + 自适应参数调优”的方式，在不同负载下动态切换 TTL/LRU/ML 策略，实现自适应的缓存管理与性能优化。机器学习策略通过特征工程和反馈学习持续优化预测准确性。多策略融合和并行评估目前为规划特性，非并行执行路径，现阶段以单策略切换为主，以保证实现的简洁性与稳定性。
+系统采用“策略驱动 + 自适应参数调优”的方式，在不同负载下动态切换 TTL/LRU/ML 策略，实现自适应的缓存管理与性能优化。机器学习策略通过特征工程和反馈学习持续优化预测准确性。

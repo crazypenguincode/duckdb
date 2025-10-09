@@ -3,7 +3,7 @@
     "total_chapters": 8,
     "chapters_converted": 6,
     "total_figures": 20,
-    "total_tables": 23,
+    "total_tables": 22,
     "total_algorithms": 5,
     "total_references": 102
   },
@@ -20,7 +20,7 @@
     },
     "chapter_3": {
       "figures": 2,
-      "tables": 9,
+      "tables": 8,
       "algorithms": 3
     },
     "chapter_4": {
@@ -77,7 +77,7 @@
     "table_counter": {
       "1": 0,
       "2": 0,
-      "3": 9,
+      "3": 8,
       "4": 1,
       "5": 3,
       "6": 10,

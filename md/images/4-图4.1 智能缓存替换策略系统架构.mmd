@@ -1,18 +1,16 @@
-graph TB
-    A[缓存替换请求] --> B[缓存替换管理层]
-    B --> C[策略决策层]
-    C --> D[LRU策略]
-    C --> E[TTL策略]
-    C --> F[ML策略]
-    C --> G[混合策略]
-    D --> H[策略执行层]
-    E --> H
-    F --> H
-    G --> H
-    H --> I[缓存条目淘汰]
-    H --> J[统计信息更新]
-    H --> K[性能监控反馈]
+sequenceDiagram
+    participant 请求 as 缓存替换请求
+    participant 决策 as 策略决策层
+    participant 执行 as 策略执行层
     
-    style C fill:#e3f2fd
-    style H fill:#e8f5e8
-    style I fill:#fff3e0
+    请求->>决策: 发起替换请求
+    
+    alt LRU策略
+        决策->>执行: 执行LRU淘汰
+    else TTL策略
+        决策->>执行: 执行TTL淘汰
+    else ML策略
+        决策->>执行: 执行ML淘汰
+    end
+    
+    执行->>请求: 淘汰完成

@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant 请求 as 存储请求
+    participant 混合 as 混合持久化
+    participant ML as ML决策引擎
+    participant 内存 as 内存模式
+    participant WAL as WAL模式
+    participant 视图 as 物化视图模式
+
+    请求->>混合: 缓存存储请求
+    混合->>ML: 数据特征分析
+    
+    alt 高频小数据
+        ML->>内存: 选择内存模式
+        内存-->>混合: 存储完成
+    else 平衡需求
+        ML->>WAL: 选择WAL模式
+        WAL-->>混合: 存储完成
+    else 高可靠性
+        ML->>视图: 选择物化视图
+        视图-->>混合: 存储完成
+    end
+    
+    混合-->>请求: 返回结果

@@ -62,6 +62,13 @@ WAL持久化实现通过WAL格式持久化类(WALFormatPersistence)提供基于�
 
 混合持久化通过混合持久化类(HybridPersistence)实现智能存储策略选择，其核心特点包括：内部集成机器学习智能持久化实例(MLIntelligentPersistence)作为智能决策引擎，通过机器学习模型分析数据特征以动态选择最优存储策略（支持内存、WAL和物化视图三种后端动态切换）。同时，提供了统一的接口封装，对外提供透明的存储服务，并通过性能统计和反馈机制持续优化存储决策，最终结合多种持久化方式的优势，实现性能与可靠性的最佳平衡。
 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.95\textwidth]{images/5-图5.3 混合持久化技术数据流图.png}
+	\caption{混合持久化技术数据流图}
+	\label{fig5_5_3}
+\end{figure}
+
 策略选择器(strategy\_selector)是混合持久化的核心组件，根据数据的多维特征智能选择最适合的存储策略。选择算法(selection\_algorithm)考虑数据大小(data\_size)、访问频率(access\_frequency)、重要性(importance)、时效性(timeliness)等因素。小而频繁访问的数据优先选择内存存储，大而重要的数据优先选择物化视图存储，中等规模的数据选择WAL存储。策略选择还考虑系统的当前状态，如内存使用率(memory\_usage)、I/O负载(io\_load)等。
 
 存储适配器(storage\_adapter)提供统一的接口来访问不同的存储后端，屏蔽底层存储实现的差异。适配器实现了统一的CRUD操作接口(crud\_interface)，将上层的存储请求转换为具体存储后端的操作。适配器还负责错误处理和重试机制(retry\_mechanism)，确保存储操作的可靠性。负载均衡功能(load\_balancing)将存储请求分发到不同的存储后端，避免单点瓶颈。
@@ -175,9 +182,9 @@ WAL持久化实现通过WAL格式持久化类(WALFormatPersistence)提供基于�
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.95\textwidth]{images/5-图5.3 未命名图表.png}
+	\includegraphics[width=0.95\textwidth]{images/5-图5.4 未命名图表.png}
 	\caption{未命名图表}
-	\label{fig5_5_3}
+	\label{fig5_5_4}
 \end{figure}
 
 实现了跨进程共享，解决了传统内存缓存无法跨进程共享的问题；在测试环境下性能提升显著，平均达到99.61\%，加速比高达264倍；同时具备通用性，适用于多进程应用场景。

@@ -2,7 +2,7 @@
   "conversion_summary": {
     "total_chapters": 8,
     "chapters_converted": 6,
-    "total_figures": 20,
+    "total_figures": 21,
     "total_tables": 22,
     "total_algorithms": 5,
     "total_references": 102
@@ -29,7 +29,7 @@
       "algorithms": 2
     },
     "chapter_5": {
-      "figures": 3,
+      "figures": 4,
       "tables": 3,
       "algorithms": 0
     },
@@ -70,7 +70,7 @@
       "2": 4,
       "3": 2,
       "4": 3,
-      "5": 3,
+      "5": 4,
       "6": 6,
       "7": 0
     },

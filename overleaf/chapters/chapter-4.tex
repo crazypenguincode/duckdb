@@ -88,17 +88,17 @@
 \STATE oldest $\leftarrow$ argmin(created\_at) \Comment{以创建时间排序，优先释放最早条目}
 \STATE current\_memory -= Memory(oldest) \Comment{删除后及时扣减内存估算}
 \STATE cache.Remove(oldest) \Comment{执行删除以释放空间}
-\STATE stats.ttl\_evictions++ \Comment{记录TTL策略的淘汰次数(ttl_evictions)}
+\STATE stats.ttl\_evictions++ \Comment{记录TTL策略的淘汰次数}
 \STATE case LRU\_BASED:
-\STATE lru $\leftarrow$ argmin(last\_accessed) \Comment{以最近访问时间(last_accessed)排序，淘汰最久未访问条目}
+\STATE lru $\leftarrow$ argmin(last\_accessed) \Comment{以最近访问时间排序，淘汰最久未访问条目}
 \STATE current\_memory -= Memory(lru) \Comment{扣减LRU条目的内存占用}
 \STATE cache.Remove(lru) \Comment{移除LRU条目}
-\STATE stats.lru\_evictions++ \Comment{记录LRU策略的淘汰次数(lru_evictions)}
+\STATE stats.lru\_evictions++ \Comment{记录LRU策略的淘汰次数}
 \STATE case ML\_BASED:
-\STATE worst $\leftarrow$ argmin(ml\_score) \Comment{以机器学习评分(ml_score)排序，优先移除低价值条目}
+\STATE worst $\leftarrow$ argmin(ml\_score) \Comment{以机器学习评分排序，优先移除低价值条目}
 \STATE current\_memory -= Memory(worst) \Comment{扣减低价值条目的内存占用}
 \STATE cache.Remove(worst) \Comment{移除低价值条目}
-\STATE stats.ml\_evictions++ \Comment{记录ML策略的淘汰次数(ml_evictions)}
+\STATE stats.ml\_evictions++ \Comment{记录ML策略的淘汰次数}
 \STATE end switch
 \STATE end while
 \STATE if config.eviction\_strategy = ML\_BASED then

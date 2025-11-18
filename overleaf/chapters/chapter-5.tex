@@ -63,13 +63,13 @@ WAL持久化实现通过WAL格式持久化类（WALFormatPersistence）提供基
 
 \subsection{混合持久化技术}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
 	\centering
 	\includegraphics[width=1.05\textwidth]{images/5-图5.3 混合持久化技术数据流图.png}
 	\caption{混合持久化技术数据流图}
 	\label{fig5_5_1}
 \end{figure}
-混合持久化通过混合持久化类（HybridPersistence）实现智能存储策略选择。系统实现了两种策略并可通过配置切换。基础混合策略实现采用内存与磁盘双层存储架构，内部集成内存存储（MemoryOnlyPersistence）和WAL格式磁盘存储（WALFormatPersistence）两种后端。系统根据数据访问模式自动判断热度：根据访问次数（access\_count）和最后访问时间（last\_accessed）来判定数据是否为热数据，热数据存储在内存中以获得最佳性能；冷数据存储在磁盘上以节省内存。当内存使用超过配置阈值（memory\_threshold）时，系统自动将最冷的数据迁移到磁盘，采用渐进式迁移策略避免性能冲击。
+混合持久化通过混合持久化类（HybridPersistence）实现智能存储策略选择。如图5.2，系统实现了两种策略并可通过配置切换。基础混合策略实现采用内存与磁盘双层存储架构，内部集成内存存储（MemoryOnlyPersistence）和WAL格式磁盘存储（WALFormatPersistence）两种后端。系统根据数据访问模式自动判断热度：根据访问次数（access\_count）和最后访问时间（last\_accessed）来判定数据是否为热数据，热数据存储在内存中以获得最佳性能；冷数据存储在磁盘上以节省内存。当内存使用超过配置阈值（memory\_threshold）时，系统自动将最冷的数据迁移到磁盘，采用渐进式迁移策略避免性能冲击。
 
 智能混合策略实现则完全委托给机器学习智能持久化引擎（MLIntelligentPersistence）进行决策，在其基础上增加性能监控层，记录平均读写时间和操作次数等关键指标。这种实现方式将复杂的存储决策逻辑封装在ML引擎内部，HybridPersistence作为透明的代理层对外提供统一的存储服务接口。
 
